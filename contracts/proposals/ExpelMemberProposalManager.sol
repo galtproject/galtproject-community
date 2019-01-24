@@ -14,7 +14,7 @@
 pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/galtproject-core/contracts/interfaces/ISpaceLocker.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "./AbstractProposalManager.sol";
 import "../FundStorage.sol";
 

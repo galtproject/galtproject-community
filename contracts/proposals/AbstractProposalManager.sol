@@ -15,7 +15,7 @@ pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/drafts/Counter.sol";
-import "@galtproject/galtproject-libs/contracts/traits/Permissionable.sol";
+import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "../FundStorage.sol";
 import "../interfaces/IRSRA.sol";
 import "./IProposalManager.sol";

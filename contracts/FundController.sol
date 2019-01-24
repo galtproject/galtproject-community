@@ -15,8 +15,8 @@ pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "@galtproject/galtproject-libs/contracts/traits/Permissionable.sol";
-import "@galtproject/galtproject-libs/contracts/collections/ArraySet.sol";
+import "@galtproject/libs/contracts/traits/Permissionable.sol";
+import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "./FundMultiSig.sol";
 import "./FundStorage.sol";
 

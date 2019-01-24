@@ -15,7 +15,7 @@ pragma solidity ^0.5.3;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/galtproject-core/contracts/interfaces/ISpaceLocker.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 
 // This contract will be included into the current one
 import "./MockRSRA.sol";

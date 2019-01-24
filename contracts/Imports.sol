@@ -13,10 +13,10 @@
 
 pragma solidity 0.5.3;
 
-import "@galtproject/galtproject-core/contracts/SpaceToken.sol";
-import "@galtproject/galtproject-core/contracts/GaltToken.sol";
-import "@galtproject/galtproject-core/contracts/factories/SpaceLockerFactory.sol";
-import "@galtproject/galtproject-core/contracts/registries/SpaceLockerRegistry.sol";
+import "@galtproject/core/contracts/SpaceToken.sol";
+import "@galtproject/core/contracts/GaltToken.sol";
+import "@galtproject/core/contracts/factories/SpaceLockerFactory.sol";
+import "@galtproject/core/contracts/registries/SpaceLockerRegistry.sol";
 
 contract Imports {
 
