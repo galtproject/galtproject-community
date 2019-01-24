@@ -1,0 +1,35 @@
+{
+  "name": "@galtproject/galtproject-fund-basic",
+  "version": "0.7.0",
+  "description": "GaltProject Basic Fund Implementation",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
+    "@galtproject/galtproject-libs": "file:../galtproject-libs",
+    "@galtproject/galtproject-core": "file:../galtproject-contracts",
+    "eslint": "^5.12.1",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^3.6.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-prettier": "^3.0.0",
+    "ethlint": "1.2.2",
+    "ganache-core": "2.3.3",
+    "openzeppelin-solidity": "2.1.2",
+    "prettier": "1.16.1",
+    "truffle": "5.0.2",
+    "typedarray-to-buffer": "^3.1.5",
+    "web3": "1.0.0-beta.37"
+  },
+  "scripts": {
+    "eslint": "eslint .",
+    "ethlint": "solium --dir .",
+    "test": "truffle test --network test"
+  },
+  "engines": {
+    "node": ">=10.15.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
