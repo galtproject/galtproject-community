@@ -19,7 +19,6 @@ import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/core/contracts/LiquidReputationAccounting.sol";
 import "@galtproject/core/contracts/registries/interfaces/ISpaceLockerRegistry.sol";
 import "./FundStorage.sol";
-import "./proposals/IProposalManager.sol";
 import "./interfaces/IRSRA.sol";
 
 

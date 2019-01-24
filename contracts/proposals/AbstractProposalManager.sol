@@ -18,10 +18,9 @@ import "openzeppelin-solidity/contracts/drafts/Counter.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "../FundStorage.sol";
 import "../interfaces/IRSRA.sol";
-import "./IProposalManager.sol";
 
 
-contract AbstractProposalManager is Permissionable, IProposalManager {
+contract AbstractProposalManager is Permissionable {
   using Counter for Counter.Counter;
   using ArraySet for ArraySet.AddressSet;
 
