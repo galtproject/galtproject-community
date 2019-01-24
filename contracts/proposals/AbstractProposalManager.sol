@@ -92,13 +92,13 @@ contract AbstractProposalManager is Permissionable, IProposalManager {
   }
 
   function aye(uint256 _proposalId) external onlyMember {
-    require(_proposalVotings[_proposalId].status == ProposalStatus.ACTIVE);
+    require(_proposalVotings[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     _aye(_proposalId, msg.sender);
   }
 
   function nay(uint256 _proposalId) external onlyMember {
-    require(_proposalVotings[_proposalId].status == ProposalStatus.ACTIVE);
+    require(_proposalVotings[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     _nay(_proposalId, msg.sender);
   }
@@ -107,7 +107,7 @@ contract AbstractProposalManager is Permissionable, IProposalManager {
   // permissionLESS
   function triggerApprove(uint256 _proposalId) external {
     ProposalVoting storage proposalVoting = _proposalVotings[_proposalId];
-    require(proposalVoting.status == ProposalStatus.ACTIVE);
+    require(proposalVoting.status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     uint256 threshold = getThreshold();
     uint256 ayeShare = getAyeShare(_proposalId);
@@ -125,7 +125,7 @@ contract AbstractProposalManager is Permissionable, IProposalManager {
   // permissionLESS
   function triggerReject(uint256 _proposalId) external {
     ProposalVoting storage proposalVoting = _proposalVotings[_proposalId];
-    require(proposalVoting.status == ProposalStatus.ACTIVE);
+    require(proposalVoting.status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     uint256 threshold = getThreshold();
     uint256 nayShare = getNayShare(_proposalId);

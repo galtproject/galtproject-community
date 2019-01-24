@@ -18,6 +18,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 
+
 contract FundStorage is Permissionable {
   using ArraySet for ArraySet.AddressSet;
 

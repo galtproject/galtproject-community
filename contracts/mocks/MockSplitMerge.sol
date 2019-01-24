@@ -14,7 +14,7 @@
 pragma solidity ^0.5.3;
 
 
-contract MockSplitMerge  {
+contract MockSplitMerge {
   mapping(uint256 => uint256) private _tokenAreas;
 
   function setTokenArea(uint256 _tokenId, uint256 _amount) external {

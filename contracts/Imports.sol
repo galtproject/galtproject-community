@@ -18,6 +18,8 @@ import "@galtproject/core/contracts/GaltToken.sol";
 import "@galtproject/core/contracts/factories/SpaceLockerFactory.sol";
 import "@galtproject/core/contracts/registries/SpaceLockerRegistry.sol";
 
+
+// solium-disable-next-line no-empty-blocks
 contract Imports {
 
 }

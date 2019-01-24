@@ -20,6 +20,7 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "./FundMultiSig.sol";
 import "./FundStorage.sol";
 
+
 contract FundController is Permissionable {
   using ArraySet for ArraySet.AddressSet;
 
