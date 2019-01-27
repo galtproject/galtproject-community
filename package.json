@@ -1,5 +1,5 @@
 {
-  "name": "@galtproject/galtproject-fund-basic",
+  "name": "@galtproject/fund-basic",
   "version": "0.7.0",
   "description": "GaltProject Basic Fund Implementation",
   "directories": {
