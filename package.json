@@ -8,7 +8,7 @@
   "devDependencies": {
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
     "@galtproject/libs": "git+https://github.com/galtspace/galtproject-libs.git",
-    "@galtproject/core": "git+https://github.com/galtspace/galtproject-contracts.git#f2fa8da70f3818005cf66f52a94710d21f6f024e",
+    "@galtproject/core": "git+https://github.com/galtspace/galtproject-core.git#dee5acdb73bfab93d1276257b183ab924209d694",
     "eslint": "^5.12.1",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^3.6.0",
