@@ -22,7 +22,7 @@ import "./FundStorage.sol";
 import "./interfaces/IRSRA.sol";
 
 
-contract RSRA is LiquidReputationAccounting, IRSRA {
+contract RSRA is IRSRA, LiquidReputationAccounting {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
@@ -69,6 +69,7 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
 
   // PermissionED
   function revokeLocked(address _delegate, uint256 _amount) external {
+    revert("Locking temporarily disabled");
     require(_delegations[msg.sender][_delegate] >= _amount, "Not enough funds");
     require(_locks[_delegate] >= _amount, "Not enough funds");
 
@@ -95,6 +96,7 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
   }
 
   function burnExpelledAndLocked(uint256 _spaceTokenId, address _delegate, address _owner, uint256 _amount) external {
+    revert("Locking temporarily disabled");
     require(_delegations[_owner][_delegate] >= _amount, "Not enough funds");
     require(_locks[_delegate] >= _amount, "Not enough funds");
 
@@ -112,6 +114,7 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
 
   // PermissionED
   function lockReputation(uint256 _amount) external {
+    revert("Locking temporarily disabled");
     require(_balances[msg.sender] >= _amount, "Insufficient amount to lock");
 
     _lockReputation(msg.sender, _amount);
@@ -119,6 +122,7 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
 
   // PermissionED
   function unlockReputation(uint256 _amount) external {
+    revert("Locking temporarily disabled");
     uint256 beforeUnlock = _locks[msg.sender];
     uint256 afterUnlock = _locks[msg.sender] - _amount;
 
@@ -134,7 +138,7 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
   // INTERNAL
 
   function _lockReputation(address _locker, uint256 _amount) internal {
-
+    revert("Locking temporarily disabled");
     _balances[_locker] -= _amount;
     _locks[_locker] += _amount;
     _totalLockedSupply += _amount;
@@ -146,17 +150,19 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
     uint256 aggregator = 0;
 
     for (uint256 i = 0; i < _addresses.length; i++) {
-      aggregator += _locks[_addresses[i]];
+      aggregator += _balances[_addresses[i]];
     }
 
-    return aggregator * 100 / _totalLockedSupply;
+    return aggregator * 100 / totalSupply();
   }
 
   function lockedBalanceOf(address _owner) external view returns (uint256) {
+    revert("Locking temporarily disabled");
     return _locks[_owner];
   }
 
   function totalLockedSupply() external view returns (uint256) {
+    revert("Locking temporarily disabled");
     return _totalLockedSupply;
   }
 }

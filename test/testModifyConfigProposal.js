@@ -86,7 +86,7 @@ contract('ModifyConfigProposal', accounts => {
 
   describe('proposal creation', () => {
     it('should allow user who has reputation creating a new proposal', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
       let res = await this.modifyConfigProposalManagerX.propose(
         bytes32('modify_config_threshold'),
@@ -106,9 +106,9 @@ contract('ModifyConfigProposal', accounts => {
     });
   });
 
-  describe('voting method #2 (Proposal contracts queries RSRA for addresses locked reputation share)', () => {
+  describe('(Proposal contracts queries RSRA for addresses locked reputation share)', () => {
     it('should allow reverting a proposal if negative votes threshold is reached', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
       let res = await this.modifyConfigProposalManagerX.propose(
         bytes32('modify_config_threshold'),
@@ -129,6 +129,13 @@ contract('ModifyConfigProposal', accounts => {
       assert.sameMembers(res.nays, [charlie]);
 
       assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.modifyConfigProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.modifyConfigProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.modifyConfigProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
 
       res = await this.modifyConfigProposalManagerX.getAyeShare(proposalId);
       assert.equal(res, 20);
@@ -152,10 +159,17 @@ contract('ModifyConfigProposal', accounts => {
 
       res = await this.modifyConfigProposalManagerX.getProposalVoting(proposalId);
       assert.equal(res.status, ProposalStatus.REJECTED);
+
+      res = await this.modifyConfigProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.modifyConfigProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.modifyConfigProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
     });
 
     it('should allow approving proposal if positive votes threshold is reached', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
       let res = await this.modifyConfigProposalManagerX.propose(
         bytes32('modify_config_threshold'),
@@ -167,6 +181,13 @@ contract('ModifyConfigProposal', accounts => {
       );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      res = await this.modifyConfigProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.modifyConfigProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.modifyConfigProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
 
       await this.modifyConfigProposalManagerX.aye(proposalId, { from: bob });
       await this.modifyConfigProposalManagerX.nay(proposalId, { from: charlie });
@@ -204,6 +225,13 @@ contract('ModifyConfigProposal', accounts => {
 
       res = await this.fundStorageX.getConfigValue(web3.utils.utf8ToHex('modify_config_threshold'));
       assert.equal(web3.utils.hexToNumberString(res), '42');
+
+      res = await this.modifyConfigProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.modifyConfigProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.modifyConfigProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
     });
   });
 });

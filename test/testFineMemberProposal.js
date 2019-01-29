@@ -98,7 +98,7 @@ contract('FineFundMemberProposal', accounts => {
     await this.fundFactory.buildThirdStep({ from: alice });
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -157,9 +157,11 @@ contract('FineFundMemberProposal', accounts => {
       await this.fineMemberProposalManagerX.aye(proposalId, { from: bob });
       await this.fineMemberProposalManagerX.aye(proposalId, { from: charlie });
       await this.fineMemberProposalManagerX.aye(proposalId, { from: dan });
+      await this.fineMemberProposalManagerX.aye(proposalId, { from: eve });
+      await this.fineMemberProposalManagerX.aye(proposalId, { from: frank });
 
       res = await this.fineMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 60);
+      assert.equal(res, 65);
       res = await this.fineMemberProposalManagerX.getThreshold();
       assert.equal(res, 60);
 

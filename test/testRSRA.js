@@ -227,7 +227,7 @@ contract('RSRA', accounts => {
   });
 
   describe('lock/unlock by delegate', () => {
-    it('should allow update balances of all whitelisted proposal contracts', async function() {
+    it.skip('should allow update balances of all whitelisted proposal contracts', async function() {
       let res = await this.spaceToken.mint(alice, { from: minter });
       const token1 = res.logs[0].args.tokenId.toNumber();
 

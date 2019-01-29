@@ -89,7 +89,7 @@ contract('WLProposal', accounts => {
 
   describe('pipeline', () => {
     it('should allow address addition to the WL', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
       let res = await this.wlProposalManagerX.propose(address4wl, Action.ADD, 'blah', {
         from: bob
@@ -123,7 +123,7 @@ contract('WLProposal', accounts => {
     });
 
     it('should allow address removal from the WL', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
       let res = await this.wlProposalManagerX.propose(this.modifyConfigProposalManagerAddress, Action.REMOVE, 'blah', {
         from: bob

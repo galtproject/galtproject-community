@@ -28,6 +28,9 @@ const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
+web3.utils.BN.prototype.toString = function() {
+  return this.toString(10);
+};
 
 const ProposalStatus = {
   NULL: 0,
@@ -104,7 +107,7 @@ contract('ExpelFundMemberProposal', accounts => {
     this.expelMemberProposalManagerX = await ExpelMemberProposalManager.at(res.logs[0].args.expelMemberProposalManager);
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -167,9 +170,16 @@ contract('ExpelFundMemberProposal', accounts => {
       await this.expelMemberProposalManagerX.aye(proposalId, { from: bob });
       await this.expelMemberProposalManagerX.aye(proposalId, { from: charlie });
       await this.expelMemberProposalManagerX.aye(proposalId, { from: dan });
+      await this.expelMemberProposalManagerX.aye(proposalId, { from: eve });
 
+      res = await this.rsraX.totalSupply();
+      assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.rsraX.balanceOf(bob);
+      assert.equal(res, 500);
+      res = await this.rsraX.getShare([bob]);
+      assert.equal(res, 21);
       res = await this.expelMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 60);
+      assert.equal(res, 65); // (500 + 400 + 300 + 300) / 2300
       res = await this.expelMemberProposalManagerX.getThreshold();
       assert.equal(res, 60);
 
@@ -188,10 +198,10 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       // BURNING LOCKED REPUTATION FOR EXPELLED TOKEN
-      await assertRevert(this.rsraX.burnExpelledAndLocked(token1, charlie, alice, 101, { from: unauthorized }));
-      await this.rsraX.burnExpelledAndLocked(token1, charlie, alice, 100, { from: unauthorized });
-      await assertRevert(this.rsraX.burnExpelledAndLocked(token1, bob, alice, 201, { from: unauthorized }));
-      await this.rsraX.burnExpelledAndLocked(token1, bob, alice, 200, { from: unauthorized });
+      await assertRevert(this.rsraX.burnExpelled(token1, charlie, alice, 101, { from: unauthorized }));
+      await this.rsraX.burnExpelled(token1, charlie, alice, 100, { from: unauthorized });
+      await assertRevert(this.rsraX.burnExpelled(token1, bob, alice, 201, { from: unauthorized }));
+      await this.rsraX.burnExpelled(token1, bob, alice, 200, { from: unauthorized });
       await assertRevert(this.rsraX.burnExpelled(token1, alice, alice, 501, { from: unauthorized }));
       await this.rsraX.burnExpelled(token1, alice, alice, 500, { from: unauthorized });
 

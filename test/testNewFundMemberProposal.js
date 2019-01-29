@@ -101,7 +101,7 @@ contract('NewFundMemberProposal', accounts => {
     await this.fundFactory.buildThirdStep({ from: alice });
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
