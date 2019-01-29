@@ -24,6 +24,7 @@
   },
   "repository": "https://github.com/galtspace/galtproject-fund-basic",
   "scripts": {
+    "compile": "truffle compile",
     "eslint": "eslint .",
     "ethlint": "solium --dir .",
     "test": "truffle test --network test"

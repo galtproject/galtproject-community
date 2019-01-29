@@ -4,7 +4,7 @@ cleanup:
 	rm -rf ./build
 
 compile: cleanup
-	truffle compile
+	npm run compile
 	tput bel
 
 validate:
