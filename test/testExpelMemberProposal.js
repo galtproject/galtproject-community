@@ -18,6 +18,8 @@ const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberPropos
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require('./ChangeNameAndDescriptionProposalManagerFactory.sol');
+const ActiveRulesProposalManagerFactory = artifacts.require('./ActiveRulesProposalManagerFactory.sol');
 
 const MockModifyConfigProposalManager = artifacts.require('./MockModifyConfigProposalManager.sol');
 const NewMemberProposalManager = artifacts.require('./NewMemberProposalManager.sol');
@@ -66,6 +68,8 @@ contract('ExpelFundMemberProposal', accounts => {
     this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
+    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
+    this.activeRulesProposalManagerFactory = await ActiveRulesProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
       this.galtToken.address,
@@ -80,6 +84,8 @@ contract('ExpelFundMemberProposal', accounts => {
       this.fineMemberProposalManagerFactory.address,
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
+      this.activeRulesProposalManagerFactory.address,
       { from: coreTeam }
     );
 

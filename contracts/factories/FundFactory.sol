@@ -31,6 +31,7 @@ import "./NewMemberProposalManagerFactory.sol";
 import "./FineMemberProposalManagerFactory.sol";
 import "./ExpelMemberProposalManagerFactory.sol";
 import "./WLProposalManagerFactory.sol";
+import "./ActiveRulesProposalManagerFactory.sol";
 import "./ChangeNameAndDescriptionProposalManagerFactory.sol";
 
 
@@ -60,7 +61,8 @@ contract FundFactory is Ownable {
 
   event CreateFundFourthStep(
     address creator,
-    address changeNameAndDescriptionProposalManager
+    address changeNameAndDescriptionProposalManager,
+    address activeRulesProposalManager
   );
 
   string public constant RSRA_CONTRACT = "rsra_contract";
@@ -81,6 +83,7 @@ contract FundFactory is Ownable {
   ExpelMemberProposalManagerFactory expelMemberProposalManagerFactory;
   WLProposalManagerFactory wlProposalManagerFactory;
   ChangeNameAndDescriptionProposalManagerFactory changeNameAndDescriptionProposalManagerFactory;
+  ActiveRulesProposalManagerFactory activeRulesProposalManagerFactory;
 
   enum Step {
     FIRST,
@@ -112,7 +115,8 @@ contract FundFactory is Ownable {
     FineMemberProposalManagerFactory _fineMemberProposalManagerFactory,
     ExpelMemberProposalManagerFactory _expelMemberProposalManagerFactory,
     WLProposalManagerFactory _wlProposalManagerFactory,
-    ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory
+    ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory,
+    ActiveRulesProposalManagerFactory _activeRulesProposalManagerFactory
   ) public {
     commission = 10 ether;
 
@@ -130,6 +134,7 @@ contract FundFactory is Ownable {
     expelMemberProposalManagerFactory = _expelMemberProposalManagerFactory;
     wlProposalManagerFactory = _wlProposalManagerFactory;
     changeNameAndDescriptionProposalManagerFactory = _changeNameAndDescriptionProposalManagerFactory;
+    activeRulesProposalManagerFactory = _activeRulesProposalManagerFactory;
   }
 
   function buildFirstStep(
@@ -227,6 +232,7 @@ contract FundFactory is Ownable {
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(wlProposalManager), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.addRoleTo(address(expelMemberProposalManager), _fundStorage.CONTRACT_EXPEL_MEMBER_MANAGER());
 
     c.currentStep = Step.FOURTH;
 
@@ -246,8 +252,10 @@ contract FundFactory is Ownable {
 
     ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager =
       changeNameAndDescriptionProposalManagerFactory.build(c.rsra, _fundStorage);
+    ActiveRulesProposalManager activeRulesProposalManager = activeRulesProposalManagerFactory.build(c.rsra, _fundStorage);
 
     _fundStorage.addRoleTo(address(changeNameAndDescriptionProposalManager), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    _fundStorage.addRoleTo(address(activeRulesProposalManager), _fundStorage.CONTRACT_ACTIVE_RULES_MANAGER());
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.setNameAndDescription(_name, _description);
@@ -257,7 +265,8 @@ contract FundFactory is Ownable {
 
     emit CreateFundFourthStep(
       msg.sender,
-      address(changeNameAndDescriptionProposalManager)
+      address(changeNameAndDescriptionProposalManager),
+      address(activeRulesProposalManager)
     );
   }
 

@@ -21,6 +21,7 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 
 contract FundStorage is Permissionable {
   using ArraySet for ArraySet.AddressSet;
+  using ArraySet for ArraySet.Uint256Set;
 
   string public constant CONTRACT_WHITELIST_MANAGER = "wl_manager";
   string public constant CONTRACT_CONFIG_MANAGER = "config_manager";
@@ -29,6 +30,7 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
   string public constant CONTRACT_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
   string public constant CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
+  string public constant CONTRACT_ACTIVE_RULES_MANAGER = "active_rules_manager";
   string public constant CONTRACT_RSRA = "rsra";
 
   bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
@@ -37,12 +39,21 @@ contract FundStorage is Permissionable {
   bytes32 public constant EXPEL_MEMBER_THRESHOLD = bytes32("expel_member_threshold");
   bytes32 public constant FINE_MEMBER_THRESHOLD = bytes32("fine_member_threshold");
   bytes32 public constant NAME_AND_DESCRIPTION_THRESHOLD = bytes32("name_and_description_threshold");
+  bytes32 public constant ACTIVE_RULES_THRESHOLD = bytes32("active_rules_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
-  ArraySet.AddressSet private whiteListedContracts;
+  struct FundRule {
+    bool active;
+    uint256 id;
+    bytes32 ipfsHash;
+    string description;
+  }
 
   string public name;
   string public description;
+
+  ArraySet.AddressSet private _whiteListedContracts;
+  ArraySet.Uint256Set private _activeFundRules;
 
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
@@ -53,6 +64,8 @@ contract FundStorage is Permissionable {
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
   mapping(uint256 => uint256) private _expelledTokenReputation;
+  // FRP => FundRule details
+  mapping(uint256 => FundRule) public fundRules;
 
   constructor (
     bool _isPrivate,
@@ -109,11 +122,28 @@ contract FundStorage is Permissionable {
   }
 
   function addWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
-    whiteListedContracts.add(_contract);
+    _whiteListedContracts.add(_contract);
   }
 
   function removeWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
-    whiteListedContracts.remove(_contract);
+    _whiteListedContracts.remove(_contract);
+  }
+
+  function addFundRule(uint256 _id, bytes32 _ipfsHash, string calldata _description) external onlyRole(CONTRACT_ACTIVE_RULES_MANAGER) {
+    FundRule storage fundRule = fundRules[_id];
+
+    fundRule.active = true;
+    fundRule.id = _id;
+    fundRule.ipfsHash = _ipfsHash;
+    fundRule.description = _description;
+
+    _activeFundRules.add(_id);
+  }
+
+  function disableFundRule(uint256 _id) external onlyRole(CONTRACT_ACTIVE_RULES_MANAGER) {
+    fundRules[_id].active = false;
+
+    _activeFundRules.remove(_id);
   }
 
   function setNameAndDescription(
@@ -141,7 +171,15 @@ contract FundStorage is Permissionable {
   }
 
   function getWhiteListedContracts() external view returns(address[] memory) {
-    return whiteListedContracts.elements();
+    return _whiteListedContracts.elements();
+  }
+
+  function getActiveFundRules() external view returns(uint256[] memory) {
+    return _activeFundRules.elements();
+  }
+
+  function getActiveFundRulesCount() external view returns(uint256) {
+    return _activeFundRules.size();
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns(bool) {
