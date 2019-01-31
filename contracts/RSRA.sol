@@ -26,7 +26,7 @@ contract RSRA is IRSRA, LiquidReputationAccounting {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
-  FundStorage fundStorage;
+  FundStorage public fundStorage;
 
   mapping(uint256 => bool) internal _tokensToExpel;
 
