@@ -231,4 +231,25 @@ contract FundFactory is Ownable {
   function setCommission(uint256 _commission) external onlyOwner {
     commission = _commission;
   }
+
+  function getMyLastCreatedContracts() external returns (
+    Step currentStep,
+    IRSRA rsra,
+    FundMultiSig fundMultiSig,
+    FundStorage fundStorage,
+    FundController fundController
+  )
+  {
+    return (
+      _firstStepContracts[msg.sender].currentStep,
+      _firstStepContracts[msg.sender].rsra,
+      _firstStepContracts[msg.sender].fundMultiSig,
+      _firstStepContracts[msg.sender].fundStorage,
+      _firstStepContracts[msg.sender].fundController
+    );
+  }
+
+  function getCurrentStep(address _creator) external returns (Step) {
+    return _firstStepContracts[_creator].currentStep;
+  }
 }
