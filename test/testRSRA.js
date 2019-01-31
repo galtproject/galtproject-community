@@ -17,6 +17,7 @@ const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalMa
 const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require('./ChangeNameAndDescriptionProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
 
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
@@ -52,6 +53,7 @@ contract('RSRA', accounts => {
     this.newMemberProposalManagerFactory = await NewMemberProposalManagerFactory.new();
     this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
+    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
@@ -67,6 +69,7 @@ contract('RSRA', accounts => {
       this.fineMemberProposalManagerFactory.address,
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
       { from: coreTeam }
     );
 

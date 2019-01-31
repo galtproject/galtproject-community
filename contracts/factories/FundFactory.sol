@@ -31,10 +31,12 @@ import "./NewMemberProposalManagerFactory.sol";
 import "./FineMemberProposalManagerFactory.sol";
 import "./ExpelMemberProposalManagerFactory.sol";
 import "./WLProposalManagerFactory.sol";
+import "./ChangeNameAndDescriptionProposalManagerFactory.sol";
 
 
 contract FundFactory is Ownable {
   event CreateFundFirstStep(
+    address creator,
     address fundRsra,
     address fundMultiSig,
     address fundStorage,
@@ -42,6 +44,7 @@ contract FundFactory is Ownable {
   );
 
   event CreateFundSecondStep(
+    address creator,
     address multiSig,
     address modifyConfigProposalManager,
     address newMemberProposalManager,
@@ -49,9 +52,15 @@ contract FundFactory is Ownable {
   );
 
   event CreateFundThirdStep(
+    address creator,
     address multiSig,
     address whiteListProposalManager,
     address expelMemberProposalManager
+  );
+
+  event CreateFundFourthStep(
+    address creator,
+    address changeNameAndDescriptionProposalManager
   );
 
   string public constant RSRA_CONTRACT = "rsra_contract";
@@ -71,11 +80,13 @@ contract FundFactory is Ownable {
   FineMemberProposalManagerFactory fineMemberProposalManagerFactory;
   ExpelMemberProposalManagerFactory expelMemberProposalManagerFactory;
   WLProposalManagerFactory wlProposalManagerFactory;
+  ChangeNameAndDescriptionProposalManagerFactory changeNameAndDescriptionProposalManagerFactory;
 
   enum Step {
     FIRST,
     SECOND,
-    THIRD
+    THIRD,
+    FOURTH
   }
 
   struct FirstStepContracts {
@@ -100,7 +111,8 @@ contract FundFactory is Ownable {
     NewMemberProposalManagerFactory _newMemberProposalManagerFactory,
     FineMemberProposalManagerFactory _fineMemberProposalManagerFactory,
     ExpelMemberProposalManagerFactory _expelMemberProposalManagerFactory,
-    WLProposalManagerFactory _wlProposalManagerFactory
+    WLProposalManagerFactory _wlProposalManagerFactory,
+    ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory
   ) public {
     commission = 10 ether;
 
@@ -117,6 +129,7 @@ contract FundFactory is Ownable {
     fineMemberProposalManagerFactory = _fineMemberProposalManagerFactory;
     expelMemberProposalManagerFactory = _expelMemberProposalManagerFactory;
     wlProposalManagerFactory = _wlProposalManagerFactory;
+    changeNameAndDescriptionProposalManagerFactory = _changeNameAndDescriptionProposalManagerFactory;
   }
 
   function buildFirstStep(
@@ -159,7 +172,7 @@ contract FundFactory is Ownable {
     c.fundMultiSig = fundMultiSig;
     c.fundController = fundController;
 
-    emit CreateFundFirstStep(address(rsra), address(fundMultiSig), address(fundStorage), address(fundController));
+    emit CreateFundFirstStep(msg.sender, address(rsra), address(fundMultiSig), address(fundStorage), address(fundController));
   }
 
   function buildSecondStep() external {
@@ -190,6 +203,7 @@ contract FundFactory is Ownable {
     c.currentStep = Step.THIRD;
 
     emit CreateFundSecondStep(
+      msg.sender,
       address(_fundMultiSig),
       address(modifyConfigProposalManager),
       address(newMemberProposalManager),
@@ -213,14 +227,37 @@ contract FundFactory is Ownable {
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(wlProposalManager), _fundStorage.CONTRACT_WHITELIST_MANAGER());
-    _fundStorage.addRoleTo(address(expelMemberProposalManager), _fundStorage.CONTRACT_EXPEL_MEMBER_MANAGER());
 
-    delete _firstStepContracts[msg.sender];
+    c.currentStep = Step.FOURTH;
 
     emit CreateFundThirdStep(
+      msg.sender,
       address(c.fundMultiSig),
       address(wlProposalManager),
       address(expelMemberProposalManager)
+    );
+  }
+
+  function buildFourthStep(string calldata _name, string calldata _description) external {
+    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+    require(c.currentStep == Step.FOURTH, "Requires fourth step");
+
+    FundStorage _fundStorage = c.fundStorage;
+
+    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager =
+      changeNameAndDescriptionProposalManagerFactory.build(c.rsra, _fundStorage);
+
+    _fundStorage.addRoleTo(address(changeNameAndDescriptionProposalManager), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+
+    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.setNameAndDescription(_name, _description);
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+
+    delete _firstStepContracts[msg.sender];
+
+    emit CreateFundFourthStep(
+      msg.sender,
+      address(changeNameAndDescriptionProposalManager)
     );
   }
 

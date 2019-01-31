@@ -28,6 +28,7 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_EXPEL_MEMBER_MANAGER = "expel_member_manager";
   string public constant CONTRACT_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
   string public constant CONTRACT_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
+  string public constant CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
   string public constant CONTRACT_RSRA = "rsra";
 
   bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
@@ -35,9 +36,13 @@ contract FundStorage is Permissionable {
   bytes32 public constant NEW_MEMBER_THRESHOLD = bytes32("new_member_threshold");
   bytes32 public constant EXPEL_MEMBER_THRESHOLD = bytes32("expel_member_threshold");
   bytes32 public constant FINE_MEMBER_THRESHOLD = bytes32("fine_member_threshold");
+  bytes32 public constant NAME_AND_DESCRIPTION_THRESHOLD = bytes32("name_and_description_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   ArraySet.AddressSet private whiteListedContracts;
+
+  string public name;
+  string public description;
 
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
@@ -109,6 +114,17 @@ contract FundStorage is Permissionable {
 
   function removeWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
     whiteListedContracts.remove(_contract);
+  }
+
+  function setNameAndDescription(
+    string calldata _name,
+    string calldata _description
+  )
+    external
+    onlyRole(CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER)
+  {
+    name = _name;
+    description = _description;
   }
 
   // GETTERS
