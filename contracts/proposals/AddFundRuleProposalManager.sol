@@ -17,7 +17,7 @@ import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
 
-contract ActiveRulesProposalManager is AbstractProposalManager {
+contract AddFundRuleProposalManager is AbstractProposalManager {
   enum Action {
     ADD,
     DISABLE
@@ -36,7 +36,6 @@ contract ActiveRulesProposalManager is AbstractProposalManager {
 
   function propose(Action _action, bytes32 _ipfsHash, string calldata _description) external onlyMember {
     uint256 id = idCounter.next();
-    // asser not exists
 
     _proposals[id] = Proposal({
       action: _action,
@@ -79,6 +78,6 @@ contract ActiveRulesProposalManager is AbstractProposalManager {
   }
 
   function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.ACTIVE_RULES_THRESHOLD()));
+    return uint256(fundStorage.getConfigValue(fundStorage.ADD_FUND_RULE_THRESHOLD()));
   }
 }

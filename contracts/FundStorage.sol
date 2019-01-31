@@ -30,7 +30,8 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
   string public constant CONTRACT_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
   string public constant CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
-  string public constant CONTRACT_ACTIVE_RULES_MANAGER = "active_rules_manager";
+  string public constant CONTRACT_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
+  string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
   string public constant CONTRACT_RSRA = "rsra";
 
   bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
@@ -39,7 +40,8 @@ contract FundStorage is Permissionable {
   bytes32 public constant EXPEL_MEMBER_THRESHOLD = bytes32("expel_member_threshold");
   bytes32 public constant FINE_MEMBER_THRESHOLD = bytes32("fine_member_threshold");
   bytes32 public constant NAME_AND_DESCRIPTION_THRESHOLD = bytes32("name_and_description_threshold");
-  bytes32 public constant ACTIVE_RULES_THRESHOLD = bytes32("active_rules_threshold");
+  bytes32 public constant ADD_FUND_RULE_THRESHOLD = bytes32("add_fund_rule_threshold");
+  bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -65,7 +67,7 @@ contract FundStorage is Permissionable {
   // spaceTokenId => availableAmountToBurn
   mapping(uint256 => uint256) private _expelledTokenReputation;
   // FRP => FundRule details
-  mapping(uint256 => FundRule) public fundRules;
+  mapping(uint256 => FundRule) private _fundRules;
 
   constructor (
     bool _isPrivate,
@@ -73,7 +75,10 @@ contract FundStorage is Permissionable {
     uint256 _modifyConfigThreshold,
     uint256 _newMemberThreshold,
     uint256 _expelMemberThreshold,
-    uint256 _fineMemberThreshold
+    uint256 _fineMemberThreshold,
+    uint256 _changeNameAndDescriptionThreshold,
+    uint256 _addFundRuleThreshold,
+    uint256 _deactivateFundRuleThreshold
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);
@@ -81,6 +86,9 @@ contract FundStorage is Permissionable {
     _config[NEW_MEMBER_THRESHOLD] = bytes32(_newMemberThreshold);
     _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_expelMemberThreshold);
     _config[FINE_MEMBER_THRESHOLD] = bytes32(_fineMemberThreshold);
+    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_changeNameAndDescriptionThreshold);
+    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_addFundRuleThreshold);
+    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_deactivateFundRuleThreshold);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -129,8 +137,15 @@ contract FundStorage is Permissionable {
     _whiteListedContracts.remove(_contract);
   }
 
-  function addFundRule(uint256 _id, bytes32 _ipfsHash, string calldata _description) external onlyRole(CONTRACT_ACTIVE_RULES_MANAGER) {
-    FundRule storage fundRule = fundRules[_id];
+  function addFundRule(
+    uint256 _id,
+    bytes32 _ipfsHash,
+    string calldata _description
+  )
+    external
+    onlyRole(CONTRACT_ADD_FUND_RULE_MANAGER)
+  {
+    FundRule storage fundRule = _fundRules[_id];
 
     fundRule.active = true;
     fundRule.id = _id;
@@ -140,8 +155,8 @@ contract FundStorage is Permissionable {
     _activeFundRules.add(_id);
   }
 
-  function disableFundRule(uint256 _id) external onlyRole(CONTRACT_ACTIVE_RULES_MANAGER) {
-    fundRules[_id].active = false;
+  function disableFundRule(uint256 _id) external onlyRole(CONTRACT_DEACTIVATE_FUND_RULE_MANAGER) {
+    _fundRules[_id].active = false;
 
     _activeFundRules.remove(_id);
   }
@@ -180,6 +195,20 @@ contract FundStorage is Permissionable {
 
   function getActiveFundRulesCount() external view returns(uint256) {
     return _activeFundRules.size();
+  }
+
+  function getFundRule(uint256 _frpId) external view returns(
+    bool active,
+    uint256 id,
+    bytes32 ipfsHash,
+    string memory description
+  ) {
+    FundRule storage r = _fundRules[_frpId];
+
+    active = r.active;
+    id = r.id;
+    ipfsHash = r.ipfsHash;
+    description = r.description;
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns(bool) {

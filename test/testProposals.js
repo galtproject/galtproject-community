@@ -14,11 +14,15 @@ const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.s
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
 const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require('./ChangeNameAndDescriptionProposalManagerFactory.sol');
-const ActiveRulesProposalManagerFactory = artifacts.require('./ActiveRulesProposalManagerFactory.sol');
+const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
+const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 
 const MockModifyConfigProposalManager = artifacts.require('./MockModifyConfigProposalManager.sol');
+const AddFundRuleProposalManager = artifacts.require('./AddFundRuleProposalManager.sol');
+const DeactivateFundRuleProposalManager = artifacts.require('./DeactivateFundRuleProposalManager.sol');
 
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
+const galt = require('@galtproject/utils');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -32,7 +36,12 @@ const ProposalStatus = {
   REJECTED: 3
 };
 
-contract.only('Proposals', accounts => {
+const ActiveRuleAction = {
+  ADD: 0,
+  REMOVE: 1
+};
+
+contract('Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, spaceLockerRegistryAddress] = accounts;
 
   beforeEach(async function() {
@@ -51,7 +60,8 @@ contract.only('Proposals', accounts => {
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
     this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
-    this.activeRulesProposalManagerFactory = await ActiveRulesProposalManagerFactory.new();
+    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
+    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
       this.galtToken.address,
@@ -67,7 +77,8 @@ contract.only('Proposals', accounts => {
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
       this.changeNameAndDescriptionProposalManagerFactory.address,
-      this.activeRulesProposalManagerFactory.address,
+      this.addFundRuleProposalManagerFactory.address,
+      this.deactivateFundRuleProposalManagerFactory.address,
       { from: coreTeam }
     );
 
@@ -76,7 +87,7 @@ contract.only('Proposals', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, 60, 50, 60, 60, 60, [bob, charlie, dan], 2, { from: alice });
+    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, { from: alice });
     this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
@@ -86,6 +97,14 @@ contract.only('Proposals', accounts => {
     );
 
     await this.fundFactory.buildThirdStep({ from: alice });
+
+    res = await this.fundFactory.buildFourthStep("MyFund", "my awesome fund", { from: alice });
+    this.addFundRuleProposalManagerX = await AddFundRuleProposalManager.at(
+        res.logs[0].args.addFundRuleProposalManager
+    );
+    this.deactivateFundRuleProposalManagerX = await DeactivateFundRuleProposalManager.at(
+      res.logs[0].args.deactivateFundRuleProposalManager
+    );
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
   });
@@ -240,6 +259,151 @@ contract.only('Proposals', accounts => {
         res = await this.modifyConfigProposalManagerX.getRejectedProposals();
         assert.sameMembers(res.map(a => a.toNumber(10)), []);
       });
+    });
+  });
+
+  describe('SetAddFundRuleProposalManager', () => {
+    it('should add a new active rule for ADD action', async function() {
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+
+      let res = await this.addFundRuleProposalManagerX.propose(
+          ActiveRuleAction.ADD,
+          galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'),
+          'Do that',
+          {
+            from: bob
+          }
+      );
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.addFundRuleProposalManagerX.aye(proposalId, { from: bob });
+      await this.addFundRuleProposalManagerX.nay(proposalId, { from: charlie });
+
+      res = await this.addFundRuleProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [bob]);
+      assert.sameMembers(res.nays, [charlie]);
+
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.addFundRuleProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.addFundRuleProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.addFundRuleProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      res = await this.addFundRuleProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 20);
+      res = await this.addFundRuleProposalManagerX.getNayShare(proposalId);
+      assert.equal(res, 20);
+
+      // Deny double-vote
+      await assertRevert(this.addFundRuleProposalManagerX.aye(proposalId, { from: bob }));
+      await assertRevert(this.addFundRuleProposalManagerX.triggerReject(proposalId, { from: dan }));
+
+      await this.addFundRuleProposalManagerX.aye(proposalId, { from: dan });
+      await this.addFundRuleProposalManagerX.aye(proposalId, { from: eve });
+
+      res = await this.addFundRuleProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 60);
+      res = await this.addFundRuleProposalManagerX.getNayShare(proposalId);
+      assert.equal(res, 20);
+
+      await this.addFundRuleProposalManagerX.triggerApprove(proposalId, { from: dan });
+
+      res = await this.addFundRuleProposalManagerX.getProposalVoting(proposalId);
+      assert.equal(res.status, ProposalStatus.APPROVED);
+
+      res = await this.addFundRuleProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.addFundRuleProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.addFundRuleProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      // verify value changed
+      res = await this.fundStorageX.getActiveFundRulesCount();
+      assert.equal(res, 1);
+
+      res = await this.fundStorageX.getActiveFundRules();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+
+      res = await this.fundStorageX.getFundRule(1);
+      assert.equal(res.active, true);
+      assert.equal(res.id, 1);
+      assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
+      assert.equal(res.description, 'Do that');
+
+      // >>> deactivate aforementioned proposal
+
+      res = await this.deactivateFundRuleProposalManagerX.propose(
+        1,
+        'obsolete',
+        {
+          from: bob
+        }
+      );
+
+      const removeProposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.deactivateFundRuleProposalManagerX.aye(removeProposalId, { from: bob });
+      await this.deactivateFundRuleProposalManagerX.nay(removeProposalId, { from: charlie });
+
+      res = await this.deactivateFundRuleProposalManagerX.getProposalVoting(removeProposalId);
+      assert.sameMembers(res.ayes, [bob]);
+      assert.sameMembers(res.nays, [charlie]);
+
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.deactivateFundRuleProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.deactivateFundRuleProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.deactivateFundRuleProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      res = await this.deactivateFundRuleProposalManagerX.getAyeShare(removeProposalId);
+      assert.equal(res, 20);
+      res = await this.deactivateFundRuleProposalManagerX.getNayShare(removeProposalId);
+      assert.equal(res, 20);
+
+      // Deny double-vote
+      await assertRevert(this.deactivateFundRuleProposalManagerX.aye(removeProposalId, { from: bob }));
+      await assertRevert(this.deactivateFundRuleProposalManagerX.triggerReject(removeProposalId, { from: dan }));
+
+      await this.deactivateFundRuleProposalManagerX.aye(removeProposalId, { from: dan });
+      await this.deactivateFundRuleProposalManagerX.aye(removeProposalId, { from: eve });
+
+      res = await this.deactivateFundRuleProposalManagerX.getAyeShare(removeProposalId);
+      assert.equal(res, 60);
+      res = await this.deactivateFundRuleProposalManagerX.getNayShare(removeProposalId);
+      assert.equal(res, 20);
+
+      await this.deactivateFundRuleProposalManagerX.triggerApprove(removeProposalId, { from: dan });
+
+      res = await this.deactivateFundRuleProposalManagerX.getProposalVoting(removeProposalId);
+      assert.equal(res.status, ProposalStatus.APPROVED);
+
+      res = await this.deactivateFundRuleProposalManagerX.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.deactivateFundRuleProposalManagerX.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.deactivateFundRuleProposalManagerX.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      // verify value changed
+      res = await this.fundStorageX.getActiveFundRulesCount();
+      assert.equal(res, 0);
+
+      res = await this.fundStorageX.getActiveFundRules();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      res = await this.fundStorageX.getFundRule(1);
+      assert.equal(res.active, false);
+      assert.equal(res.id, 1);
+      assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
+      assert.equal(res.description, 'Do that');
     });
   });
 });

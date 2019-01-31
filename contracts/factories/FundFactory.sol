@@ -31,8 +31,9 @@ import "./NewMemberProposalManagerFactory.sol";
 import "./FineMemberProposalManagerFactory.sol";
 import "./ExpelMemberProposalManagerFactory.sol";
 import "./WLProposalManagerFactory.sol";
-import "./ActiveRulesProposalManagerFactory.sol";
 import "./ChangeNameAndDescriptionProposalManagerFactory.sol";
+import "./AddFundRuleProposalManagerFactory.sol";
+import "./DeactivateFundRuleProposalManagerFactory.sol";
 
 
 contract FundFactory is Ownable {
@@ -62,7 +63,8 @@ contract FundFactory is Ownable {
   event CreateFundFourthStep(
     address creator,
     address changeNameAndDescriptionProposalManager,
-    address activeRulesProposalManager
+    address addFundRuleProposalManager,
+    address deactivateFundRuleProposalManager
   );
 
   string public constant RSRA_CONTRACT = "rsra_contract";
@@ -83,7 +85,8 @@ contract FundFactory is Ownable {
   ExpelMemberProposalManagerFactory expelMemberProposalManagerFactory;
   WLProposalManagerFactory wlProposalManagerFactory;
   ChangeNameAndDescriptionProposalManagerFactory changeNameAndDescriptionProposalManagerFactory;
-  ActiveRulesProposalManagerFactory activeRulesProposalManagerFactory;
+  AddFundRuleProposalManagerFactory addFundRuleProposalManagerFactory;
+  DeactivateFundRuleProposalManagerFactory deactivateFundRuleProposalManagerFactory;
 
   enum Step {
     FIRST,
@@ -116,7 +119,8 @@ contract FundFactory is Ownable {
     ExpelMemberProposalManagerFactory _expelMemberProposalManagerFactory,
     WLProposalManagerFactory _wlProposalManagerFactory,
     ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory,
-    ActiveRulesProposalManagerFactory _activeRulesProposalManagerFactory
+    AddFundRuleProposalManagerFactory _addFundRuleProposalManagerFactory,
+    DeactivateFundRuleProposalManagerFactory _deactivateFundRuleProposalManagerFactory
   ) public {
     commission = 10 ether;
 
@@ -134,22 +138,21 @@ contract FundFactory is Ownable {
     expelMemberProposalManagerFactory = _expelMemberProposalManagerFactory;
     wlProposalManagerFactory = _wlProposalManagerFactory;
     changeNameAndDescriptionProposalManagerFactory = _changeNameAndDescriptionProposalManagerFactory;
-    activeRulesProposalManagerFactory = _activeRulesProposalManagerFactory;
+    addFundRuleProposalManagerFactory = _addFundRuleProposalManagerFactory;
+    deactivateFundRuleProposalManagerFactory = _deactivateFundRuleProposalManagerFactory;
   }
 
   function buildFirstStep(
     bool _isPrivate,
-    uint256 _manageWhiteListThreshold,
-    uint256 _modifyConfigThreshold,
-    uint256 _newMemberThreshold,
-    uint256 _expelMemberThreshold,
-    uint256 _fineMemberThreshold,
+    uint256[] calldata _thresholds,
     address[] calldata _multiSigInitialOwners,
     uint256 _multiSigRequired
   )
     external
     returns (IRSRA rsra, FundMultiSig fundMultiSig, FundStorage fundStorage, FundController fundController)
   {
+    require(_thresholds.length == 8, "Thresholds length should be 8");
+
     FirstStepContracts storage c = _firstStepContracts[msg.sender];
     require(c.currentStep == Step.FIRST, "Requires first step");
 
@@ -158,11 +161,7 @@ contract FundFactory is Ownable {
     fundMultiSig = fundMultiSigFactory.build(_multiSigInitialOwners, _multiSigRequired);
     fundStorage = fundStorageFactory.build(
       _isPrivate,
-      _manageWhiteListThreshold,
-      _modifyConfigThreshold,
-      _newMemberThreshold,
-      _expelMemberThreshold,
-      _fineMemberThreshold
+      _thresholds
     );
     fundController = fundControllerFactory.build(
       galtToken,
@@ -252,21 +251,24 @@ contract FundFactory is Ownable {
 
     ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager =
       changeNameAndDescriptionProposalManagerFactory.build(c.rsra, _fundStorage);
-    ActiveRulesProposalManager activeRulesProposalManager = activeRulesProposalManagerFactory.build(c.rsra, _fundStorage);
+    AddFundRuleProposalManager addFundRuleProposalManager = addFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
+    DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = deactivateFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
 
     _fundStorage.addRoleTo(address(changeNameAndDescriptionProposalManager), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
-    _fundStorage.addRoleTo(address(activeRulesProposalManager), _fundStorage.CONTRACT_ACTIVE_RULES_MANAGER());
+    _fundStorage.addRoleTo(address(addFundRuleProposalManager), _fundStorage.CONTRACT_ADD_FUND_RULE_MANAGER());
+    _fundStorage.addRoleTo(address(deactivateFundRuleProposalManager), _fundStorage.CONTRACT_DEACTIVATE_FUND_RULE_MANAGER());
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
     _fundStorage.setNameAndDescription(_name, _description);
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
 
     delete _firstStepContracts[msg.sender];
 
     emit CreateFundFourthStep(
       msg.sender,
       address(changeNameAndDescriptionProposalManager),
-      address(activeRulesProposalManager)
+      address(addFundRuleProposalManager),
+      address(deactivateFundRuleProposalManager)
     );
   }
 
