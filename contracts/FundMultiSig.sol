@@ -13,8 +13,7 @@
 
 pragma solidity 0.5.3;
 
-import "./vendor/MultiSigWallet/MultiSigWallet.sol";
-
+import "@galtproject/core/contracts/vendor/MultiSigWallet/MultiSigWallet.sol";
 
 contract FundMultiSig is MultiSigWallet {
   modifier forbidden() {
