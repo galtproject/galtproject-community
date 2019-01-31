@@ -25,8 +25,10 @@ contract ChangeNameAndDescriptionProposalManagerFactory is Ownable {
     external
     returns (ChangeNameAndDescriptionProposalManager)
   {
-    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager =
-      new ChangeNameAndDescriptionProposalManager(_rsra, _fundStorage);
+    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = new ChangeNameAndDescriptionProposalManager(
+      _rsra,
+      _fundStorage
+    );
 
     changeNameAndDescriptionProposalManager.addRoleTo(msg.sender, "role_manager");
     changeNameAndDescriptionProposalManager.removeRoleFrom(address(this), "role_manager");

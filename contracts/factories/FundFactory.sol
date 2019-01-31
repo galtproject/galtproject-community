@@ -249,8 +249,8 @@ contract FundFactory is Ownable {
 
     FundStorage _fundStorage = c.fundStorage;
 
-    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager =
-      changeNameAndDescriptionProposalManagerFactory.build(c.rsra, _fundStorage);
+    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = changeNameAndDescriptionProposalManagerFactory
+      .build(c.rsra, _fundStorage);
     AddFundRuleProposalManager addFundRuleProposalManager = addFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
     DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = deactivateFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
 

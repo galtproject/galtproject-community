@@ -237,7 +237,8 @@ contract FundStorage is Permissionable {
     uint256 id,
     bytes32 ipfsHash,
     string memory description
-  ) {
+  )
+  {
     FundRule storage r = _fundRules[_frpId];
 
     active = r.active;
