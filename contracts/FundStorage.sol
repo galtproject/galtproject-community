@@ -51,6 +51,11 @@ contract FundStorage is Permissionable {
     string description;
   }
 
+  struct ProposalContract {
+    bytes32 abiIpfsHash;
+    string description;
+  }
+
   string public name;
   string public description;
 
@@ -66,8 +71,10 @@ contract FundStorage is Permissionable {
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
   mapping(uint256 => uint256) private _expelledTokenReputation;
-  // FRP => FundRule details
+  // FRP => fundRuleDetails
   mapping(uint256 => FundRule) private _fundRules;
+  // contractAddress => details
+  mapping(address => ProposalContract) private _proposalContracts;
 
   constructor (
     bool _isPrivate,
@@ -129,8 +136,20 @@ contract FundStorage is Permissionable {
     _fines[_spaceTokenId] -= _amount;
   }
 
-  function addWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
-    _whiteListedContracts.add(_contract);
+  function addWhiteListedContract(
+    address _contract,
+    bytes32 _abiIpfsHash,
+    string calldata _description
+  )
+    external
+    onlyRole(CONTRACT_WHITELIST_MANAGER)
+  {
+    _whiteListedContracts.addSilent(_contract);
+
+    ProposalContract storage c = _proposalContracts[_contract];
+
+    c.abiIpfsHash = _abiIpfsHash;
+    c.description = _description;
   }
 
   function removeWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
@@ -195,6 +214,22 @@ contract FundStorage is Permissionable {
 
   function getActiveFundRulesCount() external view returns(uint256) {
     return _activeFundRules.size();
+  }
+
+  function getProposalContract(
+    address _contract
+  )
+    external
+    view
+    returns(
+      bytes32 abiIpfsHash,
+      string memory description
+    )
+  {
+    ProposalContract storage c = _proposalContracts[_contract];
+
+    abiIpfsHash = c.abiIpfsHash;
+    description = c.description;
   }
 
   function getFundRule(uint256 _frpId) external view returns(

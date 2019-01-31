@@ -19,9 +19,11 @@ const DeactivateFundRuleProposalManagerFactory = artifacts.require('./Deactivate
 
 const WLProposalManager = artifacts.require('./WLProposalManager.sol');
 
+const galt = require('@galtproject/utils');
 const { ether, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = SpaceToken;
+const bytes32 = web3.utils.utf8ToHex;
 
 initHelperWeb3(web3);
 
@@ -100,9 +102,13 @@ contract('WLProposal', accounts => {
     it('should allow address addition to the WL', async function() {
       await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
-      let res = await this.wlProposalManagerX.propose(address4wl, Action.ADD, 'blah', {
-        from: bob
-      });
+      let res = await this.wlProposalManagerX.propose(
+        Action.ADD,
+        address4wl,
+        galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'),
+        'blah',
+        { from: bob }
+        );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -134,9 +140,15 @@ contract('WLProposal', accounts => {
     it('should allow address removal from the WL', async function() {
       await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
-      let res = await this.wlProposalManagerX.propose(this.modifyConfigProposalManagerAddress, Action.REMOVE, 'blah', {
-        from: bob
-      });
+      let res = await this.wlProposalManagerX.propose(
+        Action.REMOVE,
+        this.modifyConfigProposalManagerAddress,
+        bytes32(''),
+        'obsolete',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 

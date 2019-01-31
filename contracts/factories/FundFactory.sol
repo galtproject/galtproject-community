@@ -193,9 +193,9 @@ contract FundFactory is Ownable {
     FineMemberProposalManager fineMemberProposalManager = fineMemberProposalManagerFactory.build(_rsra, _fundStorage);
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
-    _fundStorage.addWhiteListedContract(address(modifyConfigProposalManager));
-    _fundStorage.addWhiteListedContract(address(newMemberProposalManager));
-    _fundStorage.addWhiteListedContract(address(fineMemberProposalManager));
+    _fundStorage.addWhiteListedContract(address(modifyConfigProposalManager), 0x0, "");
+    _fundStorage.addWhiteListedContract(address(newMemberProposalManager), 0x0, "");
+    _fundStorage.addWhiteListedContract(address(fineMemberProposalManager), 0x0, "");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(modifyConfigProposalManager), _fundStorage.CONTRACT_CONFIG_MANAGER());
@@ -226,8 +226,8 @@ contract FundFactory is Ownable {
     ExpelMemberProposalManager expelMemberProposalManager = expelMemberProposalManagerFactory.build(_rsra, _fundStorage, spaceToken);
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
-    _fundStorage.addWhiteListedContract(address(wlProposalManager));
-    _fundStorage.addWhiteListedContract(address(expelMemberProposalManager));
+    _fundStorage.addWhiteListedContract(address(wlProposalManager), 0x0, "");
+    _fundStorage.addWhiteListedContract(address(expelMemberProposalManager), 0x0, "");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(wlProposalManager), _fundStorage.CONTRACT_WHITELIST_MANAGER());
@@ -257,6 +257,12 @@ contract FundFactory is Ownable {
     _fundStorage.addRoleTo(address(changeNameAndDescriptionProposalManager), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
     _fundStorage.addRoleTo(address(addFundRuleProposalManager), _fundStorage.CONTRACT_ADD_FUND_RULE_MANAGER());
     _fundStorage.addRoleTo(address(deactivateFundRuleProposalManager), _fundStorage.CONTRACT_DEACTIVATE_FUND_RULE_MANAGER());
+
+    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.addWhiteListedContract(address(changeNameAndDescriptionProposalManager), 0x0, "");
+    _fundStorage.addWhiteListedContract(address(addFundRuleProposalManager), 0x0, "");
+    _fundStorage.addWhiteListedContract(address(deactivateFundRuleProposalManager), 0x0, "");
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
     _fundStorage.setNameAndDescription(_name, _description);
