@@ -39,11 +39,7 @@ contract MockRSRA is RSRA {
   }
 
   function delegateHack(address _to, address _from, address _owner, uint256 _amount) external {
-    _delegate(_to, _from, _owner, _amount);
-  }
-
-  function lockReputationHack(address _locker, uint256 _amount) external {
-    _lockReputation(_locker, _amount);
+    _transfer(_to, _from, _owner, _amount);
   }
 
   function mintAll(address[] calldata _addresses, uint256 _amount) external {

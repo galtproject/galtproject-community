@@ -151,11 +151,13 @@ contract('ExpelFundMemberProposal', accounts => {
       await assertRevert(this.rsraX.mint(lockerAddress, { from: minter }));
       await this.rsraX.mint(lockerAddress, { from: alice });
 
+      res = await this.rsraX.spaceTokenOwners();
+      assert.sameMembers(res, [alice, bob, charlie, dan, eve, frank]);
+
       // DISTRIBUTE REPUTATION
       await this.rsraX.delegate(bob, alice, 300, { from: alice });
       await this.rsraX.delegate(charlie, alice, 100, { from: bob });
 
-      await assertRevert(this.rsraX.burnExpelledAndLocked(token1, bob, alice, 200, { from: unauthorized }));
       await assertRevert(this.rsraX.burnExpelled(token1, bob, alice, 200, { from: unauthorized }));
 
       // EXPEL
