@@ -17,7 +17,9 @@ const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalMa
 const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
-const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require('./ChangeNameAndDescriptionProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
+  './ChangeNameAndDescriptionProposalManagerFactory.sol'
+);
 const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
 const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 

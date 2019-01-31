@@ -1,3 +1,5 @@
+const galt = require('@galtproject/utils');
+
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
@@ -13,7 +15,9 @@ const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberPropos
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
-const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require('./ChangeNameAndDescriptionProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
+  './ChangeNameAndDescriptionProposalManagerFactory.sol'
+);
 const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
 const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 
@@ -22,7 +26,6 @@ const AddFundRuleProposalManager = artifacts.require('./AddFundRuleProposalManag
 const DeactivateFundRuleProposalManager = artifacts.require('./DeactivateFundRuleProposalManager.sol');
 
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
-const galt = require('@galtproject/utils');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -87,7 +90,9 @@ contract('Proposals', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, { from: alice });
+    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
+      from: alice
+    });
     this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
@@ -98,10 +103,8 @@ contract('Proposals', accounts => {
 
     await this.fundFactory.buildThirdStep({ from: alice });
 
-    res = await this.fundFactory.buildFourthStep("MyFund", "my awesome fund", { from: alice });
-    this.addFundRuleProposalManagerX = await AddFundRuleProposalManager.at(
-        res.logs[0].args.addFundRuleProposalManager
-    );
+    res = await this.fundFactory.buildFourthStep('MyFund', 'my awesome fund', { from: alice });
+    this.addFundRuleProposalManagerX = await AddFundRuleProposalManager.at(res.logs[0].args.addFundRuleProposalManager);
     this.deactivateFundRuleProposalManagerX = await DeactivateFundRuleProposalManager.at(
       res.logs[0].args.deactivateFundRuleProposalManager
     );
@@ -115,12 +118,12 @@ contract('Proposals', accounts => {
         await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
-            bytes32('modify_config_threshold'),
-            '0x000000000000000000000000000000000000000000000000000000000000002a',
-            'blah',
-            {
-              from: bob
-            }
+          bytes32('modify_config_threshold'),
+          '0x000000000000000000000000000000000000000000000000000000000000002a',
+          'blah',
+          {
+            from: bob
+          }
         );
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
@@ -137,12 +140,12 @@ contract('Proposals', accounts => {
         await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
-            bytes32('modify_config_threshold'),
-            '0x000000000000000000000000000000000000000000000000000000000000002a',
-            'blah',
-            {
-              from: bob
-            }
+          bytes32('modify_config_threshold'),
+          '0x000000000000000000000000000000000000000000000000000000000000002a',
+          'blah',
+          {
+            from: bob
+          }
         );
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
@@ -198,12 +201,12 @@ contract('Proposals', accounts => {
         await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
-            bytes32('modify_config_threshold'),
-            '0x000000000000000000000000000000000000000000000000000000000000002a',
-            'blah',
-            {
-              from: bob
-            }
+          bytes32('modify_config_threshold'),
+          '0x000000000000000000000000000000000000000000000000000000000000002a',
+          'blah',
+          {
+            from: bob
+          }
         );
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
@@ -267,12 +270,12 @@ contract('Proposals', accounts => {
       await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
       let res = await this.addFundRuleProposalManagerX.propose(
-          ActiveRuleAction.ADD,
-          galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'),
-          'Do that',
-          {
-            from: bob
-          }
+        ActiveRuleAction.ADD,
+        galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'),
+        'Do that',
+        {
+          from: bob
+        }
       );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
@@ -337,13 +340,9 @@ contract('Proposals', accounts => {
 
       // >>> deactivate aforementioned proposal
 
-      res = await this.deactivateFundRuleProposalManagerX.propose(
-        1,
-        'obsolete',
-        {
-          from: bob
-        }
-      );
+      res = await this.deactivateFundRuleProposalManagerX.propose(1, 'obsolete', {
+        from: bob
+      });
 
       const removeProposalId = res.logs[0].args.proposalId.toString(10);
 
