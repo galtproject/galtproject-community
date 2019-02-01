@@ -39,6 +39,7 @@ contract ModifyConfigProposalManager is AbstractProposalManager {
     });
 
     emit NewProposal(id, msg.sender);
+    _onNewProposal(id);
 
     ProposalVoting storage proposalVoting = _proposalVotings[id];
 

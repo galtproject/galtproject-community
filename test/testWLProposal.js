@@ -13,12 +13,19 @@ const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberPropos
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
+  './ChangeNameAndDescriptionProposalManagerFactory.sol'
+);
+const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
+const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 
 const WLProposalManager = artifacts.require('./WLProposalManager.sol');
 
+const galt = require('@galtproject/utils');
 const { ether, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = SpaceToken;
+const bytes32 = web3.utils.utf8ToHex;
 
 initHelperWeb3(web3);
 
@@ -52,6 +59,9 @@ contract('WLProposal', accounts => {
     this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
+    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
+    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
+    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
       this.galtToken.address,
@@ -66,6 +76,9 @@ contract('WLProposal', accounts => {
       this.fineMemberProposalManagerFactory.address,
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
+      this.addFundRuleProposalManagerFactory.address,
+      this.deactivateFundRuleProposalManagerFactory.address,
       { from: coreTeam }
     );
 
@@ -74,7 +87,9 @@ contract('WLProposal', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, 60, 50, 60, 60, 60, [bob, charlie, dan], 2, { from: alice });
+    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
+      from: alice
+    });
     this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
@@ -89,11 +104,15 @@ contract('WLProposal', accounts => {
 
   describe('pipeline', () => {
     it('should allow address addition to the WL', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
-      let res = await this.wlProposalManagerX.propose(address4wl, Action.ADD, 'blah', {
-        from: bob
-      });
+      let res = await this.wlProposalManagerX.propose(
+        Action.ADD,
+        address4wl,
+        galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'),
+        'blah',
+        { from: bob }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -123,11 +142,17 @@ contract('WLProposal', accounts => {
     });
 
     it('should allow address removal from the WL', async function() {
-      await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
 
-      let res = await this.wlProposalManagerX.propose(this.modifyConfigProposalManagerAddress, Action.REMOVE, 'blah', {
-        from: bob
-      });
+      let res = await this.wlProposalManagerX.propose(
+        Action.REMOVE,
+        this.modifyConfigProposalManagerAddress,
+        bytes32(''),
+        'obsolete',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 

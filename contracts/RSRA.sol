@@ -22,18 +22,11 @@ import "./FundStorage.sol";
 import "./interfaces/IRSRA.sol";
 
 
-contract RSRA is LiquidReputationAccounting, IRSRA {
+contract RSRA is IRSRA, LiquidReputationAccounting {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
-  event LockedBalanceChanged(address delegate, uint256 balanceAfter);
-
-  FundStorage fundStorage;
-
-  uint256 _totalLockedSupply;
-
-  // Delegate => locked amount
-  mapping(address => uint256) internal _locks;
+  FundStorage public fundStorage;
 
   mapping(uint256 => bool) internal _tokensToExpel;
 
@@ -67,77 +60,14 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
     super.approveBurn(_spaceLocker);
   }
 
-  // PermissionED
-  function revokeLocked(address _delegate, uint256 _amount) external {
-    require(_delegations[msg.sender][_delegate] >= _amount, "Not enough funds");
-    require(_locks[_delegate] >= _amount, "Not enough funds");
-
-    _delegations[msg.sender][_delegate] -= _amount;
-    _locks[_delegate] -= _amount;
-    _delegations[msg.sender][msg.sender] += _amount;
-    _balances[msg.sender] += _amount;
-    _totalLockedSupply -= _amount;
-  }
-
   function burnExpelled(uint256 _spaceTokenId, address _delegate, address _owner, uint256 _amount) external {
-    require(_delegations[_owner][_delegate] >= _amount, "Not enough funds");
-    require(_balances[_delegate] >= _amount, "Not enough funds");
-
     bool completelyBurned = fundStorage.decrementExpelledTokenReputation(_spaceTokenId, _amount);
 
-    _delegations[_owner][_delegate] -= _amount;
-    _balances[_delegate] -= _amount;
-    totalStakedSpace -= _amount;
+    _debitAccount(_delegate, _owner, _amount);
 
     if (completelyBurned) {
       reputationMinted[_spaceTokenId] = false;
     }
-  }
-
-  function burnExpelledAndLocked(uint256 _spaceTokenId, address _delegate, address _owner, uint256 _amount) external {
-    require(_delegations[_owner][_delegate] >= _amount, "Not enough funds");
-    require(_locks[_delegate] >= _amount, "Not enough funds");
-
-    bool completelyBurned = fundStorage.decrementExpelledTokenReputation(_spaceTokenId, _amount);
-
-    _delegations[_owner][_delegate] -= _amount;
-    _locks[_delegate] -= _amount;
-    _totalLockedSupply -= _amount;
-    totalStakedSpace -= _amount;
-
-    if (completelyBurned) {
-      reputationMinted[_spaceTokenId] = false;
-    }
-  }
-
-  // PermissionED
-  function lockReputation(uint256 _amount) external {
-    require(_balances[msg.sender] >= _amount, "Insufficient amount to lock");
-
-    _lockReputation(msg.sender, _amount);
-  }
-
-  // PermissionED
-  function unlockReputation(uint256 _amount) external {
-    uint256 beforeUnlock = _locks[msg.sender];
-    uint256 afterUnlock = _locks[msg.sender] - _amount;
-
-    require(beforeUnlock >= _amount, "Insufficient amount to lock");
-    require(afterUnlock >= 0, "Insufficient amount to lock");
-    require(afterUnlock < _locks[msg.sender], "Insufficient amount to lock");
-
-    _locks[msg.sender] -= _amount;
-    _balances[msg.sender] += _amount;
-    _totalLockedSupply -= _amount;
-  }
-
-  // INTERNAL
-
-  function _lockReputation(address _locker, uint256 _amount) internal {
-
-    _balances[_locker] -= _amount;
-    _locks[_locker] += _amount;
-    _totalLockedSupply += _amount;
   }
 
   // GETTERS
@@ -146,17 +76,9 @@ contract RSRA is LiquidReputationAccounting, IRSRA {
     uint256 aggregator = 0;
 
     for (uint256 i = 0; i < _addresses.length; i++) {
-      aggregator += _locks[_addresses[i]];
+      aggregator += balanceOf(_addresses[i]);
     }
 
-    return aggregator * 100 / _totalLockedSupply;
-  }
-
-  function lockedBalanceOf(address _owner) external view returns (uint256) {
-    return _locks[_owner];
-  }
-
-  function totalLockedSupply() external view returns (uint256) {
-    return _totalLockedSupply;
+    return aggregator * 100 / totalSupply();
   }
 }

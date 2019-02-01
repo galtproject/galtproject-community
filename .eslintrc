@@ -1,5 +1,6 @@
 {
-    "extends": "@galtproject/eslint-config-galt",
+    "extends": ["@galtproject/eslint-config-galt", "plugin:prettier/recommended"],
+    "plugins": ["prettier"],
     "env": {
         "node": true,
         "mocha": true

@@ -18,6 +18,11 @@ const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberPropos
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
+  './ChangeNameAndDescriptionProposalManagerFactory.sol'
+);
+const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
+const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 
 const MockModifyConfigProposalManager = artifacts.require('./MockModifyConfigProposalManager.sol');
 const NewMemberProposalManager = artifacts.require('./NewMemberProposalManager.sol');
@@ -28,6 +33,9 @@ const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
+web3.utils.BN.prototype.toString = function() {
+  return this.toString(10);
+};
 
 const ProposalStatus = {
   NULL: 0,
@@ -63,6 +71,9 @@ contract('ExpelFundMemberProposal', accounts => {
     this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
+    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
+    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
+    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
       this.galtToken.address,
@@ -77,6 +88,9 @@ contract('ExpelFundMemberProposal', accounts => {
       this.fineMemberProposalManagerFactory.address,
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
+      this.addFundRuleProposalManagerFactory.address,
+      this.deactivateFundRuleProposalManagerFactory.address,
       { from: coreTeam }
     );
 
@@ -89,7 +103,9 @@ contract('ExpelFundMemberProposal', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, 60, 50, 30, 60, 60, [bob, charlie, dan], 2, { from: alice });
+    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
+      from: alice
+    });
     this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
     this.fundControllerX = await FundController.at(res.logs[0].args.fundController);
@@ -104,7 +120,7 @@ contract('ExpelFundMemberProposal', accounts => {
     this.expelMemberProposalManagerX = await ExpelMemberProposalManager.at(res.logs[0].args.expelMemberProposalManager);
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -148,11 +164,13 @@ contract('ExpelFundMemberProposal', accounts => {
       await assertRevert(this.rsraX.mint(lockerAddress, { from: minter }));
       await this.rsraX.mint(lockerAddress, { from: alice });
 
+      res = await this.rsraX.spaceTokenOwners();
+      assert.sameMembers(res, [alice, bob, charlie, dan, eve, frank]);
+
       // DISTRIBUTE REPUTATION
       await this.rsraX.delegate(bob, alice, 300, { from: alice });
       await this.rsraX.delegate(charlie, alice, 100, { from: bob });
 
-      await assertRevert(this.rsraX.burnExpelledAndLocked(token1, bob, alice, 200, { from: unauthorized }));
       await assertRevert(this.rsraX.burnExpelled(token1, bob, alice, 200, { from: unauthorized }));
 
       // EXPEL
@@ -167,9 +185,16 @@ contract('ExpelFundMemberProposal', accounts => {
       await this.expelMemberProposalManagerX.aye(proposalId, { from: bob });
       await this.expelMemberProposalManagerX.aye(proposalId, { from: charlie });
       await this.expelMemberProposalManagerX.aye(proposalId, { from: dan });
+      await this.expelMemberProposalManagerX.aye(proposalId, { from: eve });
 
+      res = await this.rsraX.totalSupply();
+      assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.rsraX.balanceOf(bob);
+      assert.equal(res, 500);
+      res = await this.rsraX.getShare([bob]);
+      assert.equal(res, 21);
       res = await this.expelMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 60);
+      assert.equal(res, 65); // (500 + 400 + 300 + 300) / 2300
       res = await this.expelMemberProposalManagerX.getThreshold();
       assert.equal(res, 60);
 
@@ -188,10 +213,10 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       // BURNING LOCKED REPUTATION FOR EXPELLED TOKEN
-      await assertRevert(this.rsraX.burnExpelledAndLocked(token1, charlie, alice, 101, { from: unauthorized }));
-      await this.rsraX.burnExpelledAndLocked(token1, charlie, alice, 100, { from: unauthorized });
-      await assertRevert(this.rsraX.burnExpelledAndLocked(token1, bob, alice, 201, { from: unauthorized }));
-      await this.rsraX.burnExpelledAndLocked(token1, bob, alice, 200, { from: unauthorized });
+      await assertRevert(this.rsraX.burnExpelled(token1, charlie, alice, 101, { from: unauthorized }));
+      await this.rsraX.burnExpelled(token1, charlie, alice, 100, { from: unauthorized });
+      await assertRevert(this.rsraX.burnExpelled(token1, bob, alice, 201, { from: unauthorized }));
+      await this.rsraX.burnExpelled(token1, bob, alice, 200, { from: unauthorized });
       await assertRevert(this.rsraX.burnExpelled(token1, alice, alice, 501, { from: unauthorized }));
       await this.rsraX.burnExpelled(token1, alice, alice, 500, { from: unauthorized });
 

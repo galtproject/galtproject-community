@@ -17,9 +17,9 @@ import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
 
-contract NewMemberProposalManager is AbstractProposalManager {
+contract DeactivateFundRuleProposalManager is AbstractProposalManager {
   struct Proposal {
-    uint256 spaceTokenId;
+    uint256 frpId;
     string description;
   }
 
@@ -28,11 +28,14 @@ contract NewMemberProposalManager is AbstractProposalManager {
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(uint256 _spaceTokenId, string calldata _description) external {
+  function propose(uint256 _frpId, string calldata _description) external onlyMember {
+    (bool active,,,) = fundStorage.getFundRule(_frpId);
+    require(active == true, "Proposal is not active");
+
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      spaceTokenId: _spaceTokenId,
+      frpId: _frpId,
       description: _description
     });
 
@@ -47,16 +50,25 @@ contract NewMemberProposalManager is AbstractProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    fundStorage.approveMint(p.spaceTokenId);
+    fundStorage.disableFundRule(p.frpId);
+  }
+
+  function getProposal(
+    uint256 _proposalId
+  )
+    external
+    view
+    returns (
+      uint256 frpId,
+      string memory description
+    )
+  {
+    Proposal storage p = _proposals[_proposalId];
+
+    return (p.frpId, p.description);
   }
 
   function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.NEW_MEMBER_THRESHOLD()));
-  }
-
-  function getProposal(uint256 _proposalId) external view returns (uint256 spaceTokenId, string memory description) {
-    Proposal storage p = _proposals[_proposalId];
-
-    return (p.spaceTokenId, p.description);
+    return uint256(fundStorage.getConfigValue(fundStorage.DEACTIVATE_FUND_RULE_THRESHOLD()));
   }
 }
