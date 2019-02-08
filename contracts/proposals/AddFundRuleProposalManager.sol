@@ -17,10 +17,15 @@ import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
 
-contract FineMemberProposalManager is AbstractProposalManager {
+contract AddFundRuleProposalManager is AbstractProposalManager {
+  enum Action {
+    ADD,
+    DISABLE
+  }
+
   struct Proposal {
-    uint256 spaceTokenId;
-    uint256 amount;
+    Action action;
+    bytes32 ipfsHash;
     string description;
   }
 
@@ -29,12 +34,12 @@ contract FineMemberProposalManager is AbstractProposalManager {
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(uint256 _spaceTokenId, uint256 _amount, string calldata _description) external {
+  function propose(Action _action, bytes32 _ipfsHash, string calldata _description) external onlyMember {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      spaceTokenId: _spaceTokenId,
-      amount: _amount,
+      action: _action,
+      ipfsHash: _ipfsHash,
       description: _description
     });
 
@@ -49,11 +54,11 @@ contract FineMemberProposalManager is AbstractProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    fundStorage.incrementFine(p.spaceTokenId, p.amount);
-  }
-
-  function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.FINE_MEMBER_THRESHOLD()));
+    if (p.action == Action.ADD) {
+      fundStorage.addFundRule(_proposalId, p.ipfsHash, p.description);
+    } else {
+      fundStorage.disableFundRule(_proposalId);
+    }
   }
 
   function getProposal(
@@ -62,12 +67,17 @@ contract FineMemberProposalManager is AbstractProposalManager {
     external
     view
     returns (
-      uint256 spaceTokenId,
-      uint256 amount,
-      string memory description)
+      bytes32 ipfsHash,
+      Action action,
+      string memory description
+    )
   {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.spaceTokenId, p.amount, p.description);
+    return (p.ipfsHash, p.action, p.description);
+  }
+
+  function getThreshold() public view returns (uint256) {
+    return uint256(fundStorage.getConfigValue(fundStorage.ADD_FUND_RULE_THRESHOLD()));
   }
 }

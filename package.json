@@ -6,9 +6,10 @@
     "test": "test"
   },
   "devDependencies": {
+    "@galtproject/core": "git+https://github.com/galtspace/galtproject-core.git#63bffb30ce136ed4a5338a455639c78cf7535c1c",
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
     "@galtproject/libs": "git+https://github.com/galtspace/galtproject-libs.git",
-    "@galtproject/core": "git+https://github.com/galtspace/galtproject-core.git#dee5acdb73bfab93d1276257b183ab924209d694",
+    "@galtproject/utils": "^0.9.1",
     "eslint": "^5.12.1",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^3.6.0",
@@ -24,6 +25,7 @@
   },
   "repository": "https://github.com/galtspace/galtproject-fund-basic",
   "scripts": {
+    "compile": "truffle compile",
     "eslint": "eslint .",
     "ethlint": "solium --dir .",
     "test": "truffle test --network test"

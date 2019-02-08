@@ -18,6 +18,11 @@ const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberPropos
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
+  './ChangeNameAndDescriptionProposalManagerFactory.sol'
+);
+const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
+const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 
 const FineMemberProposalManager = artifacts.require('./FineMemberProposalManager.sol');
 
@@ -61,6 +66,9 @@ contract('FineFundMemberProposal', accounts => {
     this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
+    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
+    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
+    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
       this.galtToken.address,
@@ -75,6 +83,9 @@ contract('FineFundMemberProposal', accounts => {
       this.fineMemberProposalManagerFactory.address,
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
+      this.addFundRuleProposalManagerFactory.address,
+      this.deactivateFundRuleProposalManagerFactory.address,
       { from: coreTeam }
     );
 
@@ -87,7 +98,9 @@ contract('FineFundMemberProposal', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, 60, 50, 30, 60, 60, [bob, charlie, dan], 2, { from: alice });
+    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
+      from: alice
+    });
     this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
     this.fundControllerX = await FundController.at(res.logs[0].args.fundController);
@@ -98,7 +111,7 @@ contract('FineFundMemberProposal', accounts => {
     await this.fundFactory.buildThirdStep({ from: alice });
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAndLockHack(this.beneficiaries, 300, { from: alice });
+    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -157,9 +170,11 @@ contract('FineFundMemberProposal', accounts => {
       await this.fineMemberProposalManagerX.aye(proposalId, { from: bob });
       await this.fineMemberProposalManagerX.aye(proposalId, { from: charlie });
       await this.fineMemberProposalManagerX.aye(proposalId, { from: dan });
+      await this.fineMemberProposalManagerX.aye(proposalId, { from: eve });
+      await this.fineMemberProposalManagerX.aye(proposalId, { from: frank });
 
       res = await this.fineMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 60);
+      assert.equal(res, 65);
       res = await this.fineMemberProposalManagerX.getThreshold();
       assert.equal(res, 60);
 

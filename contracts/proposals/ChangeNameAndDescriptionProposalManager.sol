@@ -17,10 +17,9 @@ import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
 
-contract FineMemberProposalManager is AbstractProposalManager {
+contract ChangeNameAndDescriptionProposalManager is AbstractProposalManager {
   struct Proposal {
-    uint256 spaceTokenId;
-    uint256 amount;
+    string name;
     string description;
   }
 
@@ -29,12 +28,11 @@ contract FineMemberProposalManager is AbstractProposalManager {
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(uint256 _spaceTokenId, uint256 _amount, string calldata _description) external {
+  function propose(string calldata _name, string calldata _description) external onlyMember {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      spaceTokenId: _spaceTokenId,
-      amount: _amount,
+      name: _name,
       description: _description
     });
 
@@ -49,25 +47,16 @@ contract FineMemberProposalManager is AbstractProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    fundStorage.incrementFine(p.spaceTokenId, p.amount);
+    fundStorage.setNameAndDescription(p.name, p.description);
+  }
+
+  function getProposal(uint256 _proposalId) external view returns (string memory name, string memory description) {
+    Proposal storage p = _proposals[_proposalId];
+
+    return (p.name, p.description);
   }
 
   function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.FINE_MEMBER_THRESHOLD()));
-  }
-
-  function getProposal(
-    uint256 _proposalId
-  )
-    external
-    view
-    returns (
-      uint256 spaceTokenId,
-      uint256 amount,
-      string memory description)
-  {
-    Proposal storage p = _proposals[_proposalId];
-
-    return (p.spaceTokenId, p.amount, p.description);
+    return uint256(fundStorage.getConfigValue(fundStorage.NAME_AND_DESCRIPTION_THRESHOLD()));
   }
 }

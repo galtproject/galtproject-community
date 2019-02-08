@@ -17,10 +17,9 @@ import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
 
-contract FineMemberProposalManager is AbstractProposalManager {
+contract DeactivateFundRuleProposalManager is AbstractProposalManager {
   struct Proposal {
-    uint256 spaceTokenId;
-    uint256 amount;
+    uint256 frpId;
     string description;
   }
 
@@ -29,12 +28,14 @@ contract FineMemberProposalManager is AbstractProposalManager {
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(uint256 _spaceTokenId, uint256 _amount, string calldata _description) external {
+  function propose(uint256 _frpId, string calldata _description) external onlyMember {
+    (bool active,,,) = fundStorage.getFundRule(_frpId);
+    require(active == true, "Proposal is not active");
+
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      spaceTokenId: _spaceTokenId,
-      amount: _amount,
+      frpId: _frpId,
       description: _description
     });
 
@@ -49,11 +50,7 @@ contract FineMemberProposalManager is AbstractProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    fundStorage.incrementFine(p.spaceTokenId, p.amount);
-  }
-
-  function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.FINE_MEMBER_THRESHOLD()));
+    fundStorage.disableFundRule(p.frpId);
   }
 
   function getProposal(
@@ -62,12 +59,16 @@ contract FineMemberProposalManager is AbstractProposalManager {
     external
     view
     returns (
-      uint256 spaceTokenId,
-      uint256 amount,
-      string memory description)
+      uint256 frpId,
+      string memory description
+    )
   {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.spaceTokenId, p.amount, p.description);
+    return (p.frpId, p.description);
+  }
+
+  function getThreshold() public view returns (uint256) {
+    return uint256(fundStorage.getConfigValue(fundStorage.DEACTIVATE_FUND_RULE_THRESHOLD()));
   }
 }

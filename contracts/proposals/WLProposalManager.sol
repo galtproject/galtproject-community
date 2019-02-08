@@ -24,8 +24,9 @@ contract WLProposalManager is AbstractProposalManager {
   }
 
   struct Proposal {
-    address contractAddress;
     Action action;
+    address contractAddress;
+    bytes32 abiIpfsHash;
     string description;
   }
 
@@ -34,16 +35,26 @@ contract WLProposalManager is AbstractProposalManager {
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(address _contractAddress, Action _action, string calldata _description) external onlyMember {
+  function propose(
+    Action _action,
+    address _contractAddress,
+    bytes32 _abiIpfsHash,
+    string calldata _description
+  )
+    external
+    onlyMember
+  {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      contractAddress: _contractAddress,
       action: _action,
+      contractAddress: _contractAddress,
+      abiIpfsHash: _abiIpfsHash,
       description: _description
     });
 
     emit NewProposal(id, msg.sender);
+    _onNewProposal(id);
 
     ProposalVoting storage proposalVoting = _proposalVotings[id];
 
@@ -54,7 +65,11 @@ contract WLProposalManager is AbstractProposalManager {
     Proposal storage p = _proposals[_proposalId];
 
     if (p.action == Action.ADD) {
-      fundStorage.addWhiteListedContract(p.contractAddress);
+      fundStorage.addWhiteListedContract(
+        p.contractAddress,
+        p.abiIpfsHash,
+        p.description
+      );
     } else {
       fundStorage.removeWhiteListedContract(p.contractAddress);
     }

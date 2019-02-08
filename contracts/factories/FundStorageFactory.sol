@@ -22,22 +22,29 @@ import "../FundStorage.sol";
 contract FundStorageFactory is Ownable {
   function build(
     bool _isPrivate,
-    uint256 _manageWhiteListThreshold,
-    uint256 _modifyConfigThreshold,
-    uint256 _newMemberThreshold,
-    uint256 _expelMemberThreshold,
-    uint256 _fineMemberThreshold
+    uint256[] calldata _thresholds
   )
     external
     returns (FundStorage)
   {
     FundStorage fundStorage = new FundStorage(
       _isPrivate,
-      _manageWhiteListThreshold,
-      _modifyConfigThreshold,
-      _newMemberThreshold,
-      _expelMemberThreshold,
-      _fineMemberThreshold
+      // _manageWhiteListThreshold,
+        _thresholds[0],
+      // _modifyConfigThreshold,
+        _thresholds[1],
+      // _newMemberThreshold,
+        _thresholds[2],
+      // _expelMemberThreshold,
+        _thresholds[3],
+      // _fineMemberThreshold,
+        _thresholds[4],
+      // _changeNameAndDescriptionThreshold,
+        _thresholds[5],
+      // _addFundRuleThreshold,
+        _thresholds[6],
+      // _deactivateFundRuleThreshold,
+        _thresholds[7]
     );
 
     fundStorage.addRoleTo(msg.sender, "role_manager");

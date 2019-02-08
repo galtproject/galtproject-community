@@ -23,18 +23,20 @@ import "../interfaces/IRSRA.sol";
 contract AbstractProposalManager is Permissionable {
   using Counter for Counter.Counter;
   using ArraySet for ArraySet.AddressSet;
+  using ArraySet for ArraySet.Uint256Set;
 
   event NewProposal(uint256 proposalId, address proposee);
   event Approved(uint256 ayeShare, uint256 threshold);
   event Rejected(uint256 nayShare, uint256 threshold);
 
-  // Method #1 ONLY:
-  mapping(address => uint256) _balances;
-
   Counter.Counter idCounter;
 
   FundStorage fundStorage;
   IRSRA rsra;
+
+  ArraySet.Uint256Set private _activeProposals;
+  uint256[] private _approvedProposals;
+  uint256[] private _rejectedProposals;
 
   string public constant RSRA_CONTRACT = "rsra_contract";
 
@@ -66,7 +68,7 @@ contract AbstractProposalManager is Permissionable {
   }
 
   modifier onlyMember() {
-    require(rsra.lockedBalanceOf(msg.sender) > 0, "Not valid member");
+    require(rsra.balanceOf(msg.sender) > 0, "Not valid member");
 
     _;
   }
@@ -74,21 +76,6 @@ contract AbstractProposalManager is Permissionable {
   // Should be implemented inside descendant
   function _execute(uint256 _proposalId) internal;
   function getThreshold() public view returns (uint256);
-
-  // Method #1 ONLY:
-  function onLockChanged(
-    address _delegate,
-    uint256 _newLockedBalance
-  )
-    external
-    onlyRole(RSRA_CONTRACT)
-  {
-    _balances[_delegate] = _newLockedBalance;
-
-    // NOTICE: unable to revoke proposal votes in case of balance decrease due complexity of operation
-    // (revoke in this case should be performed atomically, within a single transaction, in all
-    // proposal contracts and their proposals).
-  }
 
   function aye(uint256 _proposalId) external onlyMember {
     require(_proposalVotings[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
@@ -102,7 +89,6 @@ contract AbstractProposalManager is Permissionable {
     _nay(_proposalId, msg.sender);
   }
 
-  // Method #2 ONLY:
   // permissionLESS
   function triggerApprove(uint256 _proposalId) external {
     ProposalVoting storage proposalVoting = _proposalVotings[_proposalId];
@@ -115,12 +101,14 @@ contract AbstractProposalManager is Permissionable {
 
     proposalVoting.status = ProposalStatus.APPROVED;
 
+    _activeProposals.remove(_proposalId);
+    _approvedProposals.push(_proposalId);
+
     _execute(_proposalId);
 
     emit Approved(ayeShare, threshold);
   }
 
-  // Method #2 ONLY:
   // permissionLESS
   function triggerReject(uint256 _proposalId) external {
     ProposalVoting storage proposalVoting = _proposalVotings[_proposalId];
@@ -132,6 +120,9 @@ contract AbstractProposalManager is Permissionable {
     require(nayShare >= threshold, "Threshold doesn't reached yet");
 
     proposalVoting.status = ProposalStatus.REJECTED;
+    _activeProposals.remove(_proposalId);
+    _rejectedProposals.push(_proposalId);
+
     emit Rejected(nayShare, threshold);
   }
 
@@ -154,16 +145,30 @@ contract AbstractProposalManager is Permissionable {
     _proposalVotings[_proposalId].nays.add(msg.sender);
   }
 
+  function _onNewProposal(uint256 _proposalId) internal {
+    _activeProposals.add(_proposalId);
+  }
+
   // GETTERS
 
-  // Method #2 ONLY:
   function getAyeShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
     return rsra.getShare(_proposalVotings[_proposalId].ayes.elements());
   }
 
-  // Method #2 ONLY:
   function getNayShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
     return rsra.getShare(_proposalVotings[_proposalId].nays.elements());
+  }
+
+  function getActiveProposals() public view returns (uint256[] memory) {
+    return _activeProposals.elements();
+  }
+
+  function getApprovedProposals() public view returns (uint256[] memory) {
+    return _approvedProposals;
+  }
+
+  function getRejectedProposals() public view returns (uint256[] memory) {
+    return _rejectedProposals;
   }
 
   function getProposalVoting(
@@ -179,10 +184,5 @@ contract AbstractProposalManager is Permissionable {
     ProposalVoting storage p = _proposalVotings[_proposalId];
 
     return (p.status, p.ayes.elements(), p.nays.elements());
-  }
-
-  // Method #1 ONLY:
-  function balanceOf(address _delegate) external view returns (uint256) {
-    return _balances[_delegate];
   }
 }

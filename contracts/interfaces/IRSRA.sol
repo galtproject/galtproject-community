@@ -14,7 +14,7 @@
 pragma solidity 0.5.3;
 
 interface IRSRA {
-  function lockedBalanceOf(address _owner) external view returns (uint256);
-  function totalLockedSupply() external view returns (uint256);
+
+  function balanceOf(address _owner) external view returns (uint256);
   function getShare(address[] calldata _addresses) external view returns (uint256);
 }

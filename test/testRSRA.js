@@ -17,6 +17,12 @@ const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalMa
 const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
+const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
+  './ChangeNameAndDescriptionProposalManagerFactory.sol'
+);
+const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
+const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
+
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
 
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
@@ -52,7 +58,10 @@ contract('RSRA', accounts => {
     this.newMemberProposalManagerFactory = await NewMemberProposalManagerFactory.new();
     this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
     this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
+    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
     this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
+    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
+    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
 
     this.fundFactory = await FundFactory.new(
       this.galtToken.address,
@@ -67,6 +76,9 @@ contract('RSRA', accounts => {
       this.fineMemberProposalManagerFactory.address,
       this.expelMemberProposalManagerFactory.address,
       this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
+      this.addFundRuleProposalManagerFactory.address,
+      this.deactivateFundRuleProposalManagerFactory.address,
       { from: coreTeam }
     );
 
@@ -77,58 +89,74 @@ contract('RSRA', accounts => {
     });
 
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
+    await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
+    await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const res = await this.fundFactory.buildFirstStep(false, 60, 50, 60, 60, 60, [bob, charlie], 2, {
+    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie], 2, {
       from: alice
     });
     this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
+
+    res = await this.spaceToken.mint(alice, { from: minter });
+    this.token1 = res.logs[0].args.tokenId.toNumber();
+    res = await this.spaceToken.mint(bob, { from: minter });
+    this.token2 = res.logs[0].args.tokenId.toNumber();
+    res = await this.spaceToken.mint(charlie, { from: minter });
+    this.token3 = res.logs[0].args.tokenId.toNumber();
+
+    res = await this.spaceToken.ownerOf(this.token1);
+    assert.equal(res, alice);
+    res = await this.spaceToken.ownerOf(this.token2);
+    assert.equal(res, bob);
+    res = await this.spaceToken.ownerOf(this.token3);
+    assert.equal(res, charlie);
+
+    // HACK
+    await this.splitMerge.setTokenArea(this.token1, 800, { from: geoDateManagement });
+    await this.splitMerge.setTokenArea(this.token2, 0, { from: geoDateManagement });
+    await this.splitMerge.setTokenArea(this.token3, 0, { from: geoDateManagement });
+
+    await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: alice });
+    res = await this.spaceLockerFactory.build({ from: alice });
+    this.aliceLockerAddress = res.logs[0].args.locker;
+
+    await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: bob });
+    res = await this.spaceLockerFactory.build({ from: bob });
+    this.bobLockerAddress = res.logs[0].args.locker;
+
+    await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: charlie });
+    res = await this.spaceLockerFactory.build({ from: charlie });
+    this.charlieLockerAddress = res.logs[0].args.locker;
+
+    this.aliceLocker = await SpaceLocker.at(this.aliceLockerAddress);
+    this.bobLocker = await SpaceLocker.at(this.bobLockerAddress);
+    this.charlieLocker = await SpaceLocker.at(this.charlieLockerAddress);
+
+    // APPROVE SPACE TOKEN
+    await this.spaceToken.approve(this.aliceLockerAddress, this.token1, { from: alice });
+    await this.spaceToken.approve(this.bobLockerAddress, this.token2, { from: bob });
+    await this.spaceToken.approve(this.charlieLockerAddress, this.token3, { from: charlie });
+
+    // DEPOSIT SPACE TOKEN
+    await this.aliceLocker.deposit(this.token1, { from: alice });
+    await this.bobLocker.deposit(this.token2, { from: bob });
+    await this.charlieLocker.deposit(this.token3, { from: charlie });
+
+    // APPROVE REPUTATION MINT
+    await this.aliceLocker.approveMint(this.rsraX.address, { from: alice });
+    await this.bobLocker.approveMint(this.rsraX.address, { from: bob });
+    await this.charlieLocker.approveMint(this.rsraX.address, { from: charlie });
+    await this.rsraX.mint(this.aliceLockerAddress, { from: alice });
+    await this.rsraX.mint(this.bobLockerAddress, { from: bob });
+    await this.rsraX.mint(this.charlieLockerAddress, { from: charlie });
   });
 
   describe('transfer', () => {
     it('should handle basic reputation transfer case', async function() {
-      let res = await this.spaceToken.mint(alice, { from: minter });
-      const token1 = res.logs[0].args.tokenId.toNumber();
-
-      res = await this.spaceToken.ownerOf(token1);
-      assert.equal(res, alice);
-
-      // HACK
-      await this.splitMerge.setTokenArea(token1, 800, { from: geoDateManagement });
-
-      await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: alice });
-      res = await this.spaceLockerFactory.build({ from: alice });
-      const lockerAddress = res.logs[0].args.locker;
-
-      const locker = await SpaceLocker.at(lockerAddress);
-
-      // DEPOSIT SPACE TOKEN
-      await this.spaceToken.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(token1, { from: alice });
-
-      res = await locker.reputation();
-      assert.equal(res, 800);
-
-      res = await locker.owner();
-      assert.equal(res, alice);
-
-      res = await locker.spaceTokenId();
-      assert.equal(res, 0);
-
-      res = await locker.tokenDeposited();
-      assert.equal(res, true);
-
-      res = await this.spaceLockerRegistry.isValid(lockerAddress);
-      assert.equal(res, true);
-
-      // MINT REPUTATION
-      await locker.approveMint(this.rsraX.address, { from: alice });
-      await assertRevert(this.rsraX.mint(lockerAddress, { from: minter }));
-      await this.rsraX.mint(lockerAddress, { from: alice });
-
-      res = await this.rsraX.balanceOf(alice);
+      let res = await this.rsraX.balanceOf(alice);
       assert.equal(res, 800);
 
       // TRANSFER #1
@@ -180,11 +208,11 @@ contract('RSRA', accounts => {
       assert.equal(res, 50);
 
       // BURN REPUTATION UNSUCCESSFUL ATTEMPTS
-      await assertRevert(this.rsraX.approveBurn(lockerAddress, { from: alice }));
+      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice }));
 
       // UNSUCCESSFUL WITHDRAW SPACE TOKEN
-      await assertRevert(locker.burn(this.rsraX.address, { from: alice }));
-      await assertRevert(locker.withdraw(token1, { from: alice }));
+      await assertRevert(this.aliceLocker.burn(this.rsraX.address, { from: alice }));
+      await assertRevert(this.aliceLocker.withdraw(this.token1, { from: alice }));
 
       // REVOKE REPUTATION
       await this.rsraX.revoke(bob, 50, { from: alice });
@@ -200,134 +228,29 @@ contract('RSRA', accounts => {
       assert.equal(res, 0);
 
       // WITHDRAW TOKEN
-      await assertRevert(this.rsraX.approveBurn(lockerAddress, { from: charlie }));
-      await this.rsraX.approveBurn(lockerAddress, { from: alice });
+      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: charlie }));
+      await this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice });
 
-      await locker.burn(this.rsraX.address, { from: alice });
-      await locker.withdraw(token1, { from: alice });
+      await this.aliceLocker.burn(this.rsraX.address, { from: alice });
+      await this.aliceLocker.withdraw(this.token1, { from: alice });
 
       res = await this.rsraX.balanceOf(alice);
       assert.equal(res, 0);
 
-      res = await locker.reputation();
+      res = await this.aliceLocker.reputation();
       assert.equal(res, 0);
 
-      res = await locker.owner();
+      res = await this.aliceLocker.owner();
       assert.equal(res, alice);
 
-      res = await locker.spaceTokenId();
+      res = await this.aliceLocker.spaceTokenId();
       assert.equal(res, 0);
 
-      res = await locker.tokenDeposited();
+      res = await this.aliceLocker.tokenDeposited();
       assert.equal(res, false);
 
-      res = await this.spaceLockerRegistry.isValid(lockerAddress);
+      res = await this.spaceLockerRegistry.isValid(this.aliceLockerAddress);
       assert.equal(res, true);
-    });
-  });
-
-  describe('lock/unlock by delegate', () => {
-    it('should allow update balances of all whitelisted proposal contracts', async function() {
-      let res = await this.spaceToken.mint(alice, { from: minter });
-      const token1 = res.logs[0].args.tokenId.toNumber();
-
-      // HACK
-      await this.splitMerge.setTokenArea(token1, 800, { from: geoDateManagement });
-
-      // CREATE LOCKER
-      await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: alice });
-      res = await this.spaceLockerFactory.build({ from: alice });
-      const lockerAddress = res.logs[0].args.locker;
-
-      const locker = await SpaceLocker.at(lockerAddress);
-
-      // DEPOSIT SPACE TOKEN
-      await this.spaceToken.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(token1, { from: alice });
-
-      // APPROVE
-      await locker.approveMint(this.rsraX.address, { from: alice });
-
-      // STAKE
-      await this.rsraX.mint(lockerAddress, { from: alice });
-      await this.rsraX.delegate(bob, alice, 350, { from: alice });
-      await this.rsraX.delegate(charlie, alice, 100, { from: bob });
-      await this.rsraX.delegate(alice, alice, 50, { from: charlie });
-
-      res = await this.rsraX.balanceOf(alice);
-      assert.equal(res, 500);
-
-      res = await this.rsraX.balanceOf(bob);
-      assert.equal(res, 250);
-
-      res = await this.rsraX.balanceOf(charlie);
-      assert.equal(res, 50);
-
-      await this.rsraX.lockReputation(100, { from: alice });
-      await this.rsraX.lockReputation(30, { from: bob });
-      await this.rsraX.lockReputation(50, { from: charlie });
-
-      // Alice can revoke only 220 unlocked reputation tokens
-      await assertRevert(this.rsraX.revoke(bob, 221, { from: alice }));
-      await this.rsraX.revoke(bob, 220, { from: alice });
-
-      // Alice can us revokeLocked for the rest of the delegated amount
-      await assertRevert(this.rsraX.revokeLocked(bob, 31, { from: alice }));
-      await this.rsraX.revokeLocked(bob, 30, { from: alice });
-
-      // Charlie partially unlocks his reputation
-      await assertRevert(this.rsraX.unlockReputation(51, { from: charlie }));
-      await this.rsraX.unlockReputation(25, { from: charlie });
-
-      res = await this.rsraX.balanceOf(alice);
-      assert.equal(res, 650);
-
-      res = await this.rsraX.balanceOf(bob);
-      assert.equal(res, 0);
-
-      res = await this.rsraX.balanceOf(charlie);
-      assert.equal(res, 25);
-
-      res = await this.rsraX.lockedBalanceOf(alice);
-      assert.equal(res, 100);
-
-      res = await this.rsraX.lockedBalanceOf(bob);
-      assert.equal(res, 0);
-
-      res = await this.rsraX.lockedBalanceOf(charlie);
-      assert.equal(res, 25);
-
-      await this.rsraX.revokeLocked(charlie, 25, { from: alice });
-      await this.rsraX.revoke(charlie, 25, { from: alice });
-      await this.rsraX.unlockReputation(100, { from: alice });
-
-      res = await this.rsraX.balanceOf(alice);
-      assert.equal(res, 800);
-
-      res = await this.rsraX.balanceOf(bob);
-      assert.equal(res, 0);
-
-      res = await this.rsraX.balanceOf(charlie);
-      assert.equal(res, 0);
-
-      res = await this.rsraX.lockedBalanceOf(alice);
-      assert.equal(res, 0);
-
-      res = await this.rsraX.lockedBalanceOf(bob);
-      assert.equal(res, 0);
-
-      res = await this.rsraX.lockedBalanceOf(charlie);
-      assert.equal(res, 0);
-
-      // ATTEMPT TO BURN
-      await assertRevert(locker.burn(this.rsraX.address, { from: alice }));
-
-      // APPROVE BURN AND TRY AGAIN
-      await this.rsraX.approveBurn(lockerAddress, { from: alice });
-      await locker.burn(this.rsraX.address, { from: alice });
-
-      // Withdraw token
-      await locker.withdraw(token1, { from: alice });
     });
   });
 });
