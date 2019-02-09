@@ -62,7 +62,11 @@ contract FundFactory is Ownable {
 
   event CreateFundFourthStep(
     address creator,
-    address changeNameAndDescriptionProposalManager,
+    address changeNameAndDescriptionProposalManager
+  );
+
+  event CreateFundFifthStep(
+    address creator,
     address addFundRuleProposalManager,
     address deactivateFundRuleProposalManager
   );
@@ -92,7 +96,8 @@ contract FundFactory is Ownable {
     FIRST,
     SECOND,
     THIRD,
-    FOURTH
+    FOURTH,
+    FIFTH
   }
 
   struct FirstStepContracts {
@@ -251,28 +256,46 @@ contract FundFactory is Ownable {
 
     ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = changeNameAndDescriptionProposalManagerFactory
       .build(c.rsra, _fundStorage);
-    AddFundRuleProposalManager addFundRuleProposalManager = addFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
-    DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = deactivateFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
 
     _fundStorage.addRoleTo(address(changeNameAndDescriptionProposalManager), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
-    _fundStorage.addRoleTo(address(addFundRuleProposalManager), _fundStorage.CONTRACT_ADD_FUND_RULE_MANAGER());
-    _fundStorage.addRoleTo(address(deactivateFundRuleProposalManager), _fundStorage.CONTRACT_DEACTIVATE_FUND_RULE_MANAGER());
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.addWhiteListedContract(address(changeNameAndDescriptionProposalManager), 0x0, "");
-    _fundStorage.addWhiteListedContract(address(addFundRuleProposalManager), 0x0, "");
-    _fundStorage.addWhiteListedContract(address(deactivateFundRuleProposalManager), 0x0, "");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
     _fundStorage.setNameAndDescription(_name, _description);
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
 
-    delete _firstStepContracts[msg.sender];
+    c.currentStep = Step.FIFTH;
 
     emit CreateFundFourthStep(
       msg.sender,
-      address(changeNameAndDescriptionProposalManager),
+      address(changeNameAndDescriptionProposalManager)
+    );
+  }
+
+  function buildFifthStep() external {
+    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+    require(c.currentStep == Step.FIFTH, "Requires fourth step");
+
+    FundStorage _fundStorage = c.fundStorage;
+
+    AddFundRuleProposalManager addFundRuleProposalManager = addFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
+    DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = deactivateFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
+
+    _fundStorage.addRoleTo(address(addFundRuleProposalManager), _fundStorage.CONTRACT_ADD_FUND_RULE_MANAGER());
+    _fundStorage.addRoleTo(address(deactivateFundRuleProposalManager), _fundStorage.CONTRACT_DEACTIVATE_FUND_RULE_MANAGER());
+
+    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.addWhiteListedContract(address(addFundRuleProposalManager), 0x0, "");
+    _fundStorage.addWhiteListedContract(address(deactivateFundRuleProposalManager), 0x0, "");
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+
+    delete _firstStepContracts[msg.sender];
+
+    emit CreateFundFifthStep(
+      msg.sender,
       address(addFundRuleProposalManager),
       address(deactivateFundRuleProposalManager)
     );
