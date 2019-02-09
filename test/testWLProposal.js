@@ -148,6 +148,7 @@ contract('WLProposal', accounts => {
       let res = await this.wlProposalManagerX.propose(
         Action.REMOVE,
         this.modifyConfigProposalManagerAddress,
+        bytes32('new_contract'),
         bytes32(''),
         'obsolete',
         {
