@@ -17,8 +17,6 @@ import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
 contract NewMemberProposalManager is AbstractProposalManager {
-  using ArraySet for ArraySet.Uint256Set;
-  
   struct Proposal {
     uint256 spaceTokenId;
     string description;
@@ -27,9 +25,6 @@ contract NewMemberProposalManager is AbstractProposalManager {
 
   mapping(uint256 => Proposal) private _proposals;
   
-  mapping(address => ArraySet.Uint256Set) private _activeProposalsBySender;
-  ArraySet.Uint256Set private _activeProposals;
-
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
@@ -48,18 +43,12 @@ contract NewMemberProposalManager is AbstractProposalManager {
     ProposalVoting storage proposalVoting = _proposalVotings[id];
 
     proposalVoting.status = ProposalStatus.ACTIVE;
-
-    _activeProposalsBySender[msg.sender].add(id);
-    _activeProposals.add(id);
   }
 
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
     fundStorage.approveMint(p.spaceTokenId);
-
-    _activeProposalsBySender[p.sender].remove(_proposalId);
-    _activeProposals.remove(_proposalId);
   }
 
   function getThreshold() public view returns (uint256) {
@@ -70,21 +59,5 @@ contract NewMemberProposalManager is AbstractProposalManager {
     Proposal storage p = _proposals[_proposalId];
 
     return (p.spaceTokenId, p.description);
-  }
-  
-  function getActiveProposals() external view returns (uint256[] memory) {
-    return _activeProposals.elements();
-  }
-
-  function getActiveProposalsCount() external view returns (uint256) {
-    return _activeProposals.size();
-  }
-
-  function getActiveProposalsBySender(address sender) external view returns (uint256[] memory) {
-    return _activeProposalsBySender[sender].elements();
-  }
-
-  function getActiveProposalsBySenderCount(address sender) external view returns (uint256) {
-    return _activeProposalsBySender[sender].size();
   }
 }

@@ -35,6 +35,10 @@ contract AbstractProposalManager is Permissionable {
   IRSRA rsra;
 
   ArraySet.Uint256Set private _activeProposals;
+  mapping(address => ArraySet.Uint256Set) private _activeProposalsBySender;
+  
+  mapping(uint256 => address) private _proposalToSender;
+  
   uint256[] private _approvedProposals;
   uint256[] private _rejectedProposals;
 
@@ -102,6 +106,7 @@ contract AbstractProposalManager is Permissionable {
     proposalVoting.status = ProposalStatus.APPROVED;
 
     _activeProposals.remove(_proposalId);
+    _activeProposalsBySender[_proposalToSender[_proposalId]].remove(_proposalId);
     _approvedProposals.push(_proposalId);
 
     _execute(_proposalId);
@@ -121,6 +126,7 @@ contract AbstractProposalManager is Permissionable {
 
     proposalVoting.status = ProposalStatus.REJECTED;
     _activeProposals.remove(_proposalId);
+    _activeProposalsBySender[_proposalToSender[_proposalId]].remove(_proposalId);
     _rejectedProposals.push(_proposalId);
 
     emit Rejected(nayShare, threshold);
@@ -147,6 +153,8 @@ contract AbstractProposalManager is Permissionable {
 
   function _onNewProposal(uint256 _proposalId) internal {
     _activeProposals.add(_proposalId);
+    _activeProposalsBySender[msg.sender].add(_proposalId);
+    _proposalToSender[_proposalId] = msg.sender;
   }
 
   // GETTERS
@@ -161,6 +169,18 @@ contract AbstractProposalManager is Permissionable {
 
   function getActiveProposals() public view returns (uint256[] memory) {
     return _activeProposals.elements();
+  }
+  
+  function getActiveProposalsCount() public view returns (uint256) {
+    return _activeProposals.size();
+  }
+  
+  function getActiveProposalsBySender(address sender) external view returns (uint256[] memory) {
+    return _activeProposalsBySender[sender].elements();
+  }
+
+  function getActiveProposalsBySenderCount(address sender) external view returns (uint256) {
+    return _activeProposalsBySender[sender].size();
   }
 
   function getApprovedProposals() public view returns (uint256[] memory) {
