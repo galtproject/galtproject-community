@@ -55,9 +55,9 @@ contract NewMemberProposalManager is AbstractProposalManager {
     return uint256(fundStorage.getConfigValue(fundStorage.NEW_MEMBER_THRESHOLD()));
   }
 
-  function getProposal(uint256 _proposalId) external view returns (uint256 spaceTokenId, string memory description) {
+  function getProposal(uint256 _proposalId) external view returns (uint256 spaceTokenId, string memory description, address sender) {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.spaceTokenId, p.description);
+    return (p.spaceTokenId, p.description, p.sender);
   }
 }
