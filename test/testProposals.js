@@ -161,6 +161,11 @@ contract('Proposals', accounts => {
         await this.modifyConfigProposalManagerX.aye(proposalId, { from: bob });
         await this.modifyConfigProposalManagerX.nay(proposalId, { from: charlie });
 
+        res = await this.modifyConfigProposalManagerX.getParticipantProposalChoice(proposalId, bob);
+        assert.equal(res, '1');
+        res = await this.modifyConfigProposalManagerX.getParticipantProposalChoice(proposalId, charlie);
+        assert.equal(res, '2');
+
         res = await this.modifyConfigProposalManagerX.getProposalVoting(proposalId);
         assert.sameMembers(res.ayes, [bob]);
         assert.sameMembers(res.nays, [charlie]);

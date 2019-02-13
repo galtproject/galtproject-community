@@ -175,12 +175,12 @@ contract AbstractProposalManager is Permissionable {
     return _activeProposals.size();
   }
   
-  function getActiveProposalsBySender(address sender) external view returns (uint256[] memory) {
-    return _activeProposalsBySender[sender].elements();
+  function getActiveProposalsBySender(address _sender) external view returns (uint256[] memory) {
+    return _activeProposalsBySender[_sender].elements();
   }
 
-  function getActiveProposalsBySenderCount(address sender) external view returns (uint256) {
-    return _activeProposalsBySender[sender].size();
+  function getActiveProposalsBySenderCount(address _sender) external view returns (uint256) {
+    return _activeProposalsBySender[_sender].size();
   }
 
   function getApprovedProposals() public view returns (uint256[] memory) {
@@ -204,5 +204,9 @@ contract AbstractProposalManager is Permissionable {
     ProposalVoting storage p = _proposalVotings[_proposalId];
 
     return (p.status, p.ayes.elements(), p.nays.elements());
+  }
+
+  function getParticipantProposalChoice(uint256 _proposalId, address _participant) external view returns (Choice) {
+    return _proposalVotings[_proposalId].participants[_participant];
   }
 }
