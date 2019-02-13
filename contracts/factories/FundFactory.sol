@@ -300,7 +300,7 @@ contract FundFactory is Ownable {
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
-    for(uint i = 0; i < _initialSpaceTokensToApprove.length; i++) {
+    for (uint i = 0; i < _initialSpaceTokensToApprove.length; i++) {
       _fundStorage.approveMint(_initialSpaceTokensToApprove[i]);
     }
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
