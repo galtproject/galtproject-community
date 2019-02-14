@@ -79,6 +79,7 @@ contract AbstractProposalManager is Permissionable {
 
   // Should be implemented inside descendant
   function _execute(uint256 _proposalId) internal;
+  // TODO: threshold should be wei
   function getThreshold() public view returns (uint256);
 
   function aye(uint256 _proposalId) external onlyMember {
