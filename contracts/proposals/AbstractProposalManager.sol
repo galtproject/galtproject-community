@@ -206,6 +206,21 @@ contract AbstractProposalManager is Permissionable {
     return (p.status, p.ayes.elements(), p.nays.elements());
   }
 
+  function getProposalStatus(
+    uint256 _proposalId
+  )
+    external
+    view
+    returns (
+      ProposalStatus status,
+      uint256 ayesCount,
+      uint256 naysCount)
+  {
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    return (p.status, p.ayes.size(), p.nays.size());
+  }
+
   function getParticipantProposalChoice(uint256 _proposalId, address _participant) external view returns (Choice) {
     return _proposalVotings[_proposalId].participants[_participant];
   }
