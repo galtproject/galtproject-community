@@ -109,7 +109,7 @@ contract('Proposals', accounts => {
     res = await this.fundFactory.buildFourthStep('MyFund', 'my awesome fund', { from: alice });
     // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
-    res = await this.fundFactory.buildFifthStep({ from: alice });
+    res = await this.fundFactory.buildFifthStep([], { from: alice });
     // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
 
     this.addFundRuleProposalManagerX = await AddFundRuleProposalManager.at(res.logs[0].args.addFundRuleProposalManager);

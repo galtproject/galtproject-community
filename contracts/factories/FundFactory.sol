@@ -282,7 +282,7 @@ contract FundFactory is Ownable {
     );
   }
 
-  function buildFifthStep() external {
+  function buildFifthStep(uint256[] calldata _initialSpaceTokensToApprove) external {
     FirstStepContracts storage c = _firstStepContracts[msg.sender];
     require(c.currentStep == Step.FIFTH, "Requires fourth step");
 
@@ -298,7 +298,13 @@ contract FundFactory is Ownable {
     _fundStorage.addWhiteListedContract(address(addFundRuleProposalManager), ADD_FUND_RULE_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(address(deactivateFundRuleProposalManager), DEACTIVATE_FUND_RULE_TYPE, 0x0, "");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
-
+    
+    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
+    for (uint i = 0; i < _initialSpaceTokensToApprove.length; i++) {
+      _fundStorage.approveMint(_initialSpaceTokensToApprove[i]);
+    }
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
+    
     delete _firstStepContracts[msg.sender];
 
     emit CreateFundFifthStep(
