@@ -162,6 +162,16 @@ contract('NewFundMemberProposal', accounts => {
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
+      res = await this.newMemberProposalManagerX.getActiveProposals();
+      assert.deepEqual(res.map(i => i.toString(10)), [proposalId]);
+      res = await this.newMemberProposalManagerX.getActiveProposalsCount();
+      assert.equal(res.toString(10), '1');
+
+      res = await this.newMemberProposalManagerX.getActiveProposalsBySender(unauthorized);
+      assert.deepEqual(res.map(i => i.toString(10)), [proposalId]);
+      res = await this.newMemberProposalManagerX.getActiveProposalsBySenderCount(unauthorized);
+      assert.equal(res.toString(10), '1');
+
       res = await this.newMemberProposalManagerX.getProposal(proposalId);
       assert.equal(web3.utils.hexToNumberString(res.spaceTokenId), token1);
       assert.equal(res.description, 'blah');
@@ -178,6 +188,16 @@ contract('NewFundMemberProposal', accounts => {
       assert.equal(res, 30);
 
       await this.newMemberProposalManagerX.triggerApprove(proposalId);
+
+      res = await this.newMemberProposalManagerX.getActiveProposals();
+      assert.deepEqual(res, []);
+      res = await this.newMemberProposalManagerX.getActiveProposalsCount();
+      assert.equal(res.toString(10), '0');
+
+      res = await this.newMemberProposalManagerX.getActiveProposalsBySender(unauthorized);
+      assert.deepEqual(res, []);
+      res = await this.newMemberProposalManagerX.getActiveProposalsBySenderCount(unauthorized);
+      assert.equal(res.toString(10), '0');
 
       res = await this.newMemberProposalManagerX.getProposalVoting(proposalId);
       assert.equal(res.status, ProposalStatus.APPROVED);

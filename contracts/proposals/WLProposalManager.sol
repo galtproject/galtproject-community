@@ -16,7 +16,6 @@ pragma solidity 0.5.3;
 import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
-
 contract WLProposalManager is AbstractProposalManager {
   enum Action {
     ADD,
@@ -26,6 +25,7 @@ contract WLProposalManager is AbstractProposalManager {
   struct Proposal {
     Action action;
     address contractAddress;
+    bytes32 contractType;
     bytes32 abiIpfsHash;
     string description;
   }
@@ -38,6 +38,7 @@ contract WLProposalManager is AbstractProposalManager {
   function propose(
     Action _action,
     address _contractAddress,
+    bytes32 _contractType,
     bytes32 _abiIpfsHash,
     string calldata _description
   )
@@ -49,6 +50,7 @@ contract WLProposalManager is AbstractProposalManager {
     _proposals[id] = Proposal({
       action: _action,
       contractAddress: _contractAddress,
+      contractType: _contractType,
       abiIpfsHash: _abiIpfsHash,
       description: _description
     });
@@ -67,6 +69,7 @@ contract WLProposalManager is AbstractProposalManager {
     if (p.action == Action.ADD) {
       fundStorage.addWhiteListedContract(
         p.contractAddress,
+        p.contractType,
         p.abiIpfsHash,
         p.description
       );
@@ -75,10 +78,10 @@ contract WLProposalManager is AbstractProposalManager {
     }
   }
 
-  function getProposal(uint256 _proposalId) external view returns (address contractAddress, Action action, string memory description) {
+  function getProposal(uint256 _proposalId) external view returns (address contractAddress, bytes32 contractType, Action action, string memory description) {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.contractAddress, p.action, p.description);
+    return (p.contractAddress, p.contractType, p.action, p.description);
   }
 
   function getThreshold() public view returns (uint256) {

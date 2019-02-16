@@ -16,15 +16,15 @@ pragma solidity 0.5.3;
 import "../FundStorage.sol";
 import "./AbstractProposalManager.sol";
 
-
 contract NewMemberProposalManager is AbstractProposalManager {
   struct Proposal {
     uint256 spaceTokenId;
     string description;
+    address sender;
   }
 
   mapping(uint256 => Proposal) private _proposals;
-
+  
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
   }
 
@@ -33,7 +33,8 @@ contract NewMemberProposalManager is AbstractProposalManager {
 
     _proposals[id] = Proposal({
       spaceTokenId: _spaceTokenId,
-      description: _description
+      description: _description,
+      sender: msg.sender
     });
 
     emit NewProposal(id, msg.sender);
@@ -54,9 +55,9 @@ contract NewMemberProposalManager is AbstractProposalManager {
     return uint256(fundStorage.getConfigValue(fundStorage.NEW_MEMBER_THRESHOLD()));
   }
 
-  function getProposal(uint256 _proposalId) external view returns (uint256 spaceTokenId, string memory description) {
+  function getProposal(uint256 _proposalId) external view returns (uint256 spaceTokenId, string memory description, address sender) {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.spaceTokenId, p.description);
+    return (p.spaceTokenId, p.description, p.sender);
   }
 }

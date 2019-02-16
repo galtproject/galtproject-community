@@ -109,6 +109,7 @@ contract('WLProposal', accounts => {
       let res = await this.wlProposalManagerX.propose(
         Action.ADD,
         address4wl,
+        bytes32('new_contract'),
         galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'),
         'blah',
         { from: bob }
@@ -147,6 +148,7 @@ contract('WLProposal', accounts => {
       let res = await this.wlProposalManagerX.propose(
         Action.REMOVE,
         this.modifyConfigProposalManagerAddress,
+        bytes32('new_contract'),
         bytes32(''),
         'obsolete',
         {

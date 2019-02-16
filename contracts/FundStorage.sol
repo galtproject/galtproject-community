@@ -53,6 +53,7 @@ contract FundStorage is Permissionable {
 
   struct ProposalContract {
     bytes32 abiIpfsHash;
+    bytes32 contractType;
     string description;
   }
 
@@ -138,6 +139,7 @@ contract FundStorage is Permissionable {
 
   function addWhiteListedContract(
     address _contract,
+    bytes32 _type,
     bytes32 _abiIpfsHash,
     string calldata _description
   )
@@ -148,6 +150,7 @@ contract FundStorage is Permissionable {
 
     ProposalContract storage c = _proposalContracts[_contract];
 
+    c.contractType = _type;
     c.abiIpfsHash = _abiIpfsHash;
     c.description = _description;
   }
@@ -222,12 +225,14 @@ contract FundStorage is Permissionable {
     external
     view
     returns(
+      bytes32 contractType,
       bytes32 abiIpfsHash,
       string memory description
     )
   {
     ProposalContract storage c = _proposalContracts[_contract];
 
+    contractType = c.contractType;
     abiIpfsHash = c.abiIpfsHash;
     description = c.description;
   }
