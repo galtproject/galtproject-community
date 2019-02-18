@@ -14,10 +14,10 @@
 pragma solidity 0.5.3;
 
 import "../FundStorage.sol";
-import "./AbstractProposalManager.sol";
+import "./AbstractFundProposalManager.sol";
 
 
-contract AddFundRuleProposalManager is AbstractProposalManager {
+contract AddFundRuleProposalManager is AbstractFundProposalManager {
   enum Action {
     ADD,
     DISABLE
@@ -31,7 +31,7 @@ contract AddFundRuleProposalManager is AbstractProposalManager {
 
   mapping(uint256 => Proposal) private _proposals;
 
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
+  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
   }
 
   function propose(Action _action, bytes32 _ipfsHash, string calldata _description) external onlyMember {

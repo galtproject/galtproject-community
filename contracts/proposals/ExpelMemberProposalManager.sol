@@ -15,11 +15,11 @@ pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-import "./AbstractProposalManager.sol";
+import "./AbstractFundProposalManager.sol";
 import "../FundStorage.sol";
 
 
-contract ExpelMemberProposalManager is AbstractProposalManager {
+contract ExpelMemberProposalManager is AbstractFundProposalManager {
   struct Proposal {
     uint256 spaceTokenId;
     string description;
@@ -35,7 +35,7 @@ contract ExpelMemberProposalManager is AbstractProposalManager {
     IERC721 _spaceToken
   )
     public
-    AbstractProposalManager(_rsra, _fundStorage)
+    AbstractFundProposalManager(_rsra, _fundStorage)
   {
     spaceToken = _spaceToken;
   }
