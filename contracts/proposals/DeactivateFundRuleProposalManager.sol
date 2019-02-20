@@ -14,10 +14,10 @@
 pragma solidity 0.5.3;
 
 import "../FundStorage.sol";
-import "./AbstractProposalManager.sol";
+import "./AbstractFundProposalManager.sol";
 
 
-contract DeactivateFundRuleProposalManager is AbstractProposalManager {
+contract DeactivateFundRuleProposalManager is AbstractFundProposalManager {
   struct Proposal {
     uint256 frpId;
     string description;
@@ -25,7 +25,7 @@ contract DeactivateFundRuleProposalManager is AbstractProposalManager {
 
   mapping(uint256 => Proposal) private _proposals;
 
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
+  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
   }
 
   function propose(uint256 _frpId, string calldata _description) external onlyMember {

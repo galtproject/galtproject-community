@@ -20,7 +20,6 @@ const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
 );
 const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
 const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
-
 const MockModifyConfigProposalManager = artifacts.require('./MockModifyConfigProposalManager.sol');
 const AddFundRuleProposalManager = artifacts.require('./AddFundRuleProposalManager.sol');
 const DeactivateFundRuleProposalManager = artifacts.require('./DeactivateFundRuleProposalManager.sol');
