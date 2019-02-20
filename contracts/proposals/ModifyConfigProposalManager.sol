@@ -14,10 +14,10 @@
 pragma solidity 0.5.3;
 
 import "../FundStorage.sol";
-import "./AbstractProposalManager.sol";
+import "./AbstractFundProposalManager.sol";
 
 
-contract ModifyConfigProposalManager is AbstractProposalManager {
+contract ModifyConfigProposalManager is AbstractFundProposalManager {
   struct Proposal {
     bytes32 key;
     bytes32 value;
@@ -26,7 +26,7 @@ contract ModifyConfigProposalManager is AbstractProposalManager {
 
   mapping(uint256 => Proposal) private _proposals;
 
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractProposalManager(_rsra, _fundStorage) {
+  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
   }
 
   function propose(bytes32 _key, bytes32 _value, string calldata _description) external onlyMember {
