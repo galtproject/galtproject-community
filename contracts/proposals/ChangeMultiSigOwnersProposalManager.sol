@@ -14,12 +14,12 @@
 pragma solidity 0.5.3;
 
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-import "./AbstractProposalManager.sol";
+import "./AbstractFundProposalManager.sol";
 import "../FundStorage.sol";
 import "../FundMultiSig.sol";
 
 
-contract ChangeMultiSigOwnersProposalManager is AbstractProposalManager {
+contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
   struct Proposal {
     string description;
     address[] newOwners;
@@ -35,7 +35,7 @@ contract ChangeMultiSigOwnersProposalManager is AbstractProposalManager {
     FundStorage _fundStorage
   )
     public
-    AbstractProposalManager(_rsra, _fundStorage)
+    AbstractFundProposalManager(_rsra, _fundStorage)
   {
     assert(address(_multiSig) != address(0));
 
