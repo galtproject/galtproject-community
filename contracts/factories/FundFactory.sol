@@ -39,7 +39,6 @@ import "./DeactivateFundRuleProposalManagerFactory.sol";
 contract FundFactory is Ownable {
   event CreateFundFirstStep(
     address creator,
-    address fundRsra,
     address fundMultiSig,
     address fundStorage,
     address fundController
@@ -47,14 +46,15 @@ contract FundFactory is Ownable {
 
   event CreateFundSecondStep(
     address creator,
+    address fundRsra,
     address multiSig,
     address modifyConfigProposalManager,
-    address newMemberProposalManager,
-    address fineMemberProposalManager
+    address newMemberProposalManager
   );
 
   event CreateFundThirdStep(
     address creator,
+    address fineMemberProposalManager,
     address multiSig,
     address whiteListProposalManager,
     address expelMemberProposalManager
@@ -161,7 +161,7 @@ contract FundFactory is Ownable {
     uint256 _multiSigRequired
   )
     external
-    returns (IRSRA rsra, FundMultiSig fundMultiSig, FundStorage fundStorage, FundController fundController)
+    returns (FundMultiSig fundMultiSig, FundStorage fundStorage, FundController fundController)
   {
     require(_thresholds.length == 8, "Thresholds length should be 8");
 
@@ -180,50 +180,46 @@ contract FundFactory is Ownable {
       fundStorage,
       fundMultiSig
     );
-    rsra = rsraFactory.build(spaceToken, spaceLockerRegistry, fundStorage);
 
     c.currentStep = Step.SECOND;
-    c.rsra = rsra;
     c.fundStorage = fundStorage;
     c.fundMultiSig = fundMultiSig;
     c.fundController = fundController;
 
-    emit CreateFundFirstStep(msg.sender, address(rsra), address(fundMultiSig), address(fundStorage), address(fundController));
+    emit CreateFundFirstStep(msg.sender, address(fundMultiSig), address(fundStorage), address(fundController));
   }
 
   function buildSecondStep() external {
     FirstStepContracts storage c = _firstStepContracts[msg.sender];
     require(c.currentStep == Step.SECOND, "Requires second step");
 
-    IRSRA _rsra = c.rsra;
     FundStorage _fundStorage = c.fundStorage;
     FundMultiSig _fundMultiSig = c.fundMultiSig;
     FundController _fundController = c.fundController;
+      
+    c.rsra = rsraFactory.build(spaceToken, spaceLockerRegistry, _fundStorage);
 
-    ModifyConfigProposalManager modifyConfigProposalManager = modifyConfigProposalManagerFactory.build(_rsra, _fundStorage);
-    NewMemberProposalManager newMemberProposalManager = newMemberProposalManagerFactory.build(_rsra, _fundStorage);
-    FineMemberProposalManager fineMemberProposalManager = fineMemberProposalManagerFactory.build(_rsra, _fundStorage);
+    ModifyConfigProposalManager modifyConfigProposalManager = modifyConfigProposalManagerFactory.build(c.rsra, _fundStorage);
+    NewMemberProposalManager newMemberProposalManager = newMemberProposalManagerFactory.build(c.rsra, _fundStorage);
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.addWhiteListedContract(address(modifyConfigProposalManager), MODIFY_CONFIG_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(address(newMemberProposalManager), NEW_MEMBER_TYPE, 0x0, "");
-    _fundStorage.addWhiteListedContract(address(fineMemberProposalManager), FINE_MEMBER_TYPE, 0x0, "");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.addRoleTo(address(modifyConfigProposalManager), _fundStorage.CONTRACT_CONFIG_MANAGER());
     _fundStorage.addRoleTo(address(newMemberProposalManager), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(address(fineMemberProposalManager), _fundStorage.CONTRACT_FINE_MEMBER_INCREMENT_MANAGER());
-    _fundStorage.addRoleTo(address(_rsra), _fundStorage.CONTRACT_RSRA());
+    _fundStorage.addRoleTo(address(c.rsra), _fundStorage.CONTRACT_RSRA());
     _fundStorage.addRoleTo(address(_fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
 
     c.currentStep = Step.THIRD;
 
     emit CreateFundSecondStep(
       msg.sender,
+      address(c.rsra),
       address(_fundMultiSig),
       address(modifyConfigProposalManager),
-      address(newMemberProposalManager),
-      address(fineMemberProposalManager)
+      address(newMemberProposalManager)
     );
   }
 
@@ -234,14 +230,17 @@ contract FundFactory is Ownable {
     FundStorage _fundStorage = c.fundStorage;
     IRSRA _rsra = c.rsra;
 
+    FineMemberProposalManager fineMemberProposalManager = fineMemberProposalManagerFactory.build(_rsra, _fundStorage);
     WLProposalManager wlProposalManager = wlProposalManagerFactory.build(c.rsra, _fundStorage);
     ExpelMemberProposalManager expelMemberProposalManager = expelMemberProposalManagerFactory.build(_rsra, _fundStorage, spaceToken);
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+    _fundStorage.addWhiteListedContract(address(fineMemberProposalManager), FINE_MEMBER_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(address(wlProposalManager), WHITE_LIST_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(address(expelMemberProposalManager), EXPEL_MEMBER_TYPE, 0x0, "");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
+    _fundStorage.addRoleTo(address(fineMemberProposalManager), _fundStorage.CONTRACT_FINE_MEMBER_INCREMENT_MANAGER());
     _fundStorage.addRoleTo(address(wlProposalManager), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.addRoleTo(address(expelMemberProposalManager), _fundStorage.CONTRACT_EXPEL_MEMBER_MANAGER());
 
@@ -249,6 +248,7 @@ contract FundFactory is Ownable {
 
     emit CreateFundThirdStep(
       msg.sender,
+      address(fineMemberProposalManager),
       address(c.fundMultiSig),
       address(wlProposalManager),
       address(expelMemberProposalManager)

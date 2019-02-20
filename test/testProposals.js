@@ -89,15 +89,16 @@ contract('Proposals', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
+    // console.log('before buildFirstStep');
     let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
       from: alice
     });
     // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
     res = await this.fundFactory.buildSecondStep({ from: alice });
     // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.modifyConfigProposalManagerX = await MockModifyConfigProposalManager.at(
       res.logs[0].args.modifyConfigProposalManager
     );

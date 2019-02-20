@@ -102,10 +102,10 @@ contract('NewFundMemberProposal', accounts => {
     let res = await this.fundFactory.buildFirstStep(true, [60, 50, 30, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
       from: alice
     });
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
     res = await this.fundFactory.buildSecondStep({ from: alice });
+    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.modifyConfigProposalManagerX = await MockModifyConfigProposalManager.at(
       res.logs[0].args.modifyConfigProposalManager
     );
