@@ -89,7 +89,6 @@ contract('Proposals', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    // console.log('before buildFirstStep');
     let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
       from: alice
     });
