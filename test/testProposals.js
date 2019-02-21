@@ -93,11 +93,11 @@ contract('Proposals', accounts => {
       from: alice
     });
     // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
     res = await this.fundFactory.buildSecondStep({ from: alice });
     // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.modifyConfigProposalManagerX = await MockModifyConfigProposalManager.at(
       res.logs[0].args.modifyConfigProposalManager
     );

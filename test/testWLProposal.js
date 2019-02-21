@@ -90,10 +90,10 @@ contract('WLProposal', accounts => {
     let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
       from: alice
     });
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
 
     res = await this.fundFactory.buildSecondStep({ from: alice });
+    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.modifyConfigProposalManagerAddress = res.logs[0].args.modifyConfigProposalManager;
 
     res = await this.fundFactory.buildThirdStep({ from: alice });
