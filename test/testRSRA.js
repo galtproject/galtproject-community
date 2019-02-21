@@ -97,8 +97,11 @@ contract('RSRA', accounts => {
     let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie], 2, {
       from: alice
     });
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
+    res = await this.fundFactory.buildSecondStep({
+      from: alice
+    });
+    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
 
     res = await this.spaceToken.mint(alice, { from: minter });
     this.token1 = res.logs[0].args.tokenId.toNumber();

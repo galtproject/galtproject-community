@@ -23,6 +23,7 @@ import "./FundMultiSig.sol";
 contract FundStorage is Permissionable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
+  using ArraySet for ArraySet.Bytes32Set;
 
   string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
 
@@ -69,6 +70,7 @@ contract FundStorage is Permissionable {
 
   ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
+  ArraySet.Bytes32Set private _configKeys;
 
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
@@ -96,18 +98,28 @@ contract FundStorage is Permissionable {
     uint256 _deactivateFundRuleThreshold
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
-    _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);
+    _configKeys.add(IS_PRIVATE);
+    _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold); 
+    _configKeys.add(MANAGE_WL_THRESHOLD);
     _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_modifyConfigThreshold);
+    _configKeys.add(MODIFY_CONFIG_THRESHOLD);
     _config[NEW_MEMBER_THRESHOLD] = bytes32(_newMemberThreshold);
+    _configKeys.add(NEW_MEMBER_THRESHOLD);
     _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_expelMemberThreshold);
+    _configKeys.add(EXPEL_MEMBER_THRESHOLD);
     _config[FINE_MEMBER_THRESHOLD] = bytes32(_fineMemberThreshold);
+    _configKeys.add(FINE_MEMBER_THRESHOLD);
     _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_changeNameAndDescriptionThreshold);
+    _configKeys.add(NAME_AND_DESCRIPTION_THRESHOLD);
     _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_addFundRuleThreshold);
+    _configKeys.add(ADD_FUND_RULE_THRESHOLD);
     _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_deactivateFundRuleThreshold);
+    _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
     _config[_key] = _value;
+    _configKeys.addSilent(_key);
   }
 
   function approveMint(uint256 _spaceTokenId) external onlyRole(CONTRACT_NEW_MEMBER_MANAGER) {
@@ -216,6 +228,10 @@ contract FundStorage is Permissionable {
 
   function getWhiteListedContracts() external view returns(address[] memory) {
     return _whiteListedContracts.elements();
+  }
+
+  function getConfigKeys() external view returns(bytes32[] memory) {
+    return _configKeys.elements();
   }
 
   function getActiveFundRules() external view returns(uint256[] memory) {

@@ -101,14 +101,14 @@ contract('FineFundMemberProposal', accounts => {
     let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
       from: alice
     });
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
     this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
     this.fundControllerX = await FundController.at(res.logs[0].args.fundController);
 
     res = await this.fundFactory.buildSecondStep({ from: alice });
-    this.fineMemberProposalManagerX = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
+    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
 
-    await this.fundFactory.buildThirdStep({ from: alice });
+    res = await this.fundFactory.buildThirdStep({ from: alice });
+    this.fineMemberProposalManagerX = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
