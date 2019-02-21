@@ -95,7 +95,8 @@ contract FundStorage is Permissionable {
     uint256 _fineMemberThreshold,
     uint256 _changeNameAndDescriptionThreshold,
     uint256 _addFundRuleThreshold,
-    uint256 _deactivateFundRuleThreshold
+    uint256 _deactivateFundRuleThreshold,
+    uint256 _changeMsOwnersThreshold
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
@@ -115,6 +116,8 @@ contract FundStorage is Permissionable {
     _configKeys.add(ADD_FUND_RULE_THRESHOLD);
     _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_deactivateFundRuleThreshold);
     _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
+    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_changeMsOwnersThreshold);
+    _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {

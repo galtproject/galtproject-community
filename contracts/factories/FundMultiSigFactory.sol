@@ -31,5 +31,9 @@ contract FundMultiSigFactory is Ownable {
       _initialOwners,
       _required
     );
+
+    fundMultiSig.addRoleTo(msg.sender, "role_manager");
+    fundMultiSig.removeRoleFrom(address(this), "role_manager");
+
   }
 }

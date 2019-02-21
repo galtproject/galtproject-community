@@ -17,7 +17,7 @@ import "@galtproject/core/contracts/vendor/MultiSigWallet/MultiSigWallet.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 
 contract FundMultiSig is MultiSigWallet, Permissionable {
-  string public constant OWNER_MANAGER = "wl_manager";
+  string public constant OWNER_MANAGER = "owner_manager";
 
   event NewOwnerSet(uint256 count);
 
