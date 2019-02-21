@@ -111,7 +111,8 @@ contract('FineFundMemberProposal', accounts => {
     this.fineMemberProposalManagerX = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+    this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
+    await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {

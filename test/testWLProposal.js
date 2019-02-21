@@ -100,11 +100,12 @@ contract('WLProposal', accounts => {
     this.wlProposalManagerX = await WLProposalManager.at(res.logs[0].args.whiteListProposalManager);
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
+    this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });
 
   describe('pipeline', () => {
     it('should allow address addition to the WL', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let res = await this.wlProposalManagerX.propose(
         Action.ADD,
@@ -143,7 +144,7 @@ contract('WLProposal', accounts => {
     });
 
     it('should allow address removal from the WL', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let res = await this.wlProposalManagerX.propose(
         Action.REMOVE,

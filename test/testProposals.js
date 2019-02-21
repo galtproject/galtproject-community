@@ -117,12 +117,13 @@ contract('Proposals', accounts => {
     );
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
+    this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });
 
   describe('ModifyConfigProposal', () => {
     describe('proposal creation', () => {
       it('should allow user who has reputation creating a new proposal', async function() {
-        await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+        await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
           bytes32('modify_config_threshold'),
@@ -144,7 +145,7 @@ contract('Proposals', accounts => {
 
     describe('(Proposal contracts queries RSRA for addresses locked reputation share)', () => {
       it('should allow reverting a proposal if negative votes threshold is reached', async function() {
-        await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+        await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
           bytes32('modify_config_threshold'),
@@ -210,7 +211,7 @@ contract('Proposals', accounts => {
       });
 
       it('should allow approving proposal if positive votes threshold is reached', async function() {
-        await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+        await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
           bytes32('modify_config_threshold'),
@@ -279,7 +280,7 @@ contract('Proposals', accounts => {
 
   describe('SetAddFundRuleProposalManager', () => {
     it('should add a new active rule for ADD action', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let res = await this.addFundRuleProposalManagerX.propose(
         ActiveRuleAction.ADD,
