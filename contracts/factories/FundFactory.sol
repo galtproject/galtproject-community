@@ -34,6 +34,7 @@ import "./WLProposalManagerFactory.sol";
 import "./ChangeNameAndDescriptionProposalManagerFactory.sol";
 import "./AddFundRuleProposalManagerFactory.sol";
 import "./DeactivateFundRuleProposalManagerFactory.sol";
+import "./ChangeMultiSigOwnersProposalManagerFactory.sol";
 
 
 contract FundFactory is Ownable {
@@ -47,7 +48,6 @@ contract FundFactory is Ownable {
   event CreateFundSecondStep(
     address creator,
     address fundRsra,
-    address multiSig,
     address modifyConfigProposalManager,
     address newMemberProposalManager
   );
@@ -55,7 +55,6 @@ contract FundFactory is Ownable {
   event CreateFundThirdStep(
     address creator,
     address fineMemberProposalManager,
-    address multiSig,
     address whiteListProposalManager,
     address expelMemberProposalManager
   );
@@ -69,6 +68,11 @@ contract FundFactory is Ownable {
     address creator,
     address addFundRuleProposalManager,
     address deactivateFundRuleProposalManager
+  );
+
+  event CreateFundSixthStep(
+    address creator,
+    address changeMultiSigOwnersProposalManager
   );
 
   bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config_proposal");
@@ -98,13 +102,15 @@ contract FundFactory is Ownable {
   ChangeNameAndDescriptionProposalManagerFactory changeNameAndDescriptionProposalManagerFactory;
   AddFundRuleProposalManagerFactory addFundRuleProposalManagerFactory;
   DeactivateFundRuleProposalManagerFactory deactivateFundRuleProposalManagerFactory;
+  ChangeMultiSigOwnersProposalManagerFactory changeMultiSigOwnersProposalManagerFactory;
 
   enum Step {
     FIRST,
     SECOND,
     THIRD,
     FOURTH,
-    FIFTH
+    FIFTH,
+    SIXTH
   }
 
   struct FirstStepContracts {
@@ -132,7 +138,8 @@ contract FundFactory is Ownable {
     WLProposalManagerFactory _wlProposalManagerFactory,
     ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory,
     AddFundRuleProposalManagerFactory _addFundRuleProposalManagerFactory,
-    DeactivateFundRuleProposalManagerFactory _deactivateFundRuleProposalManagerFactory
+    DeactivateFundRuleProposalManagerFactory _deactivateFundRuleProposalManagerFactory,
+    ChangeMultiSigOwnersProposalManagerFactory _changeMultiSigOwnersProposalManagerFactory
   ) public {
     commission = 10 ether;
 
@@ -152,6 +159,7 @@ contract FundFactory is Ownable {
     changeNameAndDescriptionProposalManagerFactory = _changeNameAndDescriptionProposalManagerFactory;
     addFundRuleProposalManagerFactory = _addFundRuleProposalManagerFactory;
     deactivateFundRuleProposalManagerFactory = _deactivateFundRuleProposalManagerFactory;
+    changeMultiSigOwnersProposalManagerFactory = _changeMultiSigOwnersProposalManagerFactory;
   }
 
   function buildFirstStep(
@@ -163,7 +171,7 @@ contract FundFactory is Ownable {
     external
     returns (FundMultiSig fundMultiSig, FundStorage fundStorage, FundController fundController)
   {
-    require(_thresholds.length == 8, "Thresholds length should be 8");
+    require(_thresholds.length == 9, "Thresholds length should be 9");
 
     FirstStepContracts storage c = _firstStepContracts[msg.sender];
     require(c.currentStep == Step.FIRST, "Requires first step");
@@ -194,9 +202,8 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundStorage _fundStorage = c.fundStorage;
-    FundMultiSig _fundMultiSig = c.fundMultiSig;
     FundController _fundController = c.fundController;
-      
+
     c.rsra = rsraFactory.build(spaceToken, spaceLockerRegistry, _fundStorage);
 
     ModifyConfigProposalManager modifyConfigProposalManager = modifyConfigProposalManagerFactory.build(c.rsra, _fundStorage);
@@ -209,7 +216,7 @@ contract FundFactory is Ownable {
 
     _fundStorage.addRoleTo(address(modifyConfigProposalManager), _fundStorage.CONTRACT_CONFIG_MANAGER());
     _fundStorage.addRoleTo(address(newMemberProposalManager), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(address(c.rsra), _fundStorage.CONTRACT_RSRA());
+    _fundStorage.addRoleTo(address(c.rsra), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
     _fundStorage.addRoleTo(address(_fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
 
     c.currentStep = Step.THIRD;
@@ -217,7 +224,6 @@ contract FundFactory is Ownable {
     emit CreateFundSecondStep(
       msg.sender,
       address(c.rsra),
-      address(_fundMultiSig),
       address(modifyConfigProposalManager),
       address(newMemberProposalManager)
     );
@@ -249,7 +255,6 @@ contract FundFactory is Ownable {
     emit CreateFundThirdStep(
       msg.sender,
       address(fineMemberProposalManager),
-      address(c.fundMultiSig),
       address(wlProposalManager),
       address(expelMemberProposalManager)
     );
@@ -284,7 +289,7 @@ contract FundFactory is Ownable {
 
   function buildFifthStep(uint256[] calldata _initialSpaceTokensToApprove) external {
     FirstStepContracts storage c = _firstStepContracts[msg.sender];
-    require(c.currentStep == Step.FIFTH, "Requires fourth step");
+    require(c.currentStep == Step.FIFTH, "Requires fifth step");
 
     FundStorage _fundStorage = c.fundStorage;
 
@@ -300,17 +305,39 @@ contract FundFactory is Ownable {
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
+
     for (uint i = 0; i < _initialSpaceTokensToApprove.length; i++) {
       _fundStorage.approveMint(_initialSpaceTokensToApprove[i]);
     }
+
     _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
-    
-    delete _firstStepContracts[msg.sender];
+
+    c.currentStep = Step.SIXTH;
 
     emit CreateFundFifthStep(
       msg.sender,
       address(addFundRuleProposalManager),
       address(deactivateFundRuleProposalManager)
+    );
+  }
+
+  function buildSixthStep() external {
+    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+    require(c.currentStep == Step.SIXTH, "Requires sixth step");
+
+    ChangeMultiSigOwnersProposalManager changeMultiSigOwnersProposalManager = changeMultiSigOwnersProposalManagerFactory.build(
+      c.fundMultiSig,
+      c.rsra,
+      c.fundStorage
+    );
+
+    c.fundMultiSig.addRoleTo(address(changeMultiSigOwnersProposalManager), c.fundMultiSig.OWNER_MANAGER());
+
+    delete _firstStepContracts[msg.sender];
+
+    emit CreateFundSixthStep(
+      msg.sender,
+      address(changeMultiSigOwnersProposalManager)
     );
   }
 
@@ -322,7 +349,7 @@ contract FundFactory is Ownable {
     commission = _commission;
   }
 
-  function getMyLastCreatedContracts() external returns (
+  function getMyLastCreatedContracts() external view returns (
     Step currentStep,
     IRSRA rsra,
     FundMultiSig fundMultiSig,
@@ -339,7 +366,7 @@ contract FundFactory is Ownable {
     );
   }
 
-  function getCurrentStep(address _creator) external returns (Step) {
+  function getCurrentStep(address _creator) external view returns (Step) {
     return _firstStepContracts[_creator].currentStep;
   }
 }

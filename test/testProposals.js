@@ -2,28 +2,8 @@ const galt = require('@galtproject/utils');
 
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
-const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
-const FundControllerFactory = artifacts.require('./FundControllerFactory.sol');
-const MockRSRA = artifacts.require('./MockRSRA.sol');
-const MockRSRAFactory = artifacts.require('./MockRSRAFactory.sol');
-const FundFactory = artifacts.require('./FundFactory.sol');
-const FundStorage = artifacts.require('./FundStorage.sol');
 
-const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalManagerFactory.sol');
-const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
-const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
-const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
-const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
-const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
-  './ChangeNameAndDescriptionProposalManagerFactory.sol'
-);
-const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
-const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
-const MockModifyConfigProposalManager = artifacts.require('./MockModifyConfigProposalManager.sol');
-const AddFundRuleProposalManager = artifacts.require('./AddFundRuleProposalManager.sol');
-const DeactivateFundRuleProposalManager = artifacts.require('./DeactivateFundRuleProposalManager.sol');
-
+const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -44,77 +24,43 @@ const ActiveRuleAction = {
 };
 
 contract('Proposals', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, spaceLockerRegistryAddress] = accounts;
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, george, spaceLockerRegistryAddress] = accounts;
 
   beforeEach(async function() {
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
     this.galtToken = await GaltToken.new({ from: coreTeam });
 
-    // fund factory contracts
-    this.rsraFactory = await MockRSRAFactory.new();
-    this.fundStorageFactory = await FundStorageFactory.new();
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
-    this.fundControllerFactory = await FundControllerFactory.new();
-
-    this.modifyConfigProposalManagerFactory = await MockModifyConfigProposalManagerFactory.new();
-    this.newMemberProposalManagerFactory = await NewMemberProposalManagerFactory.new();
-    this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
-    this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
-    this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
-    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
-    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
-    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
-
-    this.fundFactory = await FundFactory.new(
-      this.galtToken.address,
-      this.spaceToken.address,
-      spaceLockerRegistryAddress,
-      this.rsraFactory.address,
-      this.fundMultiSigFactory.address,
-      this.fundStorageFactory.address,
-      this.fundControllerFactory.address,
-      this.modifyConfigProposalManagerFactory.address,
-      this.newMemberProposalManagerFactory.address,
-      this.fineMemberProposalManagerFactory.address,
-      this.expelMemberProposalManagerFactory.address,
-      this.wlProposalManagerFactory.address,
-      this.changeNameAndDescriptionProposalManagerFactory.address,
-      this.addFundRuleProposalManagerFactory.address,
-      this.deactivateFundRuleProposalManagerFactory.address,
-      { from: coreTeam }
-    );
-
     // assign roles
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
+    // fund factory contracts
+    const fundFactory = await deployFundFactory(
+      this.galtToken.address,
+      this.spaceToken.address,
+      spaceLockerRegistryAddress,
+      alice
+    );
+
     // build fund
-    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
-      from: alice
-    });
-    // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
-    this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
-
-    res = await this.fundFactory.buildSecondStep({ from: alice });
-    // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
-    this.modifyConfigProposalManagerX = await MockModifyConfigProposalManager.at(
-      res.logs[0].args.modifyConfigProposalManager
+    await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
+    const fund = await buildFund(
+      fundFactory,
+      alice,
+      false,
+      [60, 50, 60, 60, 60, 60, 60, 60, 60],
+      [bob, charlie, dan],
+      2
     );
 
-    await this.fundFactory.buildThirdStep({ from: alice });
-    // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
-
-    res = await this.fundFactory.buildFourthStep('MyFund', 'my awesome fund', { from: alice });
-    // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
-
-    res = await this.fundFactory.buildFifthStep([], { from: alice });
-    // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
-
-    this.addFundRuleProposalManagerX = await AddFundRuleProposalManager.at(res.logs[0].args.addFundRuleProposalManager);
-    this.deactivateFundRuleProposalManagerX = await DeactivateFundRuleProposalManager.at(
-      res.logs[0].args.deactivateFundRuleProposalManager
-    );
+    this.fundStorageX = fund.fundStorage;
+    this.fundControllerX = fund.fundController;
+    this.fundMultiSig = fund.fundMultiSig;
+    this.rsraX = fund.fundRsra;
+    this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
+    this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
+    this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
+    this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
+    this.changeMultiSigOwnersProposalManager = fund.changeMultiSigOwnersProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -416,6 +362,67 @@ contract('Proposals', accounts => {
       assert.equal(res.id, 1);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
       assert.equal(res.description, 'Do that');
+    });
+  });
+
+  describe('ChangeMultiSigOwnersProposalManager', () => {
+    it('should be able to change the list of MultiSig owners', async function() {
+      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+
+      let res = await this.changeMultiSigOwnersProposalManager.propose([alice, frank, george], 'Have a new list', {
+        from: bob
+      });
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: bob });
+      await this.changeMultiSigOwnersProposalManager.nay(proposalId, { from: charlie });
+
+      res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [bob]);
+      assert.sameMembers(res.nays, [charlie]);
+
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      res = await this.changeMultiSigOwnersProposalManager.getAyeShare(proposalId);
+      assert.equal(res, 20);
+      res = await this.changeMultiSigOwnersProposalManager.getNayShare(proposalId);
+      assert.equal(res, 20);
+
+      // Deny double-vote
+      await assertRevert(this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: bob }));
+      await assertRevert(this.changeMultiSigOwnersProposalManager.triggerReject(proposalId, { from: dan }));
+
+      await this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: dan });
+      await this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: eve });
+
+      res = await this.changeMultiSigOwnersProposalManager.getAyeShare(proposalId);
+      assert.equal(res, 60);
+      res = await this.changeMultiSigOwnersProposalManager.getNayShare(proposalId);
+      assert.equal(res, 20);
+
+      await this.changeMultiSigOwnersProposalManager.triggerApprove(proposalId, { from: dan });
+
+      res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
+      assert.equal(res.status, ProposalStatus.APPROVED);
+
+      res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
+      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+
+      // verify value changed
+      res = await this.fundMultiSig.getOwners();
+      assert.sameMembers(res, [alice, frank, george]);
     });
   });
 });

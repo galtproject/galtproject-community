@@ -14,26 +14,24 @@
 pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../FundStorage.sol";
 
 // This contract will be included into the current one
-import "../FundMultiSig.sol";
+import "../proposals/ChangeMultiSigOwnersProposalManager.sol";
 
 
-contract FundMultiSigFactory is Ownable {
-  function build(
-    address[] calldata _initialOwners,
-    uint256 _required
-  )
+contract ChangeMultiSigOwnersProposalManagerFactory is Ownable {
+  function build(FundMultiSig _multiSig, IRSRA _rsra, FundStorage _fundStorage)
     external
-    returns (FundMultiSig fundMultiSig)
+    returns (ChangeMultiSigOwnersProposalManager changeNameAndDescriptionProposalManager)
   {
-    fundMultiSig = new FundMultiSig(
-      _initialOwners,
-      _required
+    changeNameAndDescriptionProposalManager = new ChangeMultiSigOwnersProposalManager(
+      _multiSig,
+      _rsra,
+      _fundStorage
     );
 
-    fundMultiSig.addRoleTo(msg.sender, "role_manager");
-    fundMultiSig.removeRoleFrom(address(this), "role_manager");
-
+    changeNameAndDescriptionProposalManager.addRoleTo(msg.sender, "role_manager");
+    changeNameAndDescriptionProposalManager.removeRoleFrom(address(this), "role_manager");
   }
 }

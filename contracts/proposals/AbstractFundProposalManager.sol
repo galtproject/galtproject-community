@@ -20,6 +20,7 @@ import "@galtproject/core/contracts/multisig/proposals/AbstractProposalManager.s
 import "../FundStorage.sol";
 import "../interfaces/IRSRA.sol";
 
+
 contract AbstractFundProposalManager is AbstractProposalManager {
   FundStorage fundStorage;
   IRSRA rsra;

@@ -13,29 +13,41 @@
 
 pragma solidity 0.5.3;
 
-import "../FundStorage.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "./AbstractFundProposalManager.sol";
+import "../FundStorage.sol";
+import "../FundMultiSig.sol";
 
 
-contract NewMemberProposalManager is AbstractFundProposalManager {
+contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
   struct Proposal {
-    uint256 spaceTokenId;
     string description;
-    address sender;
+    address[] newOwners;
   }
 
   mapping(uint256 => Proposal) private _proposals;
-  
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
+
+  FundMultiSig multiSig;
+
+  constructor(
+    FundMultiSig _multiSig,
+    IRSRA _rsra,
+    FundStorage _fundStorage
+  )
+    public
+    AbstractFundProposalManager(_rsra, _fundStorage)
+  {
+    assert(address(_multiSig) != address(0));
+
+    multiSig = _multiSig;
   }
 
-  function propose(uint256 _spaceTokenId, string calldata _description) external {
+  function propose(address[] calldata _newOwners, string calldata _description) external {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      spaceTokenId: _spaceTokenId,
-      description: _description,
-      sender: msg.sender
+      newOwners: _newOwners,
+      description: _description
     });
 
     emit NewProposal(id, msg.sender);
@@ -49,16 +61,16 @@ contract NewMemberProposalManager is AbstractFundProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    fundStorage.approveMint(p.spaceTokenId);
+    multiSig.setOwners(p.newOwners);
   }
 
   function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.NEW_MEMBER_THRESHOLD()));
+    return uint256(fundStorage.getConfigValue(fundStorage.CHANGE_MS_OWNERS_THRESHOLD()));
   }
 
-  function getProposal(uint256 _proposalId) external view returns (uint256 spaceTokenId, string memory description, address sender) {
+  function getProposal(uint256 _proposalId) external view returns (address[] memory newOwners, string memory description) {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.spaceTokenId, p.description, p.sender);
+    return (p.newOwners, p.description);
   }
 }

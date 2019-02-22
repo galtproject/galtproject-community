@@ -17,12 +17,15 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
+import "./FundMultiSig.sol";
 
 
 contract FundStorage is Permissionable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
+
+  string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
 
   string public constant CONTRACT_WHITELIST_MANAGER = "wl_manager";
   string public constant CONTRACT_CONFIG_MANAGER = "config_manager";
@@ -33,7 +36,10 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
   string public constant CONTRACT_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
   string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
-  string public constant CONTRACT_RSRA = "rsra";
+
+  bytes32 public constant CONTRACT_CORE_RSRA = "contract_core_rsra";
+  bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
+  bytes32 public constant CONTRACT_CORE_CONTROLLER = "contract_core_controller";
 
   bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
   bytes32 public constant MODIFY_CONFIG_THRESHOLD = bytes32("modify_config_threshold");
@@ -43,6 +49,7 @@ contract FundStorage is Permissionable {
   bytes32 public constant NAME_AND_DESCRIPTION_THRESHOLD = bytes32("name_and_description_threshold");
   bytes32 public constant ADD_FUND_RULE_THRESHOLD = bytes32("add_fund_rule_threshold");
   bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
+  bytes32 public constant CHANGE_MS_OWNERS_THRESHOLD = bytes32("change_ms_owners_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -88,7 +95,8 @@ contract FundStorage is Permissionable {
     uint256 _fineMemberThreshold,
     uint256 _changeNameAndDescriptionThreshold,
     uint256 _addFundRuleThreshold,
-    uint256 _deactivateFundRuleThreshold
+    uint256 _deactivateFundRuleThreshold,
+    uint256 _changeMsOwnersThreshold
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
@@ -108,6 +116,8 @@ contract FundStorage is Permissionable {
     _configKeys.add(ADD_FUND_RULE_THRESHOLD);
     _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_deactivateFundRuleThreshold);
     _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
+    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_changeMsOwnersThreshold);
+    _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -131,7 +141,7 @@ contract FundStorage is Permissionable {
     uint256 _amount
   )
     external
-    onlyRole(CONTRACT_RSRA)
+    onlyRole(DECREMENT_TOKEN_REPUTATION_ROLE)
     returns (bool completelyBurned)
   {
     require(_amount > 0 && _amount <= _expelledTokenReputation[_spaceTokenId], "Invalid reputation amount");

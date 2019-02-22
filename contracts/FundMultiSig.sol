@@ -14,12 +14,13 @@
 pragma solidity 0.5.3;
 
 import "@galtproject/core/contracts/vendor/MultiSigWallet/MultiSigWallet.sol";
+import "@galtproject/libs/contracts/traits/Permissionable.sol";
 
-contract FundMultiSig is MultiSigWallet {
-  modifier forbidden() {
-    assert(false);
-    _;
-  }
+
+contract FundMultiSig is MultiSigWallet, Permissionable {
+  string public constant OWNER_MANAGER = "owner_manager";
+
+  event NewOwnerSet(uint256 count);
 
   constructor(
     address[] memory _initialOwners,
@@ -30,10 +31,19 @@ contract FundMultiSig is MultiSigWallet {
   {
   }
 
+  modifier forbidden() {
+    assert(false);
+    _;
+  }
+
   function addOwner(address owner) public forbidden {}
   function removeOwner(address owner) public forbidden {}
   function replaceOwner(address owner, address newOwner) public forbidden {}
   function changeRequirement(uint _required) public forbidden {}
-  // TODO: ensure the constructor is forbidden
 
+  function setOwners(address[] calldata _newOwners) external onlyRole(OWNER_MANAGER) {
+    owners = _newOwners;
+
+    emit NewOwnerSet(_newOwners.length);
+  }
 }
