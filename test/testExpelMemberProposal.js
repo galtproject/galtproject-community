@@ -120,7 +120,8 @@ contract('ExpelFundMemberProposal', accounts => {
     this.expelMemberProposalManagerX = await ExpelMemberProposalManager.at(res.logs[0].args.expelMemberProposalManager);
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    await this.rsraX.mintAll(this.beneficiaries, 300, { from: alice });
+    this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
+    await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
