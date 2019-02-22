@@ -55,7 +55,6 @@ contract FundFactory is Ownable {
   event CreateFundThirdStep(
     address creator,
     address fineMemberProposalManager,
-    address multiSig,
     address whiteListProposalManager,
     address expelMemberProposalManager
   );
@@ -203,7 +202,6 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundStorage _fundStorage = c.fundStorage;
-    FundMultiSig _fundMultiSig = c.fundMultiSig;
     FundController _fundController = c.fundController;
 
     c.rsra = rsraFactory.build(spaceToken, spaceLockerRegistry, _fundStorage);
@@ -257,7 +255,6 @@ contract FundFactory is Ownable {
     emit CreateFundThirdStep(
       msg.sender,
       address(fineMemberProposalManager),
-      address(c.fundMultiSig),
       address(wlProposalManager),
       address(expelMemberProposalManager)
     );

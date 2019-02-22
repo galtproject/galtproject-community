@@ -16,6 +16,7 @@ pragma solidity 0.5.3;
 import "../FundStorage.sol";
 import "./AbstractFundProposalManager.sol";
 
+
 contract NewMemberProposalManager is AbstractFundProposalManager {
   struct Proposal {
     uint256 spaceTokenId;

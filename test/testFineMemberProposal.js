@@ -3,29 +3,9 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const SpaceLockerRegistry = artifacts.require('./SpaceLockerRegistry.sol');
 const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
 const SpaceLocker = artifacts.require('./SpaceLocker.sol');
-const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
-const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
-const FundControllerFactory = artifacts.require('./FundControllerFactory.sol');
 const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
-const MockRSRA = artifacts.require('./MockRSRA.sol');
-const MockRSRAFactory = artifacts.require('./MockRSRAFactory.sol');
-const FundFactory = artifacts.require('./FundFactory.sol');
-const FundStorage = artifacts.require('./FundStorage.sol');
-const FundController = artifacts.require('./FundController.sol');
 
-const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalManagerFactory.sol');
-const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
-const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
-const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
-const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
-const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
-  './ChangeNameAndDescriptionProposalManagerFactory.sol'
-);
-const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
-const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
-
-const FineMemberProposalManager = artifacts.require('./FineMemberProposalManager.sol');
-
+const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -55,40 +35,6 @@ contract('FineFundMemberProposal', accounts => {
       { from: coreTeam }
     );
 
-    // fund factory contracts
-    this.rsraFactory = await MockRSRAFactory.new();
-    this.fundStorageFactory = await FundStorageFactory.new();
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
-    this.fundControllerFactory = await FundControllerFactory.new();
-
-    this.modifyConfigProposalManagerFactory = await MockModifyConfigProposalManagerFactory.new();
-    this.newMemberProposalManagerFactory = await NewMemberProposalManagerFactory.new();
-    this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
-    this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
-    this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
-    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
-    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
-    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
-
-    this.fundFactory = await FundFactory.new(
-      this.galtToken.address,
-      this.spaceToken.address,
-      this.spaceLockerRegistry.address,
-      this.rsraFactory.address,
-      this.fundMultiSigFactory.address,
-      this.fundStorageFactory.address,
-      this.fundControllerFactory.address,
-      this.modifyConfigProposalManagerFactory.address,
-      this.newMemberProposalManagerFactory.address,
-      this.fineMemberProposalManagerFactory.address,
-      this.expelMemberProposalManagerFactory.address,
-      this.wlProposalManagerFactory.address,
-      this.changeNameAndDescriptionProposalManagerFactory.address,
-      this.addFundRuleProposalManagerFactory.address,
-      this.deactivateFundRuleProposalManagerFactory.address,
-      { from: coreTeam }
-    );
-
     // assign roles
     this.spaceToken.addRoleTo(minter, 'minter', { from: coreTeam });
     this.spaceLockerRegistry.addRoleTo(this.spaceLockerFactory.address, await this.spaceLockerRegistry.ROLE_FACTORY(), {
@@ -96,19 +42,29 @@ contract('FineFundMemberProposal', accounts => {
     });
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
+    // fund factory contracts
+    const fundFactory = await deployFundFactory(
+      this.galtToken.address,
+      this.spaceToken.address,
+      this.spaceLockerRegistry.address,
+      alice
+    );
+
     // build fund
-    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
-      from: alice
-    });
-    this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
-    this.fundControllerX = await FundController.at(res.logs[0].args.fundController);
+    await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
+    const fund = await buildFund(
+      fundFactory,
+      alice,
+      false,
+      [60, 50, 60, 60, 60, 60, 60, 60, 60],
+      [bob, charlie, dan],
+      2
+    );
 
-    res = await this.fundFactory.buildSecondStep({ from: alice });
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
-
-    res = await this.fundFactory.buildThirdStep({ from: alice });
-    this.fineMemberProposalManagerX = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
+    this.fundStorageX = fund.fundStorage;
+    this.fundControllerX = fund.fundController;
+    this.rsraX = fund.fundRsra;
+    this.fineMemberProposalManagerX = fund.fineMemberProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];

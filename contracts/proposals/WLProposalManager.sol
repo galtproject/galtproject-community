@@ -16,6 +16,7 @@ pragma solidity 0.5.3;
 import "../FundStorage.sol";
 import "./AbstractFundProposalManager.sol";
 
+
 contract WLProposalManager is AbstractFundProposalManager {
   enum Action {
     ADD,
@@ -78,7 +79,18 @@ contract WLProposalManager is AbstractFundProposalManager {
     }
   }
 
-  function getProposal(uint256 _proposalId) external view returns (address contractAddress, bytes32 contractType, Action action, string memory description) {
+  function getProposal(
+    uint256 _proposalId
+  )
+    external
+    view
+    returns (
+      address contractAddress,
+      bytes32 contractType,
+      Action action,
+      string memory description
+    )
+  {
     Proposal storage p = _proposals[_proposalId];
 
     return (p.contractAddress, p.contractType, p.action, p.description);

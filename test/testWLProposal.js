@@ -1,27 +1,8 @@
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
-const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
-const FundControllerFactory = artifacts.require('./FundControllerFactory.sol');
-const MockRSRA = artifacts.require('./MockRSRA.sol');
-const MockRSRAFactory = artifacts.require('./MockRSRAFactory.sol');
-const FundFactory = artifacts.require('./FundFactory.sol');
-const FundStorage = artifacts.require('./FundStorage.sol');
-
-const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalManagerFactory.sol');
-const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
-const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
-const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
-const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
-const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
-  './ChangeNameAndDescriptionProposalManagerFactory.sol'
-);
-const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
-const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
-
-const WLProposalManager = artifacts.require('./WLProposalManager.sol');
 
 const galt = require('@galtproject/utils');
+const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -48,57 +29,33 @@ contract('WLProposal', accounts => {
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
     this.galtToken = await GaltToken.new({ from: coreTeam });
 
-    // fund factory contracts
-    this.rsraFactory = await MockRSRAFactory.new();
-    this.fundStorageFactory = await FundStorageFactory.new();
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
-    this.fundControllerFactory = await FundControllerFactory.new();
-
-    this.modifyConfigProposalManagerFactory = await MockModifyConfigProposalManagerFactory.new();
-    this.newMemberProposalManagerFactory = await NewMemberProposalManagerFactory.new();
-    this.fineMemberProposalManagerFactory = await FineMemberProposalManagerFactory.new();
-    this.expelMemberProposalManagerFactory = await ExpelMemberProposalManagerFactory.new();
-    this.wlProposalManagerFactory = await WLProposalManagerFactory.new();
-    this.changeNameAndDescriptionProposalManagerFactory = await ChangeNameAndDescriptionProposalManagerFactory.new();
-    this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
-    this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
-
-    this.fundFactory = await FundFactory.new(
-      this.galtToken.address,
-      this.spaceToken.address,
-      spaceLockerRegistryAddress,
-      this.rsraFactory.address,
-      this.fundMultiSigFactory.address,
-      this.fundStorageFactory.address,
-      this.fundControllerFactory.address,
-      this.modifyConfigProposalManagerFactory.address,
-      this.newMemberProposalManagerFactory.address,
-      this.fineMemberProposalManagerFactory.address,
-      this.expelMemberProposalManagerFactory.address,
-      this.wlProposalManagerFactory.address,
-      this.changeNameAndDescriptionProposalManagerFactory.address,
-      this.addFundRuleProposalManagerFactory.address,
-      this.deactivateFundRuleProposalManagerFactory.address,
-      { from: coreTeam }
-    );
-
     // assign roles
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
+    // fund factory contracts
+    const fundFactory = await deployFundFactory(
+      this.galtToken.address,
+      this.spaceToken.address,
+      spaceLockerRegistryAddress,
+      alice
+    );
+
     // build fund
-    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    let res = await this.fundFactory.buildFirstStep(false, [60, 50, 60, 60, 60, 60, 60, 60], [bob, charlie, dan], 2, {
-      from: alice
-    });
-    this.fundStorageX = await FundStorage.at(res.logs[0].args.fundStorage);
+    await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
+    const fund = await buildFund(
+      fundFactory,
+      alice,
+      false,
+      [60, 50, 60, 60, 60, 60, 60, 60, 60],
+      [bob, charlie, dan],
+      2
+    );
 
-    res = await this.fundFactory.buildSecondStep({ from: alice });
-    this.rsraX = await MockRSRA.at(res.logs[0].args.fundRsra);
-    this.modifyConfigProposalManagerAddress = res.logs[0].args.modifyConfigProposalManager;
-
-    res = await this.fundFactory.buildThirdStep({ from: alice });
-    this.wlProposalManagerX = await WLProposalManager.at(res.logs[0].args.whiteListProposalManager);
-
+    this.fundStorageX = fund.fundStorage;
+    this.fundControllerX = fund.fundController;
+    this.rsraX = fund.fundRsra;
+    this.wlProposalManagerX = fund.whiteListProposalManager;
+    this.modifyConfigProposalManagerAddress = fund.modifyConfigProposalManager.address;
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });

@@ -16,6 +16,7 @@ pragma solidity 0.5.3;
 import "@galtproject/core/contracts/vendor/MultiSigWallet/MultiSigWallet.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 
+
 contract FundMultiSig is MultiSigWallet, Permissionable {
   string public constant OWNER_MANAGER = "owner_manager";
 
