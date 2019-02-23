@@ -24,6 +24,13 @@ import "./FundStorage.sol";
 contract FundController is Permissionable {
   using ArraySet for ArraySet.AddressSet;
 
+  enum Currency {
+    ETH,
+    ERC20
+  }
+
+  address public ETH_CONTRACT = 0x0000000000000000000000000000000000000001;
+
   IERC20 galtToken;
   FundMultiSig multiSig;
   FundStorage fundStorage;
@@ -38,13 +45,33 @@ contract FundController is Permissionable {
     multiSig = _multiSig;
   }
 
-  function payFine(uint256 _spaceTokenId, uint256 _amount) external {
-    uint256 expectedPayment = fundStorage.getFineAmount(_spaceTokenId);
+  function payFine(uint256 _spaceTokenId, Currency _currency, uint256 _amount, address _erc20Contract) external payable {
+    address erc20Contract = _erc20Contract;
+    uint256 amount = _amount;
+
+    // ERC20
+    if (_amount > 0) {
+      require(msg.value == 0, "Could not accept both ETH and GALT");
+      require(_currency == Currency.ERC20, "Could not accept both ETH and GALT");
+    // ETH
+    } else {
+      require(msg.value > 0, "Could not accept both ETH and GALT");
+      require(_currency == Currency.ETH, "Could not accept both ETH and GALT");
+      amount = msg.value;
+      erc20Contract = ETH_CONTRACT;
+    }
+
+    uint256 expectedPayment = fundStorage.getFineAmount(_spaceTokenId, erc20Contract);
 
     require(expectedPayment > 0, "Fine amount is 0");
-    require(expectedPayment >= _amount, "Amount for transfer exceeds fine value");
+    require(expectedPayment >= amount, "Amount for transfer exceeds fine value");
 
-    galtToken.transferFrom(msg.sender, address(multiSig), _amount);
-    fundStorage.decrementFine(_spaceTokenId, _amount);
+    if (_currency == Currency.ERC20) {
+      IERC20(erc20Contract).transferFrom(msg.sender, address(multiSig), amount);
+    } else {
+      address(multiSig).transfer(amount);
+    }
+
+    fundStorage.decrementFine(_spaceTokenId, erc20Contract, amount);
   }
 }

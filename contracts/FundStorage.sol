@@ -65,6 +65,12 @@ contract FundStorage is Permissionable {
     string description;
   }
 
+  struct MemberFines {
+    uint256 total;
+    // Assume ETH is address(0x1)
+    mapping(address => uint256) tokenFines;
+  }
+
   string public name;
   string public description;
 
@@ -75,8 +81,6 @@ contract FundStorage is Permissionable {
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
   mapping(uint256 => bool) private _mintApprovals;
-  // spaceTokenId => amount
-  mapping(uint256 => uint256) private _fines;
   // spaceTokenId => isExpelled
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
@@ -85,6 +89,8 @@ contract FundStorage is Permissionable {
   mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
+  // spaceTokenId => amount
+  mapping(uint256 => MemberFines) private _fines;
 
   constructor (
     bool _isPrivate,
@@ -151,12 +157,14 @@ contract FundStorage is Permissionable {
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
-  function incrementFine(uint256 _spaceTokenId, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
-    _fines[_spaceTokenId] += _amount;
+  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+    _fines[_spaceTokenId].tokenFines[_contract] += _amount;
+    _fines[_spaceTokenId].total += _amount;
   }
 
-  function decrementFine(uint256 _spaceTokenId, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_DECREMENT_MANAGER) {
-    _fines[_spaceTokenId] -= _amount;
+  function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_DECREMENT_MANAGER) {
+    _fines[_spaceTokenId].tokenFines[_contract] -= _amount;
+    _fines[_spaceTokenId].total -= _amount;
   }
 
   function addWhiteListedContract(
@@ -221,8 +229,12 @@ contract FundStorage is Permissionable {
     return _config[_key];
   }
 
-  function getFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
-    return _fines[_spaceTokenId];
+  function getFineAmount(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256) {
+    return _fines[_spaceTokenId].tokenFines[_erc20Contract];
+  }
+
+  function getTotalFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
+    return _fines[_spaceTokenId].total;
   }
 
   function getExpelledToken(uint256 _spaceTokenId) external view returns (bool isExpelled, uint256 amount) {
