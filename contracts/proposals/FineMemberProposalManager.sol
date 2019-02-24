@@ -42,7 +42,9 @@ contract FineMemberProposalManager is AbstractFundProposalManager {
     uint256 _amount,
     address _erc20Contract,
     string calldata _description
-  ) external {
+  )
+    external
+  {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
