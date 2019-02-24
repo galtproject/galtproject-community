@@ -45,18 +45,18 @@ contract FundController is Permissionable {
     multiSig = _multiSig;
   }
 
-  function payFine(uint256 _spaceTokenId, Currency _currency, uint256 _amount, address _erc20Contract) external payable {
+  function payFine(uint256 _spaceTokenId, Currency _currency, uint256 _erc20Amount, address _erc20Contract) external payable {
     address erc20Contract = _erc20Contract;
-    uint256 amount = _amount;
+    uint256 amount = _erc20Amount;
 
     // ERC20
-    if (_amount > 0) {
+    if (_currency == Currency.ERC20) {
       require(msg.value == 0, "Could not accept both ETH and GALT");
-      require(_currency == Currency.ERC20, "Could not accept both ETH and GALT");
+      require(_erc20Amount > 0, "Missing fine amount");
     // ETH
     } else {
-      require(msg.value > 0, "Could not accept both ETH and GALT");
-      require(_currency == Currency.ETH, "Could not accept both ETH and GALT");
+      require(_erc20Amount == 0, "Amount should be explicitly set to 0");
+      require(msg.value > 0, "Expect ETH payment");
       amount = msg.value;
       erc20Contract = ETH_CONTRACT;
     }
