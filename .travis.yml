@@ -18,3 +18,10 @@ install:
 script:
   - npm run eslint && npm run ethlint && npm run test
 
+notifications:
+  webhooks:
+    urls:
+      - "https://scalar.vector.im/api/neb/services/hooks/dHJhdmlzLWNpLyU0MG5pa2MlM0FtYXRyaXgub3JnLyUyMW5WVXBNWEN6VUhTY0tEQnNNQSUzQW1hdHJpeC5vcmc"
+    on_success: change  # always|never|change
+    on_failure: always
+    on_start: never
