@@ -69,6 +69,7 @@ contract FundStorage is Permissionable {
     uint256 total;
     // Assume ETH is address(0x1)
     mapping(address => uint256) tokenFines;
+    mapping(address => uint256[]) proposals;
   }
 
   string public name;
@@ -77,6 +78,8 @@ contract FundStorage is Permissionable {
   ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
+  ArraySet.Uint256Set private _finesSpaceTokens;
+  mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
@@ -89,7 +92,7 @@ contract FundStorage is Permissionable {
   mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
-  // spaceTokenId => amount
+  // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
 
   constructor (
@@ -157,14 +160,27 @@ contract FundStorage is Permissionable {
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
-  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount, uint256 _proposalId) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+    _fines[_spaceTokenId].proposals[_contract].push(_proposalId);
+
     _fines[_spaceTokenId].tokenFines[_contract] += _amount;
     _fines[_spaceTokenId].total += _amount;
+    
+    _finesSpaceTokens.addSilent(_spaceTokenId);
+    _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
   }
 
   function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_DECREMENT_MANAGER) {
     _fines[_spaceTokenId].tokenFines[_contract] -= _amount;
     _fines[_spaceTokenId].total -= _amount;
+    
+    if (_fines[_spaceTokenId].tokenFines[_contract] == 0) {
+      _finesContractsBySpaceToken[_spaceTokenId].remove(_contract);
+    }
+
+    if (_fines[_spaceTokenId].total == 0) {
+      _finesSpaceTokens.remove(_spaceTokenId);
+    }
   }
 
   function addWhiteListedContract(
@@ -233,6 +249,10 @@ contract FundStorage is Permissionable {
     return _fines[_spaceTokenId].tokenFines[_erc20Contract];
   }
 
+  function getFineProposals(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256[] memory) {
+    return _fines[_spaceTokenId].proposals[_erc20Contract];
+  }
+
   function getTotalFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
     return _fines[_spaceTokenId].total;
   }
@@ -255,6 +275,22 @@ contract FundStorage is Permissionable {
 
   function getActiveFundRulesCount() external view returns(uint256) {
     return _activeFundRules.size();
+  }
+
+  function getFineSpaceTokens() external view returns(uint256[] memory) {
+    return _finesSpaceTokens.elements();
+  }
+
+  function getFineSpaceTokensCount() external view returns(uint256) {
+    return _finesSpaceTokens.size();
+  }
+
+  function getFineContractsBySpaceToken(uint256 _spaceTokenId) external view returns(address[] memory) {
+    return _finesContractsBySpaceToken[_spaceTokenId].elements();
+  }
+
+  function getFineContractsBySpaceTokenCount(uint256 _spaceTokenId) external view returns(uint256) {
+    return _finesContractsBySpaceToken[_spaceTokenId].size();
   }
 
   function getProposalContract(
