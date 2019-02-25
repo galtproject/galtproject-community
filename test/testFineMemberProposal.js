@@ -170,6 +170,9 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getFineProposals(this.token1, this.galtToken.address);
       assert.deepEqual(res.map(id => id.toString(10)), [proposalId.toString(10)]);
 
+      res = await this.fundStorageX.getFineProposalsManagers(this.token1, this.galtToken.address);
+      assert.deepEqual(res, [this.fineMemberProposalManagerX.address]);
+
       res = await this.fundStorageX.getFineSpaceTokens();
       assert.deepEqual(res.map(tokenId => tokenId.toString(10)), [this.token1.toString(10)]);
 
