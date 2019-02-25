@@ -18,10 +18,17 @@ import "./AbstractFundProposalManager.sol";
 
 
 contract FineMemberProposalManager is AbstractFundProposalManager {
+  enum Currency {
+    ETH,
+    ERC20
+  }
+
   struct Proposal {
     uint256 spaceTokenId;
     uint256 amount;
     string description;
+    Currency currency;
+    address erc20Contract;
   }
 
   mapping(uint256 => Proposal) private _proposals;
@@ -29,12 +36,22 @@ contract FineMemberProposalManager is AbstractFundProposalManager {
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(uint256 _spaceTokenId, uint256 _amount, string calldata _description) external {
+  function propose(
+    uint256 _spaceTokenId,
+    Currency _currency,
+    uint256 _amount,
+    address _erc20Contract,
+    string calldata _description
+  )
+    external
+  {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
       spaceTokenId: _spaceTokenId,
+      currency: _currency,
       amount: _amount,
+      erc20Contract: _erc20Contract,
       description: _description
     });
 
@@ -48,8 +65,14 @@ contract FineMemberProposalManager is AbstractFundProposalManager {
 
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
+    address erc20Contract = p.erc20Contract;
 
-    fundStorage.incrementFine(p.spaceTokenId, p.amount);
+    // Assume ETH contract is address(0x1)
+    if (p.currency == Currency.ETH) {
+      erc20Contract = address(0x1);
+    }
+
+    fundStorage.incrementFine(p.spaceTokenId, erc20Contract, p.amount);
   }
 
   function getThreshold() public view returns (uint256) {
@@ -63,11 +86,13 @@ contract FineMemberProposalManager is AbstractFundProposalManager {
     view
     returns (
       uint256 spaceTokenId,
+      Currency currency,
       uint256 amount,
+      address erc20Contract,
       string memory description)
   {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.spaceTokenId, p.amount, p.description);
+    return (p.spaceTokenId, p.currency, p.amount, p.erc20Contract, p.description);
   }
 }

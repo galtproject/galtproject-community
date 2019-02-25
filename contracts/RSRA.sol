@@ -56,7 +56,7 @@ contract RSRA is IRSRA, LiquidReputationAccounting {
   )
     public
   {
-    require(fundStorage.getFineAmount(_spaceLocker.spaceTokenId()) == 0, "There are pending fines");
+    require(fundStorage.getTotalFineAmount(_spaceLocker.spaceTokenId()) == 0, "There are pending fines");
     super.approveBurn(_spaceLocker);
   }
 
