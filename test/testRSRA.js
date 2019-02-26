@@ -48,7 +48,14 @@ contract('RSRA', accounts => {
 
     // build fund
     await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(fundFactory, alice, false, [60, 50, 60, 60, 60, 60, 60, 60, 60], [bob, charlie], 2);
+    const fund = await buildFund(
+      fundFactory,
+      alice,
+      false,
+      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60],
+      [bob, charlie],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;

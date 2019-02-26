@@ -55,7 +55,7 @@ contract('NewFundMemberProposal', accounts => {
       fundFactory,
       alice,
       true,
-      [60, 50, 30, 60, 60, 60, 60, 60, 60],
+      [60, 50, 30, 60, 60, 60, 60, 60, 60, 60],
       [bob, charlie, dan],
       2
     );

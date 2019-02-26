@@ -1,5 +1,3 @@
-const galt = require('@galtproject/utils');
-
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 
@@ -7,7 +5,6 @@ const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = SpaceToken;
-const bytes32 = web3.utils.utf8ToHex;
 
 initHelperWeb3(web3);
 
@@ -18,8 +15,8 @@ const ProposalStatus = {
   REJECTED: 3
 };
 
-contract.only('Fee Proposals', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, george, spaceLockerRegistryAddress] = accounts;
+contract('Fee Proposals', accounts => {
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, spaceLockerRegistryAddress] = accounts;
 
   beforeEach(async function() {
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
@@ -62,7 +59,7 @@ contract.only('Fee Proposals', accounts => {
   });
 
   describe('Create Fee', () => {
-    it.only('should encode', async function() {
+    it('should encode', async function() {
       await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const feeContract = alice;
@@ -106,22 +103,21 @@ contract.only('Fee Proposals', accounts => {
       res = await this.modifyFeeProposalManager.getNayShare(proposalId);
       assert.equal(res, 20);
 
-      return;
-      await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: dan });
-
-      res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
-
-      res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
-      res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
-      res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
-
-      // verify value changed
-      res = await this.fundMultiSig.getOwners();
-      assert.sameMembers(res, [alice, frank, george]);
+      // await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: dan });
+      //
+      // res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
+      // assert.equal(res.status, ProposalStatus.APPROVED);
+      //
+      // res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
+      // assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      // res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
+      // assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      // res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
+      // assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      //
+      // // verify value changed
+      // res = await this.fundMultiSig.getOwners();
+      // assert.sameMembers(res, [alice, frank, george]);
     });
   });
 });
