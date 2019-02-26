@@ -55,8 +55,10 @@ contract FundStorage is Permissionable {
   struct FundRule {
     bool active;
     uint256 id;
+    address manager;
     bytes32 ipfsHash;
     string description;
+    uint256 createdAt;
   }
 
   struct ProposalContract {
@@ -225,6 +227,8 @@ contract FundStorage is Permissionable {
     fundRule.id = _id;
     fundRule.ipfsHash = _ipfsHash;
     fundRule.description = _description;
+    fundRule.manager = msg.sender;
+    fundRule.createdAt = block.timestamp;
 
     _activeFundRules.add(_id);
   }
@@ -324,16 +328,20 @@ contract FundStorage is Permissionable {
   function getFundRule(uint256 _frpId) external view returns (
     bool active,
     uint256 id,
+    address manager,
     bytes32 ipfsHash,
-    string memory description
+    string memory description,
+    uint256 createdAt
   )
   {
     FundRule storage r = _fundRules[_frpId];
 
     active = r.active;
     id = r.id;
+    manager = r.manager;
     ipfsHash = r.ipfsHash;
     description = r.description;
+    createdAt = r.createdAt;
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
