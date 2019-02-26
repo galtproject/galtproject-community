@@ -8,6 +8,7 @@ const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberPropos
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
 const WLProposalManagerFactory = artifacts.require('./WLProposalManagerFactory.sol');
 const MockModifyConfigProposalManagerFactory = artifacts.require('./MockModifyConfigProposalManagerFactory.sol');
+const ModifyFeeProposalManagerFactory = artifacts.require('./ModifyFeeProposalManagerFactory.sol');
 const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
   './ChangeNameAndDescriptionProposalManagerFactory.sol'
 );
@@ -30,6 +31,7 @@ const DeactivateFundRuleProposalManager = artifacts.require('./DeactivateFundRul
 const ChangeNameAndDescriptionProposalManager = artifacts.require('./ChangeNameAndDescriptionProposalManager.sol');
 const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
 const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
+const ModifyFeeProposalManager = artifacts.require('./ModifyFeeProposalManager.sol');
 const WLProposalManager = artifacts.require('./WLProposalManager.sol');
 
 async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLockerRegistryAddress, owner) {
@@ -47,8 +49,9 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
   this.addFundRuleProposalManagerFactory = await AddFundRuleProposalManagerFactory.new();
   this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
   this.changeMultiSigOwnersProposalManagerFactory = await ChangeMultiSigOwnersProposalManagerFactory.new();
+  this.modifyFeeProposalManagerFactory = await ModifyFeeProposalManagerFactory.new();
 
-  return FundFactory.new(
+  const fundFactory = await FundFactory.new(
     galtTokenAddress,
     spaceTokenAddress,
     spaceLockerRegistryAddress,
@@ -56,6 +59,10 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
     this.fundMultiSigFactory.address,
     this.fundStorageFactory.address,
     this.fundControllerFactory.address,
+    { from: owner }
+  );
+
+  await fundFactory.initialize(
     this.modifyConfigProposalManagerFactory.address,
     this.newMemberProposalManagerFactory.address,
     this.fineMemberProposalManagerFactory.address,
@@ -65,8 +72,11 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
     this.addFundRuleProposalManagerFactory.address,
     this.deactivateFundRuleProposalManagerFactory.address,
     this.changeMultiSigOwnersProposalManagerFactory.address,
+    this.modifyFeeProposalManagerFactory.address,
     { from: owner }
   );
+
+  return fundFactory;
 }
 
 /**
@@ -142,6 +152,7 @@ async function buildFund(
   const changeMultiSigOwnersProposalManager = await ChangeMultiSigOwnersProposalManager.at(
     res.logs[0].args.changeMultiSigOwnersProposalManager
   );
+  const modifyFeeProposalManager = await ModifyFeeProposalManager.at(res.logs[0].args.modifyFeeProposalManager);
 
   return {
     fundStorage,
@@ -156,7 +167,8 @@ async function buildFund(
     changeNameAndDescriptionProposalManager,
     addFundRuleProposalManager,
     deactivateFundRuleProposalManager,
-    changeMultiSigOwnersProposalManager
+    changeMultiSigOwnersProposalManager,
+    modifyFeeProposalManager
   };
 }
 

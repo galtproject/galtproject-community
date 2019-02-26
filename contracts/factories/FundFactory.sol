@@ -35,6 +35,7 @@ import "./ChangeNameAndDescriptionProposalManagerFactory.sol";
 import "./AddFundRuleProposalManagerFactory.sol";
 import "./DeactivateFundRuleProposalManagerFactory.sol";
 import "./ChangeMultiSigOwnersProposalManagerFactory.sol";
+import "./ModifyFeeProposalManagerFactory.sol";
 
 
 contract FundFactory is Ownable {
@@ -72,7 +73,8 @@ contract FundFactory is Ownable {
 
   event CreateFundSixthStep(
     address creator,
-    address changeMultiSigOwnersProposalManager
+    address changeMultiSigOwnersProposalManager,
+    address modifyFeeProposalManager
   );
 
   bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config_proposal");
@@ -84,6 +86,7 @@ contract FundFactory is Ownable {
   bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule_proposal");
   bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule_proposal");
 
+  bool initialized;
   uint256 commission;
 
   IERC20 galtToken;
@@ -103,6 +106,7 @@ contract FundFactory is Ownable {
   AddFundRuleProposalManagerFactory addFundRuleProposalManagerFactory;
   DeactivateFundRuleProposalManagerFactory deactivateFundRuleProposalManagerFactory;
   ChangeMultiSigOwnersProposalManagerFactory changeMultiSigOwnersProposalManagerFactory;
+  ModifyFeeProposalManagerFactory modifyFeeProposalManagerFactory;
 
   enum Step {
     FIRST,
@@ -130,16 +134,7 @@ contract FundFactory is Ownable {
     RSRAFactory _rsraFactory,
     FundMultiSigFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
-    FundControllerFactory _fundControllerFactory,
-    ModifyConfigProposalManagerFactory _modifyConfigProposalManagerFactory,
-    NewMemberProposalManagerFactory _newMemberProposalManagerFactory,
-    FineMemberProposalManagerFactory _fineMemberProposalManagerFactory,
-    ExpelMemberProposalManagerFactory _expelMemberProposalManagerFactory,
-    WLProposalManagerFactory _wlProposalManagerFactory,
-    ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory,
-    AddFundRuleProposalManagerFactory _addFundRuleProposalManagerFactory,
-    DeactivateFundRuleProposalManagerFactory _deactivateFundRuleProposalManagerFactory,
-    ChangeMultiSigOwnersProposalManagerFactory _changeMultiSigOwnersProposalManagerFactory
+    FundControllerFactory _fundControllerFactory
   ) public {
     commission = 10 ether;
 
@@ -151,6 +146,27 @@ contract FundFactory is Ownable {
     fundStorageFactory = _fundStorageFactory;
     fundMultiSigFactory = _fundMultiSigFactory;
     fundControllerFactory = _fundControllerFactory;
+  }
+
+  // All the arguments don't fit into a stack limit of constructor,
+  // so there is one more method for initialization
+  function initialize(
+    ModifyConfigProposalManagerFactory _modifyConfigProposalManagerFactory,
+    NewMemberProposalManagerFactory _newMemberProposalManagerFactory,
+    FineMemberProposalManagerFactory _fineMemberProposalManagerFactory,
+    ExpelMemberProposalManagerFactory _expelMemberProposalManagerFactory,
+    WLProposalManagerFactory _wlProposalManagerFactory,
+    ChangeNameAndDescriptionProposalManagerFactory _changeNameAndDescriptionProposalManagerFactory,
+    AddFundRuleProposalManagerFactory _addFundRuleProposalManagerFactory,
+    DeactivateFundRuleProposalManagerFactory _deactivateFundRuleProposalManagerFactory,
+    ChangeMultiSigOwnersProposalManagerFactory _changeMultiSigOwnersProposalManagerFactory,
+    ModifyFeeProposalManagerFactory _modifyFeeProposalManagerFactory
+  )
+    external
+    onlyOwner
+  {
+    require (initialized == false);
+
     modifyConfigProposalManagerFactory = _modifyConfigProposalManagerFactory;
     newMemberProposalManagerFactory = _newMemberProposalManagerFactory;
     fineMemberProposalManagerFactory = _fineMemberProposalManagerFactory;
@@ -160,6 +176,9 @@ contract FundFactory is Ownable {
     addFundRuleProposalManagerFactory = _addFundRuleProposalManagerFactory;
     deactivateFundRuleProposalManagerFactory = _deactivateFundRuleProposalManagerFactory;
     changeMultiSigOwnersProposalManagerFactory = _changeMultiSigOwnersProposalManagerFactory;
+    modifyFeeProposalManagerFactory = _modifyFeeProposalManagerFactory;
+
+    initialized = true;
   }
 
   function buildFirstStep(
@@ -171,7 +190,7 @@ contract FundFactory is Ownable {
     external
     returns (FundMultiSig fundMultiSig, FundStorage fundStorage, FundController fundController)
   {
-    require(_thresholds.length == 9, "Thresholds length should be 9");
+    require(_thresholds.length == 10, "Thresholds length should be 10");
 
     FirstStepContracts storage c = _firstStepContracts[msg.sender];
     require(c.currentStep == Step.FIRST, "Requires first step");
@@ -330,14 +349,20 @@ contract FundFactory is Ownable {
       c.rsra,
       c.fundStorage
     );
+    ModifyFeeProposalManager modifyFeeProposalManager = modifyFeeProposalManagerFactory.build(
+      c.rsra,
+      c.fundStorage
+    );
 
     c.fundMultiSig.addRoleTo(address(changeMultiSigOwnersProposalManager), c.fundMultiSig.OWNER_MANAGER());
+    c.fundStorage.addRoleTo(address(modifyFeeProposalManager), c.fundStorage.CONTRACT_FEE_MANAGER());
 
     delete _firstStepContracts[msg.sender];
 
     emit CreateFundSixthStep(
       msg.sender,
-      address(changeMultiSigOwnersProposalManager)
+      address(changeMultiSigOwnersProposalManager),
+      address(modifyFeeProposalManager)
     );
   }
 
