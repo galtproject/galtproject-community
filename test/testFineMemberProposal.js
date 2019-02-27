@@ -167,6 +167,18 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token1);
       assert.equal(res, 350);
 
+      res = await this.fundStorageX.getFineProposals(this.token1, this.galtToken.address);
+      assert.deepEqual(res.map(id => id.toString(10)), [proposalId.toString(10)]);
+
+      res = await this.fundStorageX.getFineProposalsManagers(this.token1, this.galtToken.address);
+      assert.deepEqual(res, [this.fineMemberProposalManagerX.address]);
+
+      res = await this.fundStorageX.getFineSpaceTokens();
+      assert.deepEqual(res.map(tokenId => tokenId.toString(10)), [this.token1.toString(10)]);
+
+      res = await this.fundStorageX.getFineContractsBySpaceToken(this.token1);
+      assert.deepEqual(res, [this.galtToken.address]);
+
       // Pay fee partially
       await this.galtToken.approve(this.fundControllerX.address, 300, { from: alice });
       await this.fundControllerX.payFine(this.token1, Currency.ERC20, 300, this.galtToken.address, { from: alice });

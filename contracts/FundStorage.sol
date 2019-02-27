@@ -55,8 +55,10 @@ contract FundStorage is Permissionable {
   struct FundRule {
     bool active;
     uint256 id;
+    address manager;
     bytes32 ipfsHash;
     string description;
+    uint256 createdAt;
   }
 
   struct ProposalContract {
@@ -65,10 +67,17 @@ contract FundStorage is Permissionable {
     string description;
   }
 
+  // TODO: separate caching data with config to another contract 
   struct MemberFines {
     uint256 total;
     // Assume ETH is address(0x1)
-    mapping(address => uint256) tokenFines;
+    mapping(address => MemberFineItem) tokenFines;
+  }
+
+  struct MemberFineItem {
+    uint256 amount;
+    uint256[] proposals;
+    address[] proposalsManagers;
   }
 
   string public name;
@@ -77,6 +86,8 @@ contract FundStorage is Permissionable {
   ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
+  ArraySet.Uint256Set private _finesSpaceTokens;
+  mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
@@ -89,7 +100,7 @@ contract FundStorage is Permissionable {
   mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
-  // spaceTokenId => amount
+  // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
 
   constructor (
@@ -106,7 +117,7 @@ contract FundStorage is Permissionable {
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
-    _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold); 
+    _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);
     _configKeys.add(MANAGE_WL_THRESHOLD);
     _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_modifyConfigThreshold);
     _configKeys.add(MODIFY_CONFIG_THRESHOLD);
@@ -157,14 +168,28 @@ contract FundStorage is Permissionable {
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
-  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
-    _fines[_spaceTokenId].tokenFines[_contract] += _amount;
+  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount, uint256 _proposalId) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+    _fines[_spaceTokenId].tokenFines[_contract].proposals.push(_proposalId);
+    _fines[_spaceTokenId].tokenFines[_contract].proposalsManagers.push(msg.sender);
+
+    _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
     _fines[_spaceTokenId].total += _amount;
+
+    _finesSpaceTokens.addSilent(_spaceTokenId);
+    _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
   }
 
   function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_DECREMENT_MANAGER) {
-    _fines[_spaceTokenId].tokenFines[_contract] -= _amount;
+    _fines[_spaceTokenId].tokenFines[_contract].amount -= _amount;
     _fines[_spaceTokenId].total -= _amount;
+
+    if (_fines[_spaceTokenId].tokenFines[_contract].amount == 0) {
+      _finesContractsBySpaceToken[_spaceTokenId].remove(_contract);
+    }
+
+    if (_fines[_spaceTokenId].total == 0) {
+      _finesSpaceTokens.remove(_spaceTokenId);
+    }
   }
 
   function addWhiteListedContract(
@@ -203,6 +228,8 @@ contract FundStorage is Permissionable {
     fundRule.id = _id;
     fundRule.ipfsHash = _ipfsHash;
     fundRule.description = _description;
+    fundRule.manager = msg.sender;
+    fundRule.createdAt = block.timestamp;
 
     _activeFundRules.add(_id);
   }
@@ -225,12 +252,20 @@ contract FundStorage is Permissionable {
   }
 
   // GETTERS
-  function getConfigValue(bytes32 _key) external view returns(bytes32) {
+  function getConfigValue(bytes32 _key) external view returns (bytes32) {
     return _config[_key];
   }
 
   function getFineAmount(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256) {
-    return _fines[_spaceTokenId].tokenFines[_erc20Contract];
+    return _fines[_spaceTokenId].tokenFines[_erc20Contract].amount;
+  }
+
+  function getFineProposals(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256[] memory) {
+    return _fines[_spaceTokenId].tokenFines[_erc20Contract].proposals;
+  }
+
+  function getFineProposalsManagers(uint256 _spaceTokenId, address _erc20Contract) external view returns (address[] memory) {
+    return _fines[_spaceTokenId].tokenFines[_erc20Contract].proposalsManagers;
   }
 
   function getTotalFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
@@ -241,20 +276,36 @@ contract FundStorage is Permissionable {
     return (_expelledTokens[_spaceTokenId], _expelledTokenReputation[_spaceTokenId]);
   }
 
-  function getWhiteListedContracts() external view returns(address[] memory) {
+  function getWhiteListedContracts() external view returns (address[] memory) {
     return _whiteListedContracts.elements();
   }
 
-  function getConfigKeys() external view returns(bytes32[] memory) {
+  function getConfigKeys() external view returns (bytes32[] memory) {
     return _configKeys.elements();
   }
 
-  function getActiveFundRules() external view returns(uint256[] memory) {
+  function getActiveFundRules() external view returns (uint256[] memory) {
     return _activeFundRules.elements();
   }
 
-  function getActiveFundRulesCount() external view returns(uint256) {
+  function getActiveFundRulesCount() external view returns (uint256) {
     return _activeFundRules.size();
+  }
+
+  function getFineSpaceTokens() external view returns (uint256[] memory) {
+    return _finesSpaceTokens.elements();
+  }
+
+  function getFineSpaceTokensCount() external view returns (uint256) {
+    return _finesSpaceTokens.size();
+  }
+
+  function getFineContractsBySpaceToken(uint256 _spaceTokenId) external view returns (address[] memory) {
+    return _finesContractsBySpaceToken[_spaceTokenId].elements();
+  }
+
+  function getFineContractsBySpaceTokenCount(uint256 _spaceTokenId) external view returns (uint256) {
+    return _finesContractsBySpaceToken[_spaceTokenId].size();
   }
 
   function getProposalContract(
@@ -262,7 +313,7 @@ contract FundStorage is Permissionable {
   )
     external
     view
-    returns(
+    returns (
       bytes32 contractType,
       bytes32 abiIpfsHash,
       string memory description
@@ -275,22 +326,26 @@ contract FundStorage is Permissionable {
     description = c.description;
   }
 
-  function getFundRule(uint256 _frpId) external view returns(
+  function getFundRule(uint256 _frpId) external view returns (
     bool active,
     uint256 id,
+    address manager,
     bytes32 ipfsHash,
-    string memory description
+    string memory description,
+    uint256 createdAt
   )
   {
     FundRule storage r = _fundRules[_frpId];
 
     active = r.active;
     id = r.id;
+    manager = r.manager;
     ipfsHash = r.ipfsHash;
     description = r.description;
+    createdAt = r.createdAt;
   }
 
-  function isMintApproved(uint256 _spaceTokenId) external view returns(bool) {
+  function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
     if (_expelledTokens[_spaceTokenId] == true) {
       return false;
     }
