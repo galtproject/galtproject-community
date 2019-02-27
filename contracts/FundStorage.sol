@@ -67,6 +67,7 @@ contract FundStorage is Permissionable {
     string description;
   }
 
+  // TODO: separate caching data with config to another contract 
   struct MemberFines {
     uint256 total;
     // Assume ETH is address(0x1)
@@ -156,9 +157,9 @@ contract FundStorage is Permissionable {
     uint256 _spaceTokenId,
     uint256 _amount
   )
-  external
-  onlyRole(DECREMENT_TOKEN_REPUTATION_ROLE)
-  returns (bool completelyBurned)
+    external
+    onlyRole(DECREMENT_TOKEN_REPUTATION_ROLE)
+    returns (bool completelyBurned)
   {
     require(_amount > 0 && _amount <= _expelledTokenReputation[_spaceTokenId], "Invalid reputation amount");
 
@@ -197,8 +198,8 @@ contract FundStorage is Permissionable {
     bytes32 _abiIpfsHash,
     string calldata _description
   )
-  external
-  onlyRole(CONTRACT_WHITELIST_MANAGER)
+    external
+    onlyRole(CONTRACT_WHITELIST_MANAGER)
   {
     _whiteListedContracts.addSilent(_contract);
 
@@ -218,8 +219,8 @@ contract FundStorage is Permissionable {
     bytes32 _ipfsHash,
     string calldata _description
   )
-  external
-  onlyRole(CONTRACT_ADD_FUND_RULE_MANAGER)
+    external
+    onlyRole(CONTRACT_ADD_FUND_RULE_MANAGER)
   {
     FundRule storage fundRule = _fundRules[_id];
 
@@ -243,8 +244,8 @@ contract FundStorage is Permissionable {
     string calldata _name,
     string calldata _description
   )
-  external
-  onlyRole(CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER)
+    external
+    onlyRole(CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER)
   {
     name = _name;
     description = _description;
@@ -310,13 +311,13 @@ contract FundStorage is Permissionable {
   function getProposalContract(
     address _contract
   )
-  external
-  view
-  returns (
-    bytes32 contractType,
-    bytes32 abiIpfsHash,
-    string memory description
-  )
+    external
+    view
+    returns (
+      bytes32 contractType,
+      bytes32 abiIpfsHash,
+      string memory description
+    )
   {
     ProposalContract storage c = _proposalContracts[_contract];
 
