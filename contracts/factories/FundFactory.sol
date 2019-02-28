@@ -86,9 +86,9 @@ contract FundFactory is Ownable {
 
   uint256 public commission;
 
-  IERC20 galtToken;
-  IERC721 spaceToken;
-  ISpaceLockerRegistry spaceLockerRegistry;
+  IERC20 public galtToken;
+  IERC721 public spaceToken;
+  ISpaceLockerRegistry public spaceLockerRegistry;
 
   RSRAFactory rsraFactory;
   FundStorageFactory fundStorageFactory;
