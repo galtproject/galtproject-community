@@ -20,7 +20,7 @@ import "@galtproject/libs/contracts/traits/Permissionable.sol";
 contract FundMultiSig is MultiSigWallet, Permissionable {
   string public constant OWNER_MANAGER = "owner_manager";
 
-  event NewOwnerSet(uint256 count);
+  event NewOwnerSet(uint256 required, uint256 total);
 
   constructor(
     address[] memory _initialOwners,
@@ -41,9 +41,13 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
   function replaceOwner(address owner, address newOwner) public forbidden {}
   function changeRequirement(uint _required) public forbidden {}
 
-  function setOwners(address[] calldata _newOwners) external onlyRole(OWNER_MANAGER) {
-    owners = _newOwners;
+  function setOwners(address[] calldata _newOwners, uint256 _required) external onlyRole(OWNER_MANAGER) {
+    require(_required <= _newOwners.length, "Required too big");
+    require(_required > 0, "Required too low");
 
-    emit NewOwnerSet(_newOwners.length);
+    owners = _newOwners;
+    required = _required;
+
+    emit NewOwnerSet(required, _newOwners.length);
   }
 }

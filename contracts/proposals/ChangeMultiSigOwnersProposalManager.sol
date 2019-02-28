@@ -22,6 +22,7 @@ import "../FundMultiSig.sol";
 contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
   struct Proposal {
     string description;
+    uint256 required;
     address[] newOwners;
   }
 
@@ -42,11 +43,15 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
     multiSig = _multiSig;
   }
 
-  function propose(address[] calldata _newOwners, string calldata _description) external {
+  function propose(address[] calldata _newOwners, uint256 _required, string calldata _description) external {
+    require(_required <= _newOwners.length, "Required too big");
+    require(_required > 0, "Required too low");
+
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
       newOwners: _newOwners,
+      required: _required,
       description: _description
     });
 
@@ -61,7 +66,7 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    multiSig.setOwners(p.newOwners);
+    multiSig.setOwners(p.newOwners, p.required);
   }
 
   function getThreshold() public view returns (uint256) {

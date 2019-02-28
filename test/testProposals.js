@@ -54,7 +54,7 @@ contract('Proposals', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
-    this.fundMultiSig = fund.fundMultiSig;
+    this.fundMultiSigX = fund.fundMultiSig;
     this.rsraX = fund.fundRsra;
     this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
     this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
@@ -369,9 +369,31 @@ contract('Proposals', accounts => {
     it('should be able to change the list of MultiSig owners', async function() {
       await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      let res = await this.changeMultiSigOwnersProposalManager.propose([alice, frank, george], 'Have a new list', {
-        from: bob
-      });
+      let required = await this.fundMultiSigX.required();
+      let owners = await this.fundMultiSigX.getOwners();
+
+      assert.equal(required, 2);
+      assert.equal(owners.length, 3);
+
+      await assertRevert(
+        this.changeMultiSigOwnersProposalManager.propose([alice, frank, george], 4, 'Have a new list', {
+          from: bob
+        })
+      );
+      await assertRevert(
+        this.changeMultiSigOwnersProposalManager.propose([alice, frank, george], 0, 'Have a new list', {
+          from: bob
+        })
+      );
+
+      let res = await this.changeMultiSigOwnersProposalManager.propose(
+        [alice, dan, frank, george],
+        3,
+        'Have a new list',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -421,8 +443,14 @@ contract('Proposals', accounts => {
       assert.sameMembers(res.map(a => a.toNumber(10)), []);
 
       // verify value changed
-      res = await this.fundMultiSig.getOwners();
-      assert.sameMembers(res, [alice, frank, george]);
+      res = await this.fundMultiSigX.getOwners();
+      assert.sameMembers(res, [alice, dan, frank, george]);
+
+      required = await this.fundMultiSigX.required();
+      owners = await this.fundMultiSigX.getOwners();
+
+      assert.equal(required, 3);
+      assert.equal(owners.length, 4);
     });
   });
 });
