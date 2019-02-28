@@ -84,7 +84,7 @@ contract FundFactory is Ownable {
   bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule_proposal");
   bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule_proposal");
 
-  uint256 commission;
+  uint256 public commission;
 
   IERC20 galtToken;
   IERC721 spaceToken;
