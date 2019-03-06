@@ -29,7 +29,7 @@ contract DeactivateFundRuleProposalManager is AbstractFundProposalManager {
   }
 
   function propose(uint256 _frpId, string calldata _description) external onlyMember {
-    (bool active,,,) = fundStorage.getFundRule(_frpId);
+    (bool active,,,,,) = fundStorage.getFundRule(_frpId);
     require(active == true, "Proposal is not active");
 
     uint256 id = idCounter.next();

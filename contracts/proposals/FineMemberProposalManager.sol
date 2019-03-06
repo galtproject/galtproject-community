@@ -72,7 +72,7 @@ contract FineMemberProposalManager is AbstractFundProposalManager {
       erc20Contract = address(0x1);
     }
 
-    fundStorage.incrementFine(p.spaceTokenId, erc20Contract, p.amount);
+    fundStorage.incrementFine(p.spaceTokenId, erc20Contract, p.amount, _proposalId);
   }
 
   function getThreshold() public view returns (uint256) {

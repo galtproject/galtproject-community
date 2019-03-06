@@ -87,11 +87,11 @@ contract FundFactory is Ownable {
   bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule_proposal");
 
   bool initialized;
-  uint256 commission;
+  uint256 public commission;
 
-  IERC20 galtToken;
-  IERC721 spaceToken;
-  ISpaceLockerRegistry spaceLockerRegistry;
+  IERC20 public galtToken;
+  IERC721 public spaceToken;
+  ISpaceLockerRegistry public spaceLockerRegistry;
 
   RSRAFactory rsraFactory;
   FundStorageFactory fundStorageFactory;
@@ -374,7 +374,7 @@ contract FundFactory is Ownable {
     commission = _commission;
   }
 
-  function getMyLastCreatedContracts() external view returns (
+  function getLastCreatedContracts(address _creator) external view returns (
     Step currentStep,
     IRSRA rsra,
     FundMultiSig fundMultiSig,
@@ -383,11 +383,11 @@ contract FundFactory is Ownable {
   )
   {
     return (
-      _firstStepContracts[msg.sender].currentStep,
-      _firstStepContracts[msg.sender].rsra,
-      _firstStepContracts[msg.sender].fundMultiSig,
-      _firstStepContracts[msg.sender].fundStorage,
-      _firstStepContracts[msg.sender].fundController
+      _firstStepContracts[_creator].currentStep,
+      _firstStepContracts[_creator].rsra,
+      _firstStepContracts[_creator].fundMultiSig,
+      _firstStepContracts[_creator].fundStorage,
+      _firstStepContracts[_creator].fundController
     );
   }
 
