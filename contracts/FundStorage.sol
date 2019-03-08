@@ -85,6 +85,8 @@ contract FundStorage is Permissionable {
   string public name;
   string public description;
 
+  FundMultiSig public multiSig;
+
   ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
@@ -107,6 +109,7 @@ contract FundStorage is Permissionable {
 
   constructor (
     bool _isPrivate,
+    FundMultiSig _multiSig,
     uint256 _manageWhiteListThreshold,
     uint256 _modifyConfigThreshold,
     uint256 _newMemberThreshold,
@@ -118,6 +121,8 @@ contract FundStorage is Permissionable {
     uint256 _changeMsOwnersThreshold,
     uint256 _modifyFeeThreshold
   ) public {
+    multiSig = _multiSig;
+
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
     _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);

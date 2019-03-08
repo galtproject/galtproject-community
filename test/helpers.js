@@ -53,6 +53,58 @@ const Helpers = {
       setTimeout(resolve, timeout);
     });
   },
+  async logLatestBlock(msg) {
+    // eslint-disable-next-line
+    msg = msg ? `${msg} ` : '';
+    const block = await web3.eth.getBlock('latest');
+    console.log(`${msg}Block/Timestamp`, `${block.number}/${block.timestamp}`);
+  },
+  async lastBlockTimestamp() {
+    return (await web3.eth.getBlock('latest')).timestamp;
+  },
+  async increaseTime(seconds) {
+    await Helpers.evmIncreaseTime(seconds);
+    await Helpers.evmMineBlock(seconds);
+  },
+  async evmMineBlock() {
+    return new Promise(function(resolve, reject) {
+      web3.eth.currentProvider.send(
+        {
+          jsonrpc: '2.0',
+          method: 'evm_mine',
+          id: 0
+        },
+        function(err, res) {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          resolve(res);
+        }
+      );
+    });
+  },
+  async evmIncreaseTime(seconds) {
+    return new Promise(function(resolve, reject) {
+      web3.eth.currentProvider.send(
+        {
+          jsonrpc: '2.0',
+          method: 'evm_increaseTime',
+          params: [seconds],
+          id: 0
+        },
+        function(err, res) {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          resolve(res);
+        }
+      );
+    });
+  },
   async assertInvalid(promise) {
     try {
       await promise;

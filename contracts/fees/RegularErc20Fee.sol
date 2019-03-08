@@ -21,7 +21,20 @@ import "./AbstractRegularFee.sol";
 contract RegularErc20Fee  is AbstractRegularFee {
   IERC20 token;
 
-  constructor (IERC20 _token, FundStorage _fundStorage) public AbstractRegularFee(_fundStorage) {
+  constructor (
+    IERC20 _token,
+    FundStorage _fundStorage,
+    uint256 _initialTimestamp,
+    uint256 _periodLength,
+    uint256 _rate
+  )
+    public
+    AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
+  {
     token = _token;
+  }
+
+  function foo() external {
+
   }
 }

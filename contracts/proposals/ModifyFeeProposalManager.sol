@@ -22,6 +22,7 @@ import "./AbstractFundProposalManager.sol";
 contract ModifyFeeProposalManager is AbstractFundProposalManager {
   struct Proposal {
     bytes data;
+    bytes response;
     string description;
   }
 
@@ -31,7 +32,7 @@ contract ModifyFeeProposalManager is AbstractFundProposalManager {
   }
 
   function propose(
-    bytes calldata data,
+    bytes calldata _data,
     string calldata _description
   )
     external
@@ -39,10 +40,9 @@ contract ModifyFeeProposalManager is AbstractFundProposalManager {
   {
     uint256 id = idCounter.next();
 
-    _proposals[id] = Proposal({
-      data: data,
-      description: _description
-    });
+    Proposal storage p = _proposals[id];
+    p.data = _data;
+    p.description = _description;
 
     emit NewProposal(id, msg.sender);
     _onNewProposal(id);
@@ -55,15 +55,27 @@ contract ModifyFeeProposalManager is AbstractFundProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    // TODO: address should already be created
-    // TODO: register in fund
-//    fundStorage.setConfigValue(p.key, p.value);
+    (bool x, bytes memory response) = address(fundStorage).call.gas(gasleft() - 50000)(p.data);
+
+    assert(x == true);
+
+    p.response = response;
   }
 
-  function getProposal(uint256 _proposalId) external view returns (bytes memory data, string memory description) {
+  function getProposal(
+    uint256 _proposalId
+  )
+    external
+    view
+    returns (
+      bytes memory data,
+      bytes memory response,
+      string memory description
+    )
+  {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.data, p.description);
+    return (p.data, p.response, p.description);
   }
 
   function getThreshold() public view returns (uint256) {

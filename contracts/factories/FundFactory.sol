@@ -200,6 +200,7 @@ contract FundFactory is Ownable {
     fundMultiSig = fundMultiSigFactory.build(_multiSigInitialOwners, _multiSigRequired);
     fundStorage = fundStorageFactory.build(
       _isPrivate,
+      fundMultiSig,
       _thresholds
     );
     fundController = fundControllerFactory.build(

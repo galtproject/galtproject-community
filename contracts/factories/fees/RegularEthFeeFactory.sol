@@ -23,15 +23,25 @@ import "../../fees/RegularEthFee.sol";
 
 
 contract RegularEthFeeFactory is Ownable {
+  event NewContract(address addr);
+
   function build(
-    FundStorage _fundStorage
+    FundStorage _fundStorage,
+    uint256 _initialTimestamp,
+    uint256 _period,
+    uint256 _amount
   )
     external
     returns (IRegularFee regularFee)
   {
     regularFee = new RegularEthFee(
-      _fundStorage
+      _fundStorage,
+      _initialTimestamp,
+      _period,
+      _amount
     );
+
+    emit NewContract(address(regularFee));
 
 //    regularFee.addRoleTo(msg.sender, "role_manager");
 //    regularFee.removeRoleFrom(address(this), "role_manager");

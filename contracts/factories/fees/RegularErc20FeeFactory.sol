@@ -25,14 +25,20 @@ import "../../fees/RegularErc20Fee.sol";
 contract RegularErc20FeeFactory is Ownable {
   function build(
     IERC20 _token,
-    FundStorage _fundStorage
+    FundStorage _fundStorage,
+    uint256 _initialTimestamp,
+    uint256 _period,
+    uint256 _amount
   )
     external
     returns (IRegularFee regularFee)
   {
     regularFee = new RegularErc20Fee(
       _token,
-      _fundStorage
+      _fundStorage,
+      _initialTimestamp,
+      _period,
+      _amount
     );
 
 //    regularFee.addRoleTo(msg.sender, "role_manager");

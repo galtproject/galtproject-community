@@ -46,7 +46,7 @@ contract('Fee Proposals', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
-    this.fundMultiSig = fund.fundMultiSig;
+    this.fundMultiSigX = fund.fundMultiSigX;
     this.rsraX = fund.fundRsra;
     this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
     this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
@@ -58,7 +58,7 @@ contract('Fee Proposals', accounts => {
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });
 
-  describe('Create Fee', () => {
+  describe('Create Fee Proposal', () => {
     it('should encode', async function() {
       await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
