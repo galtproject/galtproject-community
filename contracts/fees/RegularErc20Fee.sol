@@ -19,7 +19,7 @@ import "./AbstractRegularFee.sol";
 
 
 contract RegularErc20Fee  is AbstractRegularFee {
-  IERC20 token;
+  IERC20 public erc20Token;
 
   constructor (
     IERC20 _token,
@@ -31,10 +31,16 @@ contract RegularErc20Fee  is AbstractRegularFee {
     public
     AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
   {
-    token = _token;
+    erc20Token = _token;
   }
 
-  function foo() external {
+  // Each paidUntil point shifts by the current `rate`
+  function pay(uint256 _spaceTokenId, uint256 _amount) external payable {
+    require(_amount > 0, "Expect ETH payment");
+    require(erc20Token.allowance(msg.sender, address(this)) >= _amount, "Insufficient allowance");
 
+    _pay(_spaceTokenId, _amount);
+
+    erc20Token.transferFrom(msg.sender, address(fundStorage.multiSig()), _amount);
   }
 }

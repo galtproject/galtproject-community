@@ -52,6 +52,22 @@ contract AbstractRegularFee is IRegularFee {
     prePaidPeriodGap = 2592000;
   }
 
+  function _pay(uint256 _spaceTokenId, uint256 _amount) internal {
+    uint256 currentPaidUntil = paidUntil[_spaceTokenId];
+    if (currentPaidUntil == 0) {
+      currentPaidUntil = getCurrentPeriodTimestamp();
+    }
+
+    uint256 newPaidUntil = currentPaidUntil + (_amount * periodLength / rate);
+    uint256 permittedPaidUntil = getNextPeriodTimestamp() + prePaidPeriodGap;
+
+    require(newPaidUntil <= permittedPaidUntil, "Payment exceeds permitted pre-payment timestamp");
+
+    paidUntil[_spaceTokenId] = newPaidUntil;
+  }
+
+  // GETTERS
+
   function getCurrentPeriod() public view returns (uint256) {
     require(block.timestamp > initialTimestamp, "Contract not initiated yet");
 

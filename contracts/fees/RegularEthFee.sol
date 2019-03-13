@@ -33,17 +33,7 @@ contract RegularEthFee  is AbstractRegularFee {
   function pay(uint256 _spaceTokenId) external payable {
     require(msg.value > 0, "Expect ETH payment");
 
-    uint256 currentPaidUntil = paidUntil[_spaceTokenId];
-    if (currentPaidUntil == 0) {
-      currentPaidUntil = getCurrentPeriodTimestamp();
-    }
-
-    uint256 newPaidUntil = currentPaidUntil + (msg.value * periodLength / rate);
-    uint256 permittedPaidUntil = getNextPeriodTimestamp() + prePaidPeriodGap;
-
-    require(newPaidUntil <= permittedPaidUntil, "Payment exceeds permitted pre-payment timestamp");
-
-    paidUntil[_spaceTokenId] = newPaidUntil;
+    _pay(_spaceTokenId, msg.value);
 
     address(fundStorage.multiSig()).transfer(msg.value);
   }

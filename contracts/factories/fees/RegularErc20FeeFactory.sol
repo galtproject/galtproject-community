@@ -23,8 +23,10 @@ import "../../fees/RegularErc20Fee.sol";
 
 
 contract RegularErc20FeeFactory is Ownable {
+  event NewContract(address addr, address erc20Token);
+
   function build(
-    IERC20 _token,
+    IERC20 _erc20Token,
     FundStorage _fundStorage,
     uint256 _initialTimestamp,
     uint256 _period,
@@ -34,12 +36,14 @@ contract RegularErc20FeeFactory is Ownable {
     returns (IRegularFee regularFee)
   {
     regularFee = new RegularErc20Fee(
-      _token,
+      _erc20Token,
       _fundStorage,
       _initialTimestamp,
       _period,
       _amount
     );
+
+    emit NewContract(address(regularFee), address(_erc20Token));
 
 //    regularFee.addRoleTo(msg.sender, "role_manager");
 //    regularFee.removeRoleFrom(address(this), "role_manager");
