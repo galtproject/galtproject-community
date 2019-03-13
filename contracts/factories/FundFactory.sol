@@ -40,39 +40,39 @@ import "./ModifyFeeProposalManagerFactory.sol";
 
 contract FundFactory is Ownable {
   event CreateFundFirstStep(
-    address creator,
+    bytes32 fundId,
     address fundMultiSig,
     address fundStorage,
     address fundController
   );
 
   event CreateFundSecondStep(
-    address creator,
+    bytes32 fundId,
     address fundRsra,
     address modifyConfigProposalManager,
     address newMemberProposalManager
   );
 
   event CreateFundThirdStep(
-    address creator,
+    bytes32 fundId,
     address fineMemberProposalManager,
     address whiteListProposalManager,
     address expelMemberProposalManager
   );
 
   event CreateFundFourthStep(
-    address creator,
+    bytes32 fundId,
     address changeNameAndDescriptionProposalManager
   );
 
   event CreateFundFifthStep(
-    address creator,
+    bytes32 fundId,
     address addFundRuleProposalManager,
     address deactivateFundRuleProposalManager
   );
 
   event CreateFundSixthStep(
-    address creator,
+    bytes32 fundId,
     address changeMultiSigOwnersProposalManager,
     address modifyFeeProposalManager
   );
@@ -117,7 +117,9 @@ contract FundFactory is Ownable {
     SIXTH
   }
 
-  struct FirstStepContracts {
+  struct FundContracts {
+    address creator;
+    address operator;
     Step currentStep;
     IRSRA rsra;
     FundMultiSig fundMultiSig;
@@ -125,7 +127,7 @@ contract FundFactory is Ownable {
     FundController fundController;
   }
 
-  mapping(address => FirstStepContracts) private _firstStepContracts;
+  mapping(bytes32 => FundContracts) private fundContracts;
 
   constructor (
     ERC20 _galtToken,
@@ -182,43 +184,51 @@ contract FundFactory is Ownable {
   }
 
   function buildFirstStep(
+    address operator,
     bool _isPrivate,
     uint256[] calldata _thresholds,
-    address[] calldata _multiSigInitialOwners,
-    uint256 _multiSigRequired
+    address[] calldata _initialMultiSigOwners,
+    uint256 _initialMultiSigRequired
   )
     external
-    returns (FundMultiSig fundMultiSig, FundStorage fundStorage, FundController fundController)
+    returns (bytes32 fundId)
   {
     require(_thresholds.length == 10, "Thresholds length should be 10");
 
-    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+    fundId = keccak256(abi.encode(blockhash(block.number - 1), _initialMultiSigRequired, _initialMultiSigOwners, msg.sender));
+
+    FundContracts storage c = fundContracts[fundId];
     require(c.currentStep == Step.FIRST, "Requires first step");
 
     _acceptPayment();
 
-    fundMultiSig = fundMultiSigFactory.build(_multiSigInitialOwners, _multiSigRequired);
-    fundStorage = fundStorageFactory.build(
+    FundMultiSig fundMultiSig = fundMultiSigFactory.build(_initialMultiSigOwners, _initialMultiSigRequired);
+    FundStorage fundStorage = fundStorageFactory.build(
       _isPrivate,
       fundMultiSig,
       _thresholds
     );
-    fundController = fundControllerFactory.build(
+    FundController fundController = fundControllerFactory.build(
       galtToken,
       fundStorage,
       fundMultiSig
     );
 
+    c.creator = msg.sender;
+    c.operator = operator;
     c.currentStep = Step.SECOND;
     c.fundStorage = fundStorage;
     c.fundMultiSig = fundMultiSig;
     c.fundController = fundController;
 
-    emit CreateFundFirstStep(msg.sender, address(fundMultiSig), address(fundStorage), address(fundController));
+    emit CreateFundFirstStep(fundId, address(fundMultiSig), address(fundStorage), address(fundController));
+
+    return fundId;
   }
 
-  function buildSecondStep() external {
-    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+  function buildSecondStep(bytes32 _fundId) external {
+    FundContracts storage c = fundContracts[_fundId];
+    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundStorage _fundStorage = c.fundStorage;
@@ -242,15 +252,16 @@ contract FundFactory is Ownable {
     c.currentStep = Step.THIRD;
 
     emit CreateFundSecondStep(
-      msg.sender,
+      _fundId,
       address(c.rsra),
       address(modifyConfigProposalManager),
       address(newMemberProposalManager)
     );
   }
 
-  function buildThirdStep() external {
-    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+  function buildThirdStep(bytes32 _fundId) external {
+    FundContracts storage c = fundContracts[_fundId];
+    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.THIRD, "Requires second step");
 
     FundStorage _fundStorage = c.fundStorage;
@@ -273,15 +284,16 @@ contract FundFactory is Ownable {
     c.currentStep = Step.FOURTH;
 
     emit CreateFundThirdStep(
-      msg.sender,
+      _fundId,
       address(fineMemberProposalManager),
       address(wlProposalManager),
       address(expelMemberProposalManager)
     );
   }
 
-  function buildFourthStep(string calldata _name, string calldata _description) external {
-    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+  function buildFourthStep(bytes32 _fundId, string calldata _name, string calldata _description) external {
+    FundContracts storage c = fundContracts[_fundId];
+    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.FOURTH, "Requires fourth step");
 
     FundStorage _fundStorage = c.fundStorage;
@@ -302,13 +314,14 @@ contract FundFactory is Ownable {
     c.currentStep = Step.FIFTH;
 
     emit CreateFundFourthStep(
-      msg.sender,
+      _fundId,
       address(changeNameAndDescriptionProposalManager)
     );
   }
 
-  function buildFifthStep(uint256[] calldata _initialSpaceTokensToApprove) external {
-    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+  function buildFifthStep(bytes32 _fundId, uint256[] calldata _initialSpaceTokensToApprove) external {
+    FundContracts storage c = fundContracts[_fundId];
+    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.FIFTH, "Requires fifth step");
 
     FundStorage _fundStorage = c.fundStorage;
@@ -335,14 +348,15 @@ contract FundFactory is Ownable {
     c.currentStep = Step.SIXTH;
 
     emit CreateFundFifthStep(
-      msg.sender,
+      _fundId,
       address(addFundRuleProposalManager),
       address(deactivateFundRuleProposalManager)
     );
   }
 
-  function buildSixthStep() external {
-    FirstStepContracts storage c = _firstStepContracts[msg.sender];
+  function buildSixthStep(bytes32 _fundId) external {
+    FundContracts storage c = fundContracts[_fundId];
+    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.SIXTH, "Requires sixth step");
 
     ChangeMultiSigOwnersProposalManager changeMultiSigOwnersProposalManager = changeMultiSigOwnersProposalManagerFactory.build(
@@ -358,10 +372,10 @@ contract FundFactory is Ownable {
     c.fundMultiSig.addRoleTo(address(changeMultiSigOwnersProposalManager), c.fundMultiSig.OWNER_MANAGER());
     c.fundStorage.addRoleTo(address(modifyFeeProposalManager), c.fundStorage.CONTRACT_FEE_MANAGER());
 
-    delete _firstStepContracts[msg.sender];
+    delete fundContracts[_fundId];
 
     emit CreateFundSixthStep(
-      msg.sender,
+      _fundId,
       address(changeMultiSigOwnersProposalManager),
       address(modifyFeeProposalManager)
     );
@@ -375,7 +389,8 @@ contract FundFactory is Ownable {
     commission = _commission;
   }
 
-  function getLastCreatedContracts(address _creator) external view returns (
+  function getLastCreatedContracts(bytes32 _fundId) external view returns (
+    address operator,
     Step currentStep,
     IRSRA rsra,
     FundMultiSig fundMultiSig,
@@ -383,16 +398,18 @@ contract FundFactory is Ownable {
     FundController fundController
   )
   {
+    FundContracts storage c = fundContracts[_fundId];
     return (
-      _firstStepContracts[_creator].currentStep,
-      _firstStepContracts[_creator].rsra,
-      _firstStepContracts[_creator].fundMultiSig,
-      _firstStepContracts[_creator].fundStorage,
-      _firstStepContracts[_creator].fundController
+      c.operator,
+      c.currentStep,
+      c.rsra,
+      c.fundMultiSig,
+      c.fundStorage,
+      c.fundController
     );
   }
 
-  function getCurrentStep(address _creator) external view returns (Step) {
-    return _firstStepContracts[_creator].currentStep;
+  function getCurrentStep(bytes32 _fundId) external view returns (Step) {
+    return fundContracts[_fundId].currentStep;
   }
 }

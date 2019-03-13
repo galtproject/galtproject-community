@@ -105,16 +105,24 @@ async function buildFund(
   initialSpaceTokens = []
 ) {
   // >>> Step #1
-  let res = await factory.buildFirstStep(isPrivate, thresholds, initialMultiSigOwners, initialMultiSigRequired, {
-    from: creator
-  });
+  let res = await factory.buildFirstStep(
+    creator,
+    isPrivate,
+    thresholds,
+    initialMultiSigOwners,
+    initialMultiSigRequired,
+    {
+      from: creator
+    }
+  );
   // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
   const fundController = await FundController.at(res.logs[0].args.fundController);
 
   // >>> Step #2
-  res = await factory.buildSecondStep({ from: creator });
+  res = await factory.buildSecondStep(fundId, { from: creator });
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundRsra = await MockRSRA.at(res.logs[0].args.fundRsra);
   const modifyConfigProposalManager = await MockModifyConfigProposalManager.at(
@@ -123,21 +131,21 @@ async function buildFund(
   const newMemberProposalManager = await NewMemberProposalManager.at(res.logs[0].args.newMemberProposalManager);
 
   // >>> Step #3
-  res = await factory.buildThirdStep({ from: creator });
+  res = await factory.buildThirdStep(fundId, { from: creator });
   // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fineMemberProposalManager = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
   const whiteListProposalManager = await WLProposalManager.at(res.logs[0].args.whiteListProposalManager);
   const expelMemberProposalManager = await ExpelMemberProposalManager.at(res.logs[0].args.expelMemberProposalManager);
 
   // >>> Step #4
-  res = await factory.buildFourthStep(name, description, { from: creator });
+  res = await factory.buildFourthStep(fundId, name, description, { from: creator });
   // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
   const changeNameAndDescriptionProposalManager = await ChangeNameAndDescriptionProposalManager.at(
     res.logs[0].args.changeNameAndDescriptionProposalManager
   );
 
   // Step #5
-  res = await factory.buildFifthStep(initialSpaceTokens, { from: creator });
+  res = await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
   // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
 
   const addFundRuleProposalManager = await AddFundRuleProposalManager.at(res.logs[0].args.addFundRuleProposalManager);
@@ -146,7 +154,7 @@ async function buildFund(
   );
 
   // Step #6
-  res = await factory.buildSixthStep({ from: creator });
+  res = await factory.buildSixthStep(fundId, { from: creator });
   // console.log('buildSixthStep gasUsed', res.receipt.gasUsed);
 
   const changeMultiSigOwnersProposalManager = await ChangeMultiSigOwnersProposalManager.at(
