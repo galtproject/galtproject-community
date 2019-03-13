@@ -6,9 +6,9 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+https://github.com/galtspace/galtproject-core.git#8c2a8f9",
+    "@galtproject/core": "git+ssh://github.com/galtspace/galtproject-core.git#8c2a8f9",
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
-    "@galtproject/libs": "git+https://github.com/galtspace/galtproject-libs.git",
+    "@galtproject/libs": "git+ssh://github.com/galtspace/galtproject-libs.git",
     "@galtproject/utils": "^0.9.1",
     "eslint": "^5.14.1",
     "eslint-config-airbnb-base": "^13.1.0",
