@@ -52,6 +52,16 @@ contract AbstractRegularFee is IRegularFee {
     prePaidPeriodGap = 2592000;
   }
 
+  function lockSpaceToken(uint256 _spaceTokenId) external {
+    require(paidUntil[_spaceTokenId] < getNextPeriodTimestamp(), "paidUntil too small");
+    fundStorage.lockSpaceToken(_spaceTokenId);
+  }
+
+  function unlockSpaceToken(uint256 _spaceTokenId) external {
+    require(paidUntil[_spaceTokenId] >= getNextPeriodTimestamp(), "paidUntil too big");
+    fundStorage.unlockSpaceToken(_spaceTokenId);
+  }
+
   function _pay(uint256 _spaceTokenId, uint256 _amount) internal {
     uint256 currentPaidUntil = paidUntil[_spaceTokenId];
     if (currentPaidUntil == 0) {

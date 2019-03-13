@@ -20,7 +20,7 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 contract('Regular ETH Fees', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, spaceLockerRegistryAddress] = accounts;
+  const [coreTeam, alice, bob, charlie, dan, unauthorized, spaceLockerRegistryAddress] = accounts;
 
   before(async function() {
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
@@ -167,6 +167,7 @@ contract('Regular ETH Fees', accounts => {
       await this.regularEthFee.pay('2', { from: bob, value: ether(4) });
       // - charlie pays 6 ETH
       // TODO: ensure payment not grater given than value
+      await assertRevert(this.regularEthFee.pay('3', { from: bob, value: ether(12) }));
       await this.regularEthFee.pay('3', { from: bob, value: ether(6) });
 
       const multiSigBalance = await web3.eth.getBalance(this.fundMultiSigX.address);
@@ -181,5 +182,44 @@ contract('Regular ETH Fees', accounts => {
       res = await this.regularEthFee.paidUntil('3');
       assert.equal(res, this.initialTimestamp + (ONE_MONTH / 4) * 6);
     });
+  });
+
+  it('should allow any address locking spaceTokens', async function() {
+    const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
+    let res = await this.modifyFeeProposalManager.propose(calldata, 'add it', { from: alice });
+    const proposalId = res.logs[0].args.proposalId.toString(10);
+
+    await this.modifyFeeProposalManager.aye(proposalId, { from: bob });
+    await this.modifyFeeProposalManager.aye(proposalId, { from: charlie });
+    await this.modifyFeeProposalManager.aye(proposalId, { from: alice });
+    await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: dan });
+
+    res = await this.fundStorageX.getFeeContracts();
+    assert.sameMembers(res, [this.feeAddress]);
+
+    // - initially only Alice, Bob, Charlie are the fund participants
+
+    await increaseTime(ONE_DAY + 2 * ONE_HOUR);
+
+    // >> month 0 day 1 hour 1
+    // - alice pays 3 ETH
+    await this.regularEthFee.pay('1', { from: alice, value: ether(3) });
+    // not locked yet
+    await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized}));
+
+    await this.regularEthFee.lockSpaceToken('1', { from: unauthorized});
+    res = await this.fundStorageX.isSpaceTokenLocked('1');
+    assert.equal(res, true);
+
+    // unable to unlock
+    await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized}));
+
+    // the current period is completely paid upfront
+    await this.regularEthFee.pay('1', { from: alice, value: ether(1) });
+    // unlock
+    this.regularEthFee.unlockSpaceToken('1', { from: unauthorized});
+
+    // unable to lock again
+    await assertRevert(this.regularEthFee.lockSpaceToken('1', { from: unauthorized}));
   });
 });

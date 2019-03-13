@@ -91,6 +91,7 @@ contract FundStorage is Permissionable {
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
+  ArraySet.AddressSet private feeContracts;
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   mapping(bytes32 => bytes32) private _config;
@@ -100,12 +101,20 @@ contract FundStorage is Permissionable {
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
   mapping(uint256 => uint256) private _expelledTokenReputation;
+  // spaceTokenId => isLocked
+  mapping(uint256 => bool) private _lockedSpaceTokens;
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
+
+  modifier onlyFeeContract() {
+    require(feeContracts.has(msg.sender), "Not a fee contract");
+
+    _;
+  }
 
   constructor (
     bool _isPrivate,
@@ -244,6 +253,19 @@ contract FundStorage is Permissionable {
     _activeFundRules.add(_id);
   }
 
+
+  function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
+    feeContracts.add(_feeContract);
+  }
+
+  function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
+    _lockedSpaceTokens[_spaceTokenId] = true;
+  }
+
+  function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
+    _lockedSpaceTokens[_spaceTokenId] = false;
+  }
+
   function disableFundRule(uint256 _id) external onlyRole(CONTRACT_DEACTIVATE_FUND_RULE_MANAGER) {
     _fundRules[_id].active = false;
 
@@ -367,17 +389,15 @@ contract FundStorage is Permissionable {
     }
   }
 
-  ArraySet.AddressSet private feeContracts;
-
-  function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
-    feeContracts.add(_feeContract);
-  }
-
   function getFeeContracts() external view returns (address[] memory) {
     return feeContracts.elements();
   }
 
   function getFeeContractCount() external view returns (uint256) {
     return feeContracts.size();
+  }
+
+  function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
+    return _lockedSpaceTokens[_spaceTokenId];
   }
 }
