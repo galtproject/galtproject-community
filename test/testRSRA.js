@@ -14,8 +14,6 @@ const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
-// 60
-const ONE_MINUTE = 60;
 // 60 * 60
 const ONE_HOUR = 3600;
 // 60 * 60 * 24
@@ -156,17 +154,17 @@ contract('RSRA', accounts => {
       res = await this.fundStorageX.getFeeContracts();
       assert.sameMembers(res, [this.feeAddress]);
 
-      await this.regularEthFee.lockSpaceToken(this.token1, { from: unauthorized});
+      await this.regularEthFee.lockSpaceToken(this.token1, { from: unauthorized });
 
       res = await this.fundStorageX.isSpaceTokenLocked(this.token1);
       assert.equal(res, true);
 
-      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice }))
+      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice }));
 
       await increaseTime(ONE_DAY + 2 * ONE_HOUR);
       await this.regularEthFee.pay(this.token1, { from: alice, value: ether(4) });
 
-      await this.regularEthFee.unlockSpaceToken(this.token1, { from: unauthorized});
+      await this.regularEthFee.unlockSpaceToken(this.token1, { from: unauthorized });
       this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice });
     });
   });
