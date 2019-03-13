@@ -16,6 +16,7 @@ pragma solidity 0.5.3;
 import "../FundStorage.sol";
 import "./AbstractFundProposalManager.sol";
 
+
 // Contract has FEE_MANAGER role in FunStorage, so it is granted performing all
 // fee-related permissions.
 // A proposal should contain already encoded data to call (method + arguments).
