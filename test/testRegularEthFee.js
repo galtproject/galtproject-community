@@ -150,7 +150,8 @@ contract('Regular ETH Fees', accounts => {
       await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: dan });
 
       res = await this.fundStorageX.getFeeContracts();
-      assert.sameMembers(res, [this.feeAddress]);
+      assert.include(res, this.feeAddress);
+      const multiSigBalanceBefore = parseInt(await web3.eth.getBalance(this.fundMultiSigX.address), 10);
 
       // - initially only Alice, Bob, Charlie are the fund participants
 
@@ -170,8 +171,8 @@ contract('Regular ETH Fees', accounts => {
       await assertRevert(this.regularEthFee.pay('3', { from: bob, value: ether(12) }));
       await this.regularEthFee.pay('3', { from: bob, value: ether(6) });
 
-      const multiSigBalance = await web3.eth.getBalance(this.fundMultiSigX.address);
-      assert.equal(multiSigBalance, ether(13));
+      const multiSigBalanceAfter = parseInt(await web3.eth.getBalance(this.fundMultiSigX.address), 10);
+      assert.equal(multiSigBalanceAfter - multiSigBalanceBefore, ether(13));
 
       res = await this.regularEthFee.paidUntil('1');
       assert.equal(res, this.initialTimestamp + (ONE_MONTH / 4) * 3);
