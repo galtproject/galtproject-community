@@ -36,6 +36,7 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
   string public constant CONTRACT_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
   string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
+  string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
 
   bytes32 public constant CONTRACT_CORE_RSRA = "contract_core_rsra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -50,6 +51,7 @@ contract FundStorage is Permissionable {
   bytes32 public constant ADD_FUND_RULE_THRESHOLD = bytes32("add_fund_rule_threshold");
   bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
   bytes32 public constant CHANGE_MS_OWNERS_THRESHOLD = bytes32("change_ms_owners_threshold");
+  bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -83,10 +85,13 @@ contract FundStorage is Permissionable {
   string public name;
   string public description;
 
+  FundMultiSig public multiSig;
+
   ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
+  ArraySet.AddressSet private feeContracts;
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   mapping(bytes32 => bytes32) private _config;
@@ -96,6 +101,8 @@ contract FundStorage is Permissionable {
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
   mapping(uint256 => uint256) private _expelledTokenReputation;
+  // spaceTokenId => isLocked
+  mapping(uint256 => bool) private _lockedSpaceTokens;
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
@@ -103,8 +110,15 @@ contract FundStorage is Permissionable {
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
 
+  modifier onlyFeeContract() {
+    require(feeContracts.has(msg.sender), "Not a fee contract");
+
+    _;
+  }
+
   constructor (
     bool _isPrivate,
+    FundMultiSig _multiSig,
     uint256 _manageWhiteListThreshold,
     uint256 _modifyConfigThreshold,
     uint256 _newMemberThreshold,
@@ -113,8 +127,11 @@ contract FundStorage is Permissionable {
     uint256 _changeNameAndDescriptionThreshold,
     uint256 _addFundRuleThreshold,
     uint256 _deactivateFundRuleThreshold,
-    uint256 _changeMsOwnersThreshold
+    uint256 _changeMsOwnersThreshold,
+    uint256 _modifyFeeThreshold
   ) public {
+    multiSig = _multiSig;
+
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
     _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);
@@ -135,6 +152,8 @@ contract FundStorage is Permissionable {
     _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
     _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_changeMsOwnersThreshold);
     _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
+    _config[MODIFY_FEE_THRESHOLD] = bytes32(_modifyFeeThreshold);
+    _configKeys.add(MODIFY_FEE_THRESHOLD);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -232,6 +251,19 @@ contract FundStorage is Permissionable {
     fundRule.createdAt = block.timestamp;
 
     _activeFundRules.add(_id);
+  }
+
+
+  function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
+    feeContracts.add(_feeContract);
+  }
+
+  function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
+    _lockedSpaceTokens[_spaceTokenId] = true;
+  }
+
+  function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
+    _lockedSpaceTokens[_spaceTokenId] = false;
   }
 
   function disableFundRule(uint256 _id) external onlyRole(CONTRACT_DEACTIVATE_FUND_RULE_MANAGER) {
@@ -355,5 +387,17 @@ contract FundStorage is Permissionable {
     } else {
       return true;
     }
+  }
+
+  function getFeeContracts() external view returns (address[] memory) {
+    return feeContracts.elements();
+  }
+
+  function getFeeContractCount() external view returns (uint256) {
+    return feeContracts.size();
+  }
+
+  function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
+    return _lockedSpaceTokens[_spaceTokenId];
   }
 }
