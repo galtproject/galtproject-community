@@ -205,21 +205,21 @@ contract('Regular ETH Fees', accounts => {
     // - alice pays 3 ETH
     await this.regularEthFee.pay('1', { from: alice, value: ether(3) });
     // not locked yet
-    await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized}));
+    await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
-    await this.regularEthFee.lockSpaceToken('1', { from: unauthorized});
+    await this.regularEthFee.lockSpaceToken('1', { from: unauthorized });
     res = await this.fundStorageX.isSpaceTokenLocked('1');
     assert.equal(res, true);
 
     // unable to unlock
-    await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized}));
+    await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
     // the current period is completely paid upfront
     await this.regularEthFee.pay('1', { from: alice, value: ether(1) });
     // unlock
-    this.regularEthFee.unlockSpaceToken('1', { from: unauthorized});
+    this.regularEthFee.unlockSpaceToken('1', { from: unauthorized });
 
     // unable to lock again
-    await assertRevert(this.regularEthFee.lockSpaceToken('1', { from: unauthorized}));
+    await assertRevert(this.regularEthFee.lockSpaceToken('1', { from: unauthorized }));
   });
 });
