@@ -61,6 +61,7 @@ contract('Proposals', accounts => {
     this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
     this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
     this.changeMultiSigOwnersProposalManager = fund.changeMultiSigOwnersProposalManager;
+    this.modifyMultiSigManagerDetailsProposalManager = fund.modifyMultiSigManagerDetailsProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -365,10 +366,45 @@ contract('Proposals', accounts => {
     });
   });
 
-  describe('ChangeMultiSigOwnersProposalManager', () => {
+  describe('ChangeMultiSigOwnersProposalManager && ModifyMultiSigManagerDetailsProposalManager', () => {
     it('should be able to change the list of MultiSig owners', async function() {
       await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
+      // approve Alice
+      let res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
+        alice,
+        true,
+        'Alice',
+        [bytes32('asdf')],
+        'Hey',
+        {
+          from: bob
+        }
+      );
+      let pId = res.logs[0].args.proposalId.toString(10);
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
+      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+
+      // approve George
+      res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
+        george,
+        true,
+        'George',
+        [bytes32('asdf')],
+        'Hey',
+        {
+          from: bob
+        }
+      );
+      pId = res.logs[0].args.proposalId.toString(10);
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
+      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+
+      //
       let required = await this.fundMultiSigX.required();
       let owners = await this.fundMultiSigX.getOwners();
 
@@ -386,14 +422,9 @@ contract('Proposals', accounts => {
         })
       );
 
-      let res = await this.changeMultiSigOwnersProposalManager.propose(
-        [alice, dan, frank, george],
-        3,
-        'Have a new list',
-        {
-          from: bob
-        }
-      );
+      res = await this.changeMultiSigOwnersProposalManager.propose([alice, dan, frank, george], 3, 'Have a new list', {
+        from: bob
+      });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -430,6 +461,38 @@ contract('Proposals', accounts => {
       res = await this.changeMultiSigOwnersProposalManager.getNayShare(proposalId);
       assert.equal(res, 20);
 
+      await assertRevert(this.changeMultiSigOwnersProposalManager.triggerApprove(proposalId, { from: dan }));
+
+      // approve Dan
+      res = await this.modifyMultiSigManagerDetailsProposalManager.propose(dan, true, 'Dan', [bytes32('asdf')], 'Hey', {
+        from: bob
+      });
+      pId = res.logs[0].args.proposalId.toString(10);
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
+      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+
+      // approve Frank
+      res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
+        frank,
+        true,
+        'Frank',
+        [bytes32('asdf')],
+        'Hey',
+        {
+          from: bob
+        }
+      );
+
+
+      pId = res.logs[0].args.proposalId.toString(10);
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
+      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
+      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+
+      // now it's ok
       await this.changeMultiSigOwnersProposalManager.triggerApprove(proposalId, { from: dan });
 
       res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
