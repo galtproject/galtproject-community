@@ -418,7 +418,7 @@ contract FundStorage is Permissionable {
   function areMembersValid(address[] calldata _members) external view returns (bool) {
     uint256 len = _members.length;
 
-    for(uint256 i = 0; i < len; i++) {
+    for (uint256 i = 0; i < len; i++) {
       if (_multiSigManagers[_members[i]].active == false) {
         return false;
       }

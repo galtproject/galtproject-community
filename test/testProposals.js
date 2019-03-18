@@ -485,7 +485,6 @@ contract('Proposals', accounts => {
         }
       );
 
-
       pId = res.logs[0].args.proposalId.toString(10);
       await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
       await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
