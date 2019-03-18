@@ -15,6 +15,9 @@ const ChangeNameAndDescriptionProposalManagerFactory = artifacts.require(
 const ChangeMultiSigOwnersProposalManagerFactory = artifacts.require(
   './ChangeMultiSigOwnersProposalManagerFactory.sol'
 );
+const ModifyMultiSigManagerDetailsProposalManagerFactory = artifacts.require(
+  './ModifyMultiSigManagerDetailsProposalManagerFactory.sol'
+);
 
 const FundStorage = artifacts.require('./FundStorage.sol');
 const FundController = artifacts.require('./FundController.sol');
@@ -33,6 +36,9 @@ const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRulePropos
 const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 const ModifyFeeProposalManager = artifacts.require('./ModifyFeeProposalManager.sol');
 const WLProposalManager = artifacts.require('./WLProposalManager.sol');
+const ModifyMultiSigManagerDetailsProposalManager = artifacts.require(
+  './ModifyMultiSigManagerDetailsProposalManager.sol'
+);
 
 async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLockerRegistryAddress, owner) {
   this.rsraFactory = await MockRSRAFactory.new();
@@ -50,6 +56,8 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
   this.deactivateFundRuleProposalManagerFactory = await DeactivateFundRuleProposalManagerFactory.new();
   this.changeMultiSigOwnersProposalManagerFactory = await ChangeMultiSigOwnersProposalManagerFactory.new();
   this.modifyFeeProposalManagerFactory = await ModifyFeeProposalManagerFactory.new();
+  // eslint-disable-next-line
+  this.modifyMultiSigManagerDetailsProposalManagerFactory = await ModifyMultiSigManagerDetailsProposalManagerFactory.new();
 
   const fundFactory = await FundFactory.new(
     galtTokenAddress,
@@ -73,6 +81,7 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
     this.deactivateFundRuleProposalManagerFactory.address,
     this.changeMultiSigOwnersProposalManagerFactory.address,
     this.modifyFeeProposalManagerFactory.address,
+    this.modifyMultiSigManagerDetailsProposalManagerFactory.address,
     { from: owner }
   );
 
@@ -119,48 +128,59 @@ async function buildFund(
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
-  const fundController = await FundController.at(res.logs[0].args.fundController);
 
   // >>> Step #2
   res = await factory.buildSecondStep(fundId, { from: creator });
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  const fundController = await FundController.at(res.logs[0].args.fundController);
+
+  // >>> Step #3
+  res = await factory.buildThirdStep(fundId, { from: creator });
+  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRsra = await MockRSRA.at(res.logs[0].args.fundRsra);
   const modifyConfigProposalManager = await MockModifyConfigProposalManager.at(
     res.logs[0].args.modifyConfigProposalManager
   );
   const newMemberProposalManager = await NewMemberProposalManager.at(res.logs[0].args.newMemberProposalManager);
 
-  // >>> Step #3
-  res = await factory.buildThirdStep(fundId, { from: creator });
-  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  // >>> Step #4
+  res = await factory.buildFourthStep(fundId, { from: creator });
+  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
   const fineMemberProposalManager = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
   const whiteListProposalManager = await WLProposalManager.at(res.logs[0].args.whiteListProposalManager);
   const expelMemberProposalManager = await ExpelMemberProposalManager.at(res.logs[0].args.expelMemberProposalManager);
 
-  // >>> Step #4
-  res = await factory.buildFourthStep(fundId, name, description, { from: creator });
-  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
+  // >>> Step #5
+  res = await factory.buildFifthStep(fundId, name, description, { from: creator });
+  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
   const changeNameAndDescriptionProposalManager = await ChangeNameAndDescriptionProposalManager.at(
     res.logs[0].args.changeNameAndDescriptionProposalManager
   );
 
-  // Step #5
-  res = await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
-  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
+  // >>> Step #6
+  res = await factory.buildSixthStep(fundId, initialSpaceTokens, { from: creator });
+  // console.log('buildSixthStep gasUsed', res.receipt.gasUsed);
 
   const addFundRuleProposalManager = await AddFundRuleProposalManager.at(res.logs[0].args.addFundRuleProposalManager);
   const deactivateFundRuleProposalManager = await DeactivateFundRuleProposalManager.at(
     res.logs[0].args.deactivateFundRuleProposalManager
   );
 
-  // Step #6
-  res = await factory.buildSixthStep(fundId, { from: creator });
-  // console.log('buildSixthStep gasUsed', res.receipt.gasUsed);
+  // >>> Step #7
+  res = await factory.buildSeventhStep(fundId, { from: creator });
+  // console.log('buildSeventhStep gasUsed', res.receipt.gasUsed);
 
   const changeMultiSigOwnersProposalManager = await ChangeMultiSigOwnersProposalManager.at(
     res.logs[0].args.changeMultiSigOwnersProposalManager
   );
   const modifyFeeProposalManager = await ModifyFeeProposalManager.at(res.logs[0].args.modifyFeeProposalManager);
+
+  // >>> Step #8
+  res = await factory.buildEighthStep(fundId, { from: creator });
+  // console.log('buildEighthStep gasUsed', res.receipt.gasUsed);
+  const modifyMultiSigManagerDetailsProposalManager = await ModifyMultiSigManagerDetailsProposalManager.at(
+    res.logs[0].args.modifyMultiSigManagerDetailsProposalManager
+  );
 
   return {
     fundStorage,
@@ -176,7 +196,8 @@ async function buildFund(
     addFundRuleProposalManager,
     deactivateFundRuleProposalManager,
     changeMultiSigOwnersProposalManager,
-    modifyFeeProposalManager
+    modifyFeeProposalManager,
+    modifyMultiSigManagerDetailsProposalManager
   };
 }
 

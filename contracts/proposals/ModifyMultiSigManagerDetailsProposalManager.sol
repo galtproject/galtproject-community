@@ -13,45 +13,40 @@
 
 pragma solidity 0.5.3;
 
-import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-import "./AbstractFundProposalManager.sol";
 import "../FundStorage.sol";
-import "../FundMultiSig.sol";
+import "./AbstractFundProposalManager.sol";
 
 
-contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
+contract ModifyMultiSigManagerDetailsProposalManager is AbstractFundProposalManager {
   struct Proposal {
+    bool active;
+    address manager;
+    string name;
+    bytes32[] documents;
     string description;
-    uint256 required;
-    address[] newOwners;
   }
 
   mapping(uint256 => Proposal) private _proposals;
 
-  FundMultiSig multiSig;
-
-  constructor(
-    FundMultiSig _multiSig,
-    IRSRA _rsra,
-    FundStorage _fundStorage
-  )
-    public
-    AbstractFundProposalManager(_rsra, _fundStorage)
-  {
-    assert(address(_multiSig) != address(0));
-
-    multiSig = _multiSig;
+  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(address[] calldata _newOwners, uint256 _required, string calldata _description) external {
-    require(_required <= _newOwners.length, "Required too big");
-    require(_required > 0, "Required too low");
-
+  function propose(
+    address _manager,
+    bool _active,
+    string calldata _name,
+    bytes32[] calldata _documents,
+    string calldata _description
+  )
+    external
+  {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
-      newOwners: _newOwners,
-      required: _required,
+      active: _active,
+      manager: _manager,
+      name: _name,
+      documents: _documents,
       description: _description
     });
 
@@ -66,18 +61,28 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    require(fundStorage.areMembersValid(p.newOwners), "Not all members are valid");
-
-    multiSig.setOwners(p.newOwners, p.required);
+    fundStorage.setMultiSigManager(p.active, p.manager, p.name, p.documents);
   }
 
   function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.CHANGE_MS_OWNERS_THRESHOLD()));
+    return uint256(fundStorage.getConfigValue(fundStorage.FINE_MEMBER_THRESHOLD()));
   }
 
-  function getProposal(uint256 _proposalId) external view returns (address[] memory newOwners, string memory description) {
+  function getProposal(
+    uint256 _proposalId
+  )
+    external
+    view
+    returns (
+      bool active,
+      address manager,
+      string memory name,
+      bytes32[] memory documents,
+      string memory description
+    )
+  {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.newOwners, p.description);
+    return (p.active, p.manager, p.name, p.documents, p.description);
   }
 }

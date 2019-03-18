@@ -37,6 +37,7 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
   string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
   string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
+  string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
 
   bytes32 public constant CONTRACT_CORE_RSRA = "contract_core_rsra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -67,6 +68,13 @@ contract FundStorage is Permissionable {
     bytes32 abiIpfsHash;
     bytes32 contractType;
     string description;
+  }
+
+  struct MultiSigManager {
+    bool active;
+    address manager;
+    string name;
+    bytes32[] documents;
   }
 
   // TODO: separate caching data with config to another contract 
@@ -109,6 +117,8 @@ contract FundStorage is Permissionable {
   mapping(address => ProposalContract) private _proposalContracts;
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
+  // manager => details
+  mapping(address => MultiSigManager) private _multiSigManagers;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -283,6 +293,22 @@ contract FundStorage is Permissionable {
     description = _description;
   }
 
+  function setMultiSigManager(
+    bool _active,
+    address _manager,
+    string calldata _name,
+    bytes32[] calldata _documents
+  )
+    external
+    onlyRole(CONTRACT_MEMBER_DETAILS_MANAGER)
+  {
+    MultiSigManager storage m = _multiSigManagers[_manager];
+
+    m.active = _active;
+    m.name = _name;
+    m.documents = _documents;
+  }
+
   // GETTERS
   function getConfigValue(bytes32 _key) external view returns (bytes32) {
     return _config[_key];
@@ -387,6 +413,18 @@ contract FundStorage is Permissionable {
     } else {
       return true;
     }
+  }
+
+  function areMembersValid(address[] calldata _members) external view returns (bool) {
+    uint256 len = _members.length;
+
+    for (uint256 i = 0; i < len; i++) {
+      if (_multiSigManagers[_members[i]].active == false) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   function getFeeContracts() external view returns (address[] memory) {

@@ -5,6 +5,7 @@ cleanup:
 
 compile: cleanup
 	npm run compile
+	node scripts/checkContractSize.js
 	tput bel
 
 validate:
@@ -14,6 +15,9 @@ validate:
 test:
 	-npm test
 	tput bel
+
+check-size:
+	node scripts/checkContractSize.js
 
 retest: cleanup test
 
