@@ -10,6 +10,7 @@
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
     "@galtproject/libs": "git+ssh://github.com/galtspace/galtproject-libs.git",
     "@galtproject/utils": "^0.9.1",
+    "cli-table": "^0.3.1",
     "eslint": "^5.14.1",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^4.0.0",
