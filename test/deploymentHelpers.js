@@ -18,6 +18,9 @@ const ChangeMultiSigOwnersProposalManagerFactory = artifacts.require(
 const ModifyMultiSigManagerDetailsProposalManagerFactory = artifacts.require(
   './ModifyMultiSigManagerDetailsProposalManagerFactory.sol'
 );
+const ChangeMultiSigWithdrawalLimitsProposalManagerFactory = artifacts.require(
+  './ChangeMultiSigWithdrawalLimitsProposalManagerFactory.sol'
+);
 
 const FundStorage = artifacts.require('./FundStorage.sol');
 const FundController = artifacts.require('./FundController.sol');
@@ -39,6 +42,9 @@ const WLProposalManager = artifacts.require('./WLProposalManager.sol');
 const ModifyMultiSigManagerDetailsProposalManager = artifacts.require(
   './ModifyMultiSigManagerDetailsProposalManager.sol'
 );
+const ChangeMultiSigWithdrawalLimitsProposalManager = artifacts.require(
+  './ChangeMultiSigWithdrawalLimitsProposalManager.sol'
+);
 
 async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLockerRegistryAddress, owner) {
   this.rsraFactory = await MockRSRAFactory.new();
@@ -58,6 +64,8 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
   this.modifyFeeProposalManagerFactory = await ModifyFeeProposalManagerFactory.new();
   // eslint-disable-next-line
   this.modifyMultiSigManagerDetailsProposalManagerFactory = await ModifyMultiSigManagerDetailsProposalManagerFactory.new();
+  // eslint-disable-next-line
+  this.changeMultiSigWithdrawalLimitsProposalManagerFactory = await ChangeMultiSigWithdrawalLimitsProposalManagerFactory.new();
 
   const fundFactory = await FundFactory.new(
     galtTokenAddress,
@@ -82,6 +90,7 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
     this.changeMultiSigOwnersProposalManagerFactory.address,
     this.modifyFeeProposalManagerFactory.address,
     this.modifyMultiSigManagerDetailsProposalManagerFactory.address,
+    this.changeMultiSigWithdrawalLimitsProposalManagerFactory.address,
     { from: owner }
   );
 
@@ -181,6 +190,9 @@ async function buildFund(
   const modifyMultiSigManagerDetailsProposalManager = await ModifyMultiSigManagerDetailsProposalManager.at(
     res.logs[0].args.modifyMultiSigManagerDetailsProposalManager
   );
+  const changeMultiSigWithdrawalLimitsProposalManager = await ChangeMultiSigWithdrawalLimitsProposalManager.at(
+    res.logs[0].args.changeMultiSigWithdrawalLimitsProposalManager
+  );
 
   return {
     fundStorage,
@@ -197,7 +209,8 @@ async function buildFund(
     deactivateFundRuleProposalManager,
     changeMultiSigOwnersProposalManager,
     modifyFeeProposalManager,
-    modifyMultiSigManagerDetailsProposalManager
+    modifyMultiSigManagerDetailsProposalManager,
+    changeMultiSigWithdrawalLimitsProposalManager
   };
 }
 

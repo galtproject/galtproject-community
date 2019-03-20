@@ -37,6 +37,7 @@ import "./DeactivateFundRuleProposalManagerFactory.sol";
 import "./ChangeMultiSigOwnersProposalManagerFactory.sol";
 import "./ModifyFeeProposalManagerFactory.sol";
 import "./ModifyMultiSigManagerDetailsProposalManagerFactory.sol";
+import "./ChangeMultiSigWithdrawalLimitsProposalManagerFactory.sol";
 
 
 contract FundFactory is Ownable {
@@ -84,7 +85,8 @@ contract FundFactory is Ownable {
 
   event CreateFundEighthStep(
     bytes32 fundId,
-    address modifyMultiSigManagerDetailsProposalManager
+    address modifyMultiSigManagerDetailsProposalManager,
+    address changeMultiSigWithdrawalLimitsProposalManager
   );
 
   bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config_proposal");
@@ -118,6 +120,7 @@ contract FundFactory is Ownable {
   ChangeMultiSigOwnersProposalManagerFactory changeMultiSigOwnersProposalManagerFactory;
   ModifyFeeProposalManagerFactory modifyFeeProposalManagerFactory;
   ModifyMultiSigManagerDetailsProposalManagerFactory modifyMultiSigManagerDetailsProposalManagerFactory;
+  ChangeMultiSigWithdrawalLimitsProposalManagerFactory changeMultiSigWithdrawalLimitsProposalManagerFactory;
 
   enum Step {
     FIRST,
@@ -177,7 +180,8 @@ contract FundFactory is Ownable {
     DeactivateFundRuleProposalManagerFactory _deactivateFundRuleProposalManagerFactory,
     ChangeMultiSigOwnersProposalManagerFactory _changeMultiSigOwnersProposalManagerFactory,
     ModifyFeeProposalManagerFactory _modifyFeeProposalManagerFactory,
-    ModifyMultiSigManagerDetailsProposalManagerFactory _modifyMultiSigManagerDetailsProposalManagerFactory
+    ModifyMultiSigManagerDetailsProposalManagerFactory _modifyMultiSigManagerDetailsProposalManagerFactory,
+    ChangeMultiSigWithdrawalLimitsProposalManagerFactory _changeMultiSigWithdrawalLimitsProposalManagerFactory
   )
     external
     onlyOwner
@@ -195,6 +199,7 @@ contract FundFactory is Ownable {
     changeMultiSigOwnersProposalManagerFactory = _changeMultiSigOwnersProposalManagerFactory;
     modifyFeeProposalManagerFactory = _modifyFeeProposalManagerFactory;
     modifyMultiSigManagerDetailsProposalManagerFactory = _modifyMultiSigManagerDetailsProposalManagerFactory;
+    changeMultiSigWithdrawalLimitsProposalManagerFactory = _changeMultiSigWithdrawalLimitsProposalManagerFactory;
 
     initialized = true;
   }
@@ -420,14 +425,20 @@ contract FundFactory is Ownable {
       c.rsra,
       c.fundStorage
     );
+    ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager = changeMultiSigWithdrawalLimitsProposalManagerFactory.build(
+      c.rsra,
+      c.fundStorage
+    );
 
     c.fundStorage.addRoleTo(address(modifyMultiSigManagerDetailsProposalManager), c.fundStorage.CONTRACT_MEMBER_DETAILS_MANAGER());
+    c.fundStorage.addRoleTo(address(changeMultiSigWithdrawalLimitsProposalManager), c.fundStorage.CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER());
 
     c.currentStep = Step.DONE;
 
     emit CreateFundEighthStep(
       _fundId,
-      address(modifyMultiSigManagerDetailsProposalManager)
+      address(modifyMultiSigManagerDetailsProposalManager),
+      address(changeMultiSigWithdrawalLimitsProposalManager)
     );
   }
 

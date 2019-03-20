@@ -51,6 +51,7 @@ contract FundStorageFactory is Ownable {
         _thresholds[8],
       // _modifyFeeThreshold,
       _thresholds[9]
+
     );
 
     fundStorage.addRoleTo(msg.sender, "role_manager");

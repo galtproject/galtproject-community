@@ -38,6 +38,7 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
   string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
+  string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
 
   bytes32 public constant CONTRACT_CORE_RSRA = "contract_core_rsra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -53,6 +54,7 @@ contract FundStorage is Permissionable {
   bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
   bytes32 public constant CHANGE_MS_OWNERS_THRESHOLD = bytes32("change_ms_owners_threshold");
   bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
+  bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -92,6 +94,8 @@ contract FundStorage is Permissionable {
 
   string public name;
   string public description;
+  uint256 public initialTimestamp;
+  uint256 public periodLength;
 
   FundMultiSig public multiSig;
 
@@ -119,6 +123,8 @@ contract FundStorage is Permissionable {
   mapping(uint256 => MemberFines) private _fines;
   // manager => details
   mapping(address => MultiSigManager) private _multiSigManagers;
+  // erc20Contract => details
+  mapping(address => uint256) private _periodLimit;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -164,6 +170,10 @@ contract FundStorage is Permissionable {
     _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
     _config[MODIFY_FEE_THRESHOLD] = bytes32(_modifyFeeThreshold);
     _configKeys.add(MODIFY_FEE_THRESHOLD);
+    // TODO: fix
+
+    _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(uint256(60));
+    _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -309,6 +319,16 @@ contract FundStorage is Permissionable {
     m.documents = _documents;
   }
 
+  function setPeriodLimit(
+    address _erc20Contract,
+    uint256 _amount
+  )
+    external
+    onlyRole(CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
+  {
+    _periodLimit[_erc20Contract] = _amount;
+  }
+
   // GETTERS
   function getConfigValue(bytes32 _key) external view returns (bytes32) {
     return _config[_key];
@@ -438,4 +458,9 @@ contract FundStorage is Permissionable {
   function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
     return _lockedSpaceTokens[_spaceTokenId];
   }
+
+  function getPeriodLimit(address _erc20Contract) external view returns (uint256) {
+    return _periodLimit[_erc20Contract];
+  }
+
 }
