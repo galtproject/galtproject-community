@@ -54,6 +54,7 @@ contract FundStorage is Permissionable {
   bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
   bytes32 public constant CHANGE_MS_OWNERS_THRESHOLD = bytes32("change_ms_owners_threshold");
   bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
+  bytes32 public constant MODIFY_MANAGER_DETAILS_THRESHOLD = bytes32("modify_manager_details_threshold");
   bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
@@ -135,44 +136,35 @@ contract FundStorage is Permissionable {
   constructor (
     bool _isPrivate,
     FundMultiSig _multiSig,
-    uint256 _manageWhiteListThreshold,
-    uint256 _modifyConfigThreshold,
-    uint256 _newMemberThreshold,
-    uint256 _expelMemberThreshold,
-    uint256 _fineMemberThreshold,
-    uint256 _changeNameAndDescriptionThreshold,
-    uint256 _addFundRuleThreshold,
-    uint256 _deactivateFundRuleThreshold,
-    uint256 _changeMsOwnersThreshold,
-    uint256 _modifyFeeThreshold
+    uint256[] memory _thresholds
   ) public {
     multiSig = _multiSig;
 
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
-    _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);
+    _config[MANAGE_WL_THRESHOLD] = bytes32(_thresholds[0]);
     _configKeys.add(MANAGE_WL_THRESHOLD);
-    _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_modifyConfigThreshold);
+    _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_thresholds[1]);
     _configKeys.add(MODIFY_CONFIG_THRESHOLD);
-    _config[NEW_MEMBER_THRESHOLD] = bytes32(_newMemberThreshold);
+    _config[NEW_MEMBER_THRESHOLD] = bytes32(_thresholds[2]);
     _configKeys.add(NEW_MEMBER_THRESHOLD);
-    _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_expelMemberThreshold);
+    _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_thresholds[3]);
     _configKeys.add(EXPEL_MEMBER_THRESHOLD);
-    _config[FINE_MEMBER_THRESHOLD] = bytes32(_fineMemberThreshold);
+    _config[FINE_MEMBER_THRESHOLD] = bytes32(_thresholds[4]);
     _configKeys.add(FINE_MEMBER_THRESHOLD);
-    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_changeNameAndDescriptionThreshold);
+    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_thresholds[5]);
     _configKeys.add(NAME_AND_DESCRIPTION_THRESHOLD);
-    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_addFundRuleThreshold);
+    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_thresholds[6]);
     _configKeys.add(ADD_FUND_RULE_THRESHOLD);
-    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_deactivateFundRuleThreshold);
+    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_thresholds[7]);
     _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
-    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_changeMsOwnersThreshold);
+    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_thresholds[8]);
     _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
-    _config[MODIFY_FEE_THRESHOLD] = bytes32(_modifyFeeThreshold);
+    _config[MODIFY_FEE_THRESHOLD] = bytes32(_thresholds[9]);
     _configKeys.add(MODIFY_FEE_THRESHOLD);
-    // TODO: fix
-
-    _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(uint256(60));
+    _config[MODIFY_MANAGER_DETAILS_THRESHOLD] = bytes32(_thresholds[10]);
+    _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
+    _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
     _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
   }
 

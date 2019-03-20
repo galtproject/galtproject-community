@@ -46,7 +46,7 @@ contract('WLProposal', accounts => {
       fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60],
+      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],
       [bob, charlie, dan],
       2
     );
