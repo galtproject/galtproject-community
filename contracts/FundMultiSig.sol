@@ -88,6 +88,8 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
     }
 
     (bool active,) = fundStorage.getPeriodLimit(_destination);
+
+    // If a withdrawal limit exists for this t_destination
     if (active) {
       uint256 erc20Value;
 
@@ -101,7 +103,7 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
           erc20Value := mload(add(_data, 0x44))
         }
         default {
-          // Methods other than transfer are prohibited for ERC20 contract
+          // Methods other than transfer are prohibited for ERC20 contracts
           revert(0, 0)
         }
       }
