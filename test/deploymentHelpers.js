@@ -46,6 +46,9 @@ const ChangeMultiSigWithdrawalLimitsProposalManager = artifacts.require(
   './ChangeMultiSigWithdrawalLimitsProposalManager.sol'
 );
 
+// 60 * 60 * 24 * 30
+const ONE_MONTH = 2592000;
+
 async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLockerRegistryAddress, owner) {
   this.rsraFactory = await MockRSRAFactory.new();
   this.fundStorageFactory = await FundStorageFactory.new();
@@ -105,6 +108,7 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
  * @param {Array<number>} thresholds
  * @param {Array<string>} initialMultiSigOwners
  * @param {number} initialMultiSigRequired
+ * @param {number} periodLength
  * @param {string} name
  * @param {string} description
  * @param {Array<string>} initialSpaceTokens
@@ -118,6 +122,7 @@ async function buildFund(
   thresholds,
   initialMultiSigOwners,
   initialMultiSigRequired,
+  periodLength = ONE_MONTH,
   name = 'foo',
   description = 'bar',
   initialSpaceTokens = []
@@ -129,6 +134,7 @@ async function buildFund(
     thresholds,
     initialMultiSigOwners,
     initialMultiSigRequired,
+    periodLength,
     {
       from: creator
     }

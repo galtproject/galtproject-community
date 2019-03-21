@@ -209,7 +209,8 @@ contract FundFactory is Ownable {
     bool _isPrivate,
     uint256[] calldata _thresholds,
     address[] calldata _initialMultiSigOwners,
-    uint256 _initialMultiSigRequired
+    uint256 _initialMultiSigRequired,
+    uint256 _periodLength
   )
     external
     returns (bytes32 fundId)
@@ -223,12 +224,20 @@ contract FundFactory is Ownable {
 
     _acceptPayment();
 
-    FundMultiSig fundMultiSig = fundMultiSigFactory.build(_initialMultiSigOwners, _initialMultiSigRequired);
     FundStorage fundStorage = fundStorageFactory.build(
       _isPrivate,
-      fundMultiSig,
-      _thresholds
+      _thresholds,
+      _periodLength
     );
+
+    FundMultiSig fundMultiSig = fundMultiSigFactory.build(
+      _initialMultiSigOwners,
+      _initialMultiSigRequired,
+      fundStorage
+    );
+
+    fundStorage.initialize(fundMultiSig);
+
     c.creator = msg.sender;
     c.operator = operator;
     c.fundStorage = fundStorage;

@@ -17,19 +17,22 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 // This contract will be included into the current one
 import "../FundMultiSig.sol";
+import "../FundStorage.sol";
 
 
 contract FundMultiSigFactory is Ownable {
   function build(
     address[] calldata _initialOwners,
-    uint256 _required
+    uint256 _required,
+    FundStorage _fundStorage
   )
     external
     returns (FundMultiSig fundMultiSig)
   {
     fundMultiSig = new FundMultiSig(
       _initialOwners,
-      _required
+      _required,
+      _fundStorage
     );
 
     fundMultiSig.addRoleTo(msg.sender, "role_manager");

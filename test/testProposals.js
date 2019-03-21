@@ -519,14 +519,15 @@ contract('Proposals', accounts => {
 
   describe('ChangeMultiSigWithdrawalLimitsProposalManager', () => {
     it('should be able to change limit the for each erc20 contract', async function() {
-      // ETH
       await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
-      assert.equal(limit, ether(0));
+      assert.equal(limit.active, false);
+      assert.equal(limit.amount, ether(0));
 
-      // approve Alice
+      // set limit
       const res = await this.changeMultiSigWithdrawalLimitsProposalManager.propose(
+        true,
         this.galtToken.address,
         ether(3000),
         'Hey',
@@ -541,7 +542,8 @@ contract('Proposals', accounts => {
       await this.changeMultiSigWithdrawalLimitsProposalManager.triggerApprove(pId, { from: dan });
 
       limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
-      assert.equal(limit, ether(3000));
+      assert.equal(limit.active, true);
+      assert.equal(limit.amount, ether(3000));
     });
   });
 });

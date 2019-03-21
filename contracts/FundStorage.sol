@@ -17,10 +17,11 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "./FundMultiSig.sol";
 
 
-contract FundStorage is Permissionable {
+contract FundStorage is Permissionable, Initializable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
@@ -93,6 +94,11 @@ contract FundStorage is Permissionable {
     address[] proposalsManagers;
   }
 
+  struct PeriodLimit {
+    bool active;
+    uint256 amount;
+  }
+
   string public name;
   string public description;
   uint256 public initialTimestamp;
@@ -125,7 +131,9 @@ contract FundStorage is Permissionable {
   // manager => details
   mapping(address => MultiSigManager) private _multiSigManagers;
   // erc20Contract => details
-  mapping(address => uint256) private _periodLimit;
+  mapping(address => PeriodLimit) private _periodLimits;
+  // erc20Contract => runningTotal
+  mapping(address => uint256) private _periodRunningTotals;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -133,13 +141,17 @@ contract FundStorage is Permissionable {
     _;
   }
 
+  modifier onlyMultiSig() {
+    require(msg.sender == address(multiSig), "Not a fee contract");
+
+    _;
+  }
+
   constructor (
     bool _isPrivate,
-    FundMultiSig _multiSig,
-    uint256[] memory _thresholds
+    uint256[] memory _thresholds,
+    uint256 _periodLength
   ) public {
-    multiSig = _multiSig;
-
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
     _config[MANAGE_WL_THRESHOLD] = bytes32(_thresholds[0]);
@@ -166,6 +178,13 @@ contract FundStorage is Permissionable {
     _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
     _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
     _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
+
+    periodLength = _periodLength;
+    initialTimestamp = block.timestamp;
+  }
+
+  function initialize(FundMultiSig _fundMultiSig) external isInitializer {
+    multiSig = _fundMultiSig;
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -265,7 +284,6 @@ contract FundStorage is Permissionable {
     _activeFundRules.add(_id);
   }
 
-
   function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
     feeContracts.add(_feeContract);
   }
@@ -312,13 +330,35 @@ contract FundStorage is Permissionable {
   }
 
   function setPeriodLimit(
+    bool _active,
     address _erc20Contract,
     uint256 _amount
   )
     external
     onlyRole(CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
   {
-    _periodLimit[_erc20Contract] = _amount;
+    _periodLimits[_erc20Contract].active = _active;
+    _periodLimits[_erc20Contract].amount = _amount;
+  }
+
+  function handleMultiSigTransaction(
+    address _erc20Contract,
+    uint256 _amount
+  )
+    external
+    onlyMultiSig
+  {
+    PeriodLimit storage limit = _periodLimits[_erc20Contract];
+    if (limit.active == false) {
+      return;
+    }
+
+    uint256 currentPeriod = getCurrentPeriod();
+    uint256 runningTotalBefore = _periodRunningTotals[_erc20Contract];
+    uint256 runningTotalAfter = _periodRunningTotals[_erc20Contract] + _amount;
+
+    require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
+    _periodRunningTotals[_erc20Contract] = runningTotalAfter;
   }
 
   // GETTERS
@@ -451,8 +491,12 @@ contract FundStorage is Permissionable {
     return _lockedSpaceTokens[_spaceTokenId];
   }
 
-  function getPeriodLimit(address _erc20Contract) external view returns (uint256) {
-    return _periodLimit[_erc20Contract];
+  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {
+    PeriodLimit storage p =_periodLimits[_erc20Contract];
+    return (p.active, p.amount);
   }
 
+  function getCurrentPeriod() public view returns (uint256) {
+    return (block.timestamp - initialTimestamp) / periodLength;
+  }
 }

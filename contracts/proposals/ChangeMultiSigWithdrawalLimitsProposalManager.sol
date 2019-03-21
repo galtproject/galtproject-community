@@ -19,8 +19,9 @@ import "./AbstractFundProposalManager.sol";
 
 contract ChangeMultiSigWithdrawalLimitsProposalManager is AbstractFundProposalManager {
   struct Proposal {
+    bool active;
     address erc20Contract;
-    uint256 limit;
+    uint256 amount;
     string description;
   }
 
@@ -29,12 +30,13 @@ contract ChangeMultiSigWithdrawalLimitsProposalManager is AbstractFundProposalMa
   constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
   }
 
-  function propose(address _erc20Contract, uint256 _limit, string calldata _description) external onlyMember {
+  function propose(bool _active, address _erc20Contract, uint256 _amount, string calldata _description) external onlyMember {
     uint256 id = idCounter.next();
 
     _proposals[id] = Proposal({
+      active: _active,
       erc20Contract: _erc20Contract,
-      limit: _limit,
+      amount: _amount,
       description: _description
     });
 
@@ -49,7 +51,7 @@ contract ChangeMultiSigWithdrawalLimitsProposalManager is AbstractFundProposalMa
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    fundStorage.setPeriodLimit(p.erc20Contract, p.limit);
+    fundStorage.setPeriodLimit(p.active, p.erc20Contract, p.amount);
   }
 
   function getProposal(
@@ -58,14 +60,15 @@ contract ChangeMultiSigWithdrawalLimitsProposalManager is AbstractFundProposalMa
     external
     view
     returns (
+      bool active,
       address erc20Contract,
-      uint256 limit,
+      uint256 amount,
       string memory description
     )
   {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.erc20Contract, p.limit, p.description);
+    return (p.active, p.erc20Contract, p.amount, p.description);
   }
 
   function getThreshold() public view returns (uint256) {

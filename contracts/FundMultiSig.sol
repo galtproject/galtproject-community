@@ -15,20 +15,27 @@ pragma solidity 0.5.3;
 
 import "@galtproject/core/contracts/vendor/MultiSigWallet/MultiSigWallet.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
+import "./FundStorage.sol";
 
 
 contract FundMultiSig is MultiSigWallet, Permissionable {
-  string public constant OWNER_MANAGER = "owner_manager";
-
   event NewOwnerSet(uint256 required, uint256 total);
+
+  string public constant OWNER_MANAGER = "owner_manager";
+  address public constant ETH_CONTRACT_ADDRESS = address(1);
+
+  FundStorage fundStorage;
+
 
   constructor(
     address[] memory _initialOwners,
-    uint256 _required
+    uint256 _required,
+    FundStorage _fundStorage
   )
     public
     MultiSigWallet(_initialOwners, _required)
   {
+    fundStorage = _fundStorage;
   }
 
   modifier forbidden() {
@@ -49,5 +56,61 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
     required = _required;
 
     emit NewOwnerSet(required, _newOwners.length);
+  }
+
+  // call has been separated into its own function in order to take advantage
+  // of the Solidity's code generator to produce a loop that copies tx.data into memory.
+  function external_call(address destination, uint value, uint dataLength, bytes memory data) private returns (bool) {
+    beforeTransactionHook(destination, value, dataLength, data);
+
+    bool result;
+    assembly {
+        let x := mload(0x40)   // "Allocate" memory for output (0x40 is where "free memory" pointer is stored by convention)
+        let d := add(data, 32) // First 32 bytes are the padded length of data, so exclude that
+        result := call(
+            sub(gas, 34710),   // 34710 is the value that solidity is currently emitting
+                               // It includes callGas (700) + callVeryLow (3, to pay for SUB) + callValueTransferGas (9000) +
+                               // callNewAccountGas (25000, in case the destination address does not exist and needs creating)
+            destination,
+            value,
+            d,
+            dataLength,        // Size of the input (in bytes) - this is what fixes the padding problem
+            x,
+            0                  // Output is ignored, therefore the output size is zero
+        )
+    }
+    return result;
+  }
+
+  function beforeTransactionHook(address _destination, uint _value, uint _dataLength, bytes memory _data) private {
+    if (_value > 0) {
+      fundStorage.handleMultiSigTransaction(ETH_CONTRACT_ADDRESS, _value);
+    }
+
+    (bool active,) = fundStorage.getPeriodLimit(_destination);
+    if (active) {
+      uint256 erc20Value;
+
+      assembly {
+        let code := mload(add(_data, 0x20))
+        code := and(code, 0xffffffff00000000000000000000000000000000000000000000000000000000)
+
+        switch code
+        // transfer(address,uint256)
+        case 0xa9059cbb00000000000000000000000000000000000000000000000000000000 {
+          erc20Value := mload(add(_data, 0x44))
+        }
+        default {
+          // Methods other than transfer are prohibited for GALT contract
+          revert(0, 0)
+        }
+      }
+
+      if (erc20Value == 0) {
+        return;
+      }
+
+      fundStorage.handleMultiSigTransaction(_destination, erc20Value);
+    }
   }
 }
