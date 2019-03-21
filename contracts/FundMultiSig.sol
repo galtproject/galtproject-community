@@ -101,7 +101,7 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
           erc20Value := mload(add(_data, 0x44))
         }
         default {
-          // Methods other than transfer are prohibited for GALT contract
+          // Methods other than transfer are prohibited for ERC20 contract
           revert(0, 0)
         }
       }
