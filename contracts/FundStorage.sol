@@ -132,8 +132,8 @@ contract FundStorage is Permissionable, Initializable {
   mapping(address => MultiSigManager) private _multiSigManagers;
   // erc20Contract => details
   mapping(address => PeriodLimit) private _periodLimits;
-  // erc20Contract => runningTotal
-  mapping(address => uint256) private _periodRunningTotals;
+  // periodId => (erc20Contract => runningTotal)
+  mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -354,11 +354,10 @@ contract FundStorage is Permissionable, Initializable {
     }
 
     uint256 currentPeriod = getCurrentPeriod();
-    uint256 runningTotalBefore = _periodRunningTotals[_erc20Contract];
-    uint256 runningTotalAfter = _periodRunningTotals[_erc20Contract] + _amount;
+    uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
 
     require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
-    _periodRunningTotals[_erc20Contract] = runningTotalAfter;
+    _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
   }
 
   // GETTERS
@@ -492,7 +491,7 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {
-    PeriodLimit storage p =_periodLimits[_erc20Contract];
+    PeriodLimit storage p = _periodLimits[_erc20Contract];
     return (p.active, p.amount);
   }
 
