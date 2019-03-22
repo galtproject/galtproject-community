@@ -47,7 +47,7 @@ contract('Proposals', accounts => {
       fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60],
+      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],
       [bob, charlie, dan],
       2
     );
@@ -62,6 +62,7 @@ contract('Proposals', accounts => {
     this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
     this.changeMultiSigOwnersProposalManager = fund.changeMultiSigOwnersProposalManager;
     this.modifyMultiSigManagerDetailsProposalManager = fund.modifyMultiSigManagerDetailsProposalManager;
+    this.changeMultiSigWithdrawalLimitsProposalManager = fund.changeMultiSigWithdrawalLimitsProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -513,6 +514,36 @@ contract('Proposals', accounts => {
 
       assert.equal(required, 3);
       assert.equal(owners.length, 4);
+    });
+  });
+
+  describe('ChangeMultiSigWithdrawalLimitsProposalManager', () => {
+    it('should be able to change limit the for each erc20 contract', async function() {
+      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+
+      let limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
+      assert.equal(limit.active, false);
+      assert.equal(limit.amount, ether(0));
+
+      // set limit
+      const res = await this.changeMultiSigWithdrawalLimitsProposalManager.propose(
+        true,
+        this.galtToken.address,
+        ether(3000),
+        'Hey',
+        {
+          from: bob
+        }
+      );
+      const pId = res.logs[0].args.proposalId.toString(10);
+      await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: bob });
+      await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: charlie });
+      await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: dan });
+      await this.changeMultiSigWithdrawalLimitsProposalManager.triggerApprove(pId, { from: dan });
+
+      limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
+      assert.equal(limit.active, true);
+      assert.equal(limit.amount, ether(3000));
     });
   });
 });

@@ -29,7 +29,7 @@ contract FundController is Permissionable {
     ERC20
   }
 
-  address public ETH_CONTRACT = 0x0000000000000000000000000000000000000001;
+  address public constant ETH_CONTRACT = address(1);
 
   IERC20 galtToken;
   FundMultiSig multiSig;

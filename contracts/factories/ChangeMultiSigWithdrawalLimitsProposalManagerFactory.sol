@@ -18,19 +18,17 @@ import "../FundStorage.sol";
 import "../interfaces/IRSRA.sol";
 
 // This contract will be included into the current one
-import "../proposals/ModifyConfigProposalManager.sol";
+import "../proposals/ChangeMultiSigWithdrawalLimitsProposalManager.sol";
 
 
-contract ModifyConfigProposalManagerFactory is Ownable {
+contract ChangeMultiSigWithdrawalLimitsProposalManagerFactory is Ownable {
   function build(IRSRA _rsra, FundStorage _fundStorage)
     external
-    returns (ModifyConfigProposalManager)
+    returns (ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager)
   {
-    ModifyConfigProposalManager modifyConfigProposalManager = new ModifyConfigProposalManager(_rsra, _fundStorage);
+    changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_rsra, _fundStorage);
 
-    modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
-
-    return modifyConfigProposalManager;
+    changeMultiSigWithdrawalLimitsProposalManager.addRoleTo(msg.sender, "role_manager");
+    changeMultiSigWithdrawalLimitsProposalManager.removeRoleFrom(address(this), "role_manager");
   }
 }

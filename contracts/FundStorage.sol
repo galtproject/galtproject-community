@@ -17,10 +17,11 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "./FundMultiSig.sol";
 
 
-contract FundStorage is Permissionable {
+contract FundStorage is Permissionable, Initializable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
@@ -38,6 +39,7 @@ contract FundStorage is Permissionable {
   string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
   string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
+  string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
 
   bytes32 public constant CONTRACT_CORE_RSRA = "contract_core_rsra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -53,6 +55,8 @@ contract FundStorage is Permissionable {
   bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
   bytes32 public constant CHANGE_MS_OWNERS_THRESHOLD = bytes32("change_ms_owners_threshold");
   bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
+  bytes32 public constant MODIFY_MANAGER_DETAILS_THRESHOLD = bytes32("modify_manager_details_threshold");
+  bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -90,8 +94,15 @@ contract FundStorage is Permissionable {
     address[] proposalsManagers;
   }
 
+  struct PeriodLimit {
+    bool active;
+    uint256 amount;
+  }
+
   string public name;
   string public description;
+  uint256 public initialTimestamp;
+  uint256 public periodLength;
 
   FundMultiSig public multiSig;
 
@@ -119,6 +130,10 @@ contract FundStorage is Permissionable {
   mapping(uint256 => MemberFines) private _fines;
   // manager => details
   mapping(address => MultiSigManager) private _multiSigManagers;
+  // erc20Contract => details
+  mapping(address => PeriodLimit) private _periodLimits;
+  // periodId => (erc20Contract => runningTotal)
+  mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -126,44 +141,50 @@ contract FundStorage is Permissionable {
     _;
   }
 
+  modifier onlyMultiSig() {
+    require(msg.sender == address(multiSig), "Not a fee contract");
+
+    _;
+  }
+
   constructor (
     bool _isPrivate,
-    FundMultiSig _multiSig,
-    uint256 _manageWhiteListThreshold,
-    uint256 _modifyConfigThreshold,
-    uint256 _newMemberThreshold,
-    uint256 _expelMemberThreshold,
-    uint256 _fineMemberThreshold,
-    uint256 _changeNameAndDescriptionThreshold,
-    uint256 _addFundRuleThreshold,
-    uint256 _deactivateFundRuleThreshold,
-    uint256 _changeMsOwnersThreshold,
-    uint256 _modifyFeeThreshold
+    uint256[] memory _thresholds,
+    uint256 _periodLength
   ) public {
-    multiSig = _multiSig;
-
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
-    _config[MANAGE_WL_THRESHOLD] = bytes32(_manageWhiteListThreshold);
+    _config[MANAGE_WL_THRESHOLD] = bytes32(_thresholds[0]);
     _configKeys.add(MANAGE_WL_THRESHOLD);
-    _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_modifyConfigThreshold);
+    _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_thresholds[1]);
     _configKeys.add(MODIFY_CONFIG_THRESHOLD);
-    _config[NEW_MEMBER_THRESHOLD] = bytes32(_newMemberThreshold);
+    _config[NEW_MEMBER_THRESHOLD] = bytes32(_thresholds[2]);
     _configKeys.add(NEW_MEMBER_THRESHOLD);
-    _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_expelMemberThreshold);
+    _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_thresholds[3]);
     _configKeys.add(EXPEL_MEMBER_THRESHOLD);
-    _config[FINE_MEMBER_THRESHOLD] = bytes32(_fineMemberThreshold);
+    _config[FINE_MEMBER_THRESHOLD] = bytes32(_thresholds[4]);
     _configKeys.add(FINE_MEMBER_THRESHOLD);
-    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_changeNameAndDescriptionThreshold);
+    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_thresholds[5]);
     _configKeys.add(NAME_AND_DESCRIPTION_THRESHOLD);
-    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_addFundRuleThreshold);
+    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_thresholds[6]);
     _configKeys.add(ADD_FUND_RULE_THRESHOLD);
-    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_deactivateFundRuleThreshold);
+    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_thresholds[7]);
     _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
-    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_changeMsOwnersThreshold);
+    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_thresholds[8]);
     _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
-    _config[MODIFY_FEE_THRESHOLD] = bytes32(_modifyFeeThreshold);
+    _config[MODIFY_FEE_THRESHOLD] = bytes32(_thresholds[9]);
     _configKeys.add(MODIFY_FEE_THRESHOLD);
+    _config[MODIFY_MANAGER_DETAILS_THRESHOLD] = bytes32(_thresholds[10]);
+    _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
+    _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
+    _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
+
+    periodLength = _periodLength;
+    initialTimestamp = block.timestamp;
+  }
+
+  function initialize(FundMultiSig _fundMultiSig) external isInitializer {
+    multiSig = _fundMultiSig;
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -263,7 +284,6 @@ contract FundStorage is Permissionable {
     _activeFundRules.add(_id);
   }
 
-
   function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
     feeContracts.add(_feeContract);
   }
@@ -307,6 +327,37 @@ contract FundStorage is Permissionable {
     m.active = _active;
     m.name = _name;
     m.documents = _documents;
+  }
+
+  function setPeriodLimit(
+    bool _active,
+    address _erc20Contract,
+    uint256 _amount
+  )
+    external
+    onlyRole(CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
+  {
+    _periodLimits[_erc20Contract].active = _active;
+    _periodLimits[_erc20Contract].amount = _amount;
+  }
+
+  function handleMultiSigTransaction(
+    address _erc20Contract,
+    uint256 _amount
+  )
+    external
+    onlyMultiSig
+  {
+    PeriodLimit storage limit = _periodLimits[_erc20Contract];
+    if (limit.active == false) {
+      return;
+    }
+
+    uint256 currentPeriod = getCurrentPeriod();
+    uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
+
+    require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
+    _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
   }
 
   // GETTERS
@@ -437,5 +488,14 @@ contract FundStorage is Permissionable {
 
   function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
     return _lockedSpaceTokens[_spaceTokenId];
+  }
+
+  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {
+    PeriodLimit storage p = _periodLimits[_erc20Contract];
+    return (p.active, p.amount);
+  }
+
+  function getCurrentPeriod() public view returns (uint256) {
+    return (block.timestamp - initialTimestamp) / periodLength;
   }
 }
