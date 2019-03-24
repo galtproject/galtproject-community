@@ -25,12 +25,10 @@ contract MockRSRA is RSRA {
   Counter.Counter spaceCounter;
 
   constructor(
-    IERC721 _spaceToken,
-    ISpaceLockerRegistry _spaceLockerRegistry,
     FundStorage _fundStorage
   )
     public
-    RSRA(_spaceToken, _spaceLockerRegistry, _fundStorage)
+    RSRA(_fundStorage)
   {
   }
 

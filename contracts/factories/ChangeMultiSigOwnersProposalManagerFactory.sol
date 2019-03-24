@@ -21,13 +21,11 @@ import "../proposals/ChangeMultiSigOwnersProposalManager.sol";
 
 
 contract ChangeMultiSigOwnersProposalManagerFactory is Ownable {
-  function build(FundMultiSig _multiSig, IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (ChangeMultiSigOwnersProposalManager changeNameAndDescriptionProposalManager)
   {
     changeNameAndDescriptionProposalManager = new ChangeMultiSigOwnersProposalManager(
-      _multiSig,
-      _rsra,
       _fundStorage
     );
 

@@ -22,11 +22,11 @@ import "../proposals/DeactivateFundRuleProposalManager.sol";
 
 
 contract DeactivateFundRuleProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (DeactivateFundRuleProposalManager deactivateFundRuleProposalManager)
   {
-    deactivateFundRuleProposalManager = new DeactivateFundRuleProposalManager(_rsra, _fundStorage);
+    deactivateFundRuleProposalManager = new DeactivateFundRuleProposalManager(_fundStorage);
 
     deactivateFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
     deactivateFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");

@@ -27,17 +27,12 @@ contract ExpelMemberProposalManager is AbstractFundProposalManager {
 
   mapping(uint256 => Proposal) private _proposals;
 
-  IERC721 spaceToken;
-
   constructor(
-    IRSRA _rsra,
-    FundStorage _fundStorage,
-    IERC721 _spaceToken
+    FundStorage _fundStorage
   )
     public
-    AbstractFundProposalManager(_rsra, _fundStorage)
+    AbstractFundProposalManager(_fundStorage)
   {
-    spaceToken = _spaceToken;
   }
 
   function propose(uint256 _spaceTokenId, string calldata _description) external {
@@ -59,7 +54,7 @@ contract ExpelMemberProposalManager is AbstractFundProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    address owner = spaceToken.ownerOf(p.spaceTokenId);
+    address owner = fundStorage.ggr().getSpaceToken().ownerOf(p.spaceTokenId);
     uint256 amount = ISpaceLocker(owner).reputation();
 
     assert(amount > 0);

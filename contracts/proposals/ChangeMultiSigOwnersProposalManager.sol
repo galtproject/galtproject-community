@@ -28,19 +28,12 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
 
   mapping(uint256 => Proposal) private _proposals;
 
-  FundMultiSig multiSig;
-
   constructor(
-    FundMultiSig _multiSig,
-    IRSRA _rsra,
     FundStorage _fundStorage
   )
     public
-    AbstractFundProposalManager(_rsra, _fundStorage)
+    AbstractFundProposalManager(_fundStorage)
   {
-    assert(address(_multiSig) != address(0));
-
-    multiSig = _multiSig;
   }
 
   function propose(address[] calldata _newOwners, uint256 _required, string calldata _description) external {
@@ -68,7 +61,7 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
 
     require(fundStorage.areMembersValid(p.newOwners), "Not all members are valid");
 
-    multiSig.setOwners(p.newOwners, p.required);
+    fundStorage.getMultiSig().setOwners(p.newOwners, p.required);
   }
 
   function getThreshold() public view returns (uint256) {

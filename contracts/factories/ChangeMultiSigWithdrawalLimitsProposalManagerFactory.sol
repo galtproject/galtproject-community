@@ -22,11 +22,11 @@ import "../proposals/ChangeMultiSigWithdrawalLimitsProposalManager.sol";
 
 
 contract ChangeMultiSigWithdrawalLimitsProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager)
   {
-    changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_rsra, _fundStorage);
+    changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_fundStorage);
 
     changeMultiSigWithdrawalLimitsProposalManager.addRoleTo(msg.sender, "role_manager");
     changeMultiSigWithdrawalLimitsProposalManager.removeRoleFrom(address(this), "role_manager");

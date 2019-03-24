@@ -21,11 +21,11 @@ import "../proposals/ModifyFeeProposalManager.sol";
 
 
 contract ModifyFeeProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (ModifyFeeProposalManager modifyFeeProposalManager)
   {
-    modifyFeeProposalManager = new ModifyFeeProposalManager(_rsra, _fundStorage);
+    modifyFeeProposalManager = new ModifyFeeProposalManager(_fundStorage);
 
     modifyFeeProposalManager.addRoleTo(msg.sender, "role_manager");
     modifyFeeProposalManager.removeRoleFrom(address(this), "role_manager");

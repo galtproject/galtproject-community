@@ -21,12 +21,11 @@ import "../proposals/ChangeNameAndDescriptionProposalManager.sol";
 
 
 contract ChangeNameAndDescriptionProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (ChangeNameAndDescriptionProposalManager)
   {
     ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = new ChangeNameAndDescriptionProposalManager(
-      _rsra,
       _fundStorage
     );
 
