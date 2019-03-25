@@ -24,8 +24,6 @@ import "../interfaces/IRSRA.sol";
 contract AbstractFundProposalManager is AbstractProposalManager {
   FundStorage fundStorage;
 
-  string public constant RSRA_CONTRACT = "rsra_contract";
-
   constructor(FundStorage _fundStorage) public {
     fundStorage = _fundStorage;
   }
