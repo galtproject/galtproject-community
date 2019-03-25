@@ -2,6 +2,7 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const RegularErc20FeeFactory = artifacts.require('./RegularErc20FeeFactory.sol');
 const RegularErc20Fee = artifacts.require('./RegularErc20Fee.sol');
+const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime } = require('./helpers');
@@ -20,12 +21,16 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 contract('Regular ERC20 Fees', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, spaceLockerRegistryAddress] = accounts;
+  const [coreTeam, alice, bob, charlie, dan] = accounts;
 
   before(async function() {
+    this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.daiToken = await GaltToken.new({ from: coreTeam });
+
+    await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
 
     // assign roles
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
@@ -34,17 +39,12 @@ contract('Regular ERC20 Fees', accounts => {
     await this.daiToken.mint(charlie, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    const fundFactory = await deployFundFactory(
-      this.galtToken.address,
-      this.spaceToken.address,
-      spaceLockerRegistryAddress,
-      alice
-    );
+    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
 
     // build fund
-    await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
+    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
     const fund = await buildFund(
-      fundFactory,
+      this.fundFactory,
       alice,
       false,
       [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],

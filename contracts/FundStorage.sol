@@ -196,7 +196,10 @@ contract FundStorage is Permissionable, Initializable {
     FundMultiSig _fundMultiSig,
     FundController _fundController,
     IRSRA _rsra
-  ) external isInitializer {
+  )
+    external
+    isInitializer
+  {
     _coreContracts[CONTRACT_CORE_MULTISIG] = address(_fundMultiSig);
     _coreContracts[CONTRACT_CORE_CONTROLLER] = address(_fundController);
     _coreContracts[CONTRACT_CORE_RSRA] = address(_rsra);

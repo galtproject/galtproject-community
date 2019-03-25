@@ -4,6 +4,7 @@ const SpaceLockerRegistry = artifacts.require('./SpaceLockerRegistry.sol');
 const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
 const SpaceLocker = artifacts.require('./SpaceLocker.sol');
 const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
+const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
@@ -26,38 +27,39 @@ const ProposalStatus = {
 contract('ExpelFundMemberProposal', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement, unauthorized] = accounts;
 
-  beforeEach(async function() {
-    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
+  before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
+    this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
+    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
     this.spaceLockerRegistry = await SpaceLockerRegistry.new({ from: coreTeam });
-    this.spaceLockerFactory = await SpaceLockerFactory.new(
-      this.spaceLockerRegistry.address,
-      this.galtToken.address,
-      this.spaceToken.address,
-      this.splitMerge.address,
-      { from: coreTeam }
-    );
+
+    await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.SPLIT_MERGE(), this.splitMerge.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.SPACE_LOCKER_REGISTRY(), this.spaceLockerRegistry.address, {
+      from: coreTeam
+    });
+
+    this.spaceToken.addRoleTo(minter, 'minter', { from: coreTeam });
+
+    this.spaceLockerFactory = await SpaceLockerFactory.new(this.ggr.address, { from: coreTeam });
 
     // assign roles
-    this.spaceToken.addRoleTo(minter, 'minter', { from: coreTeam });
     this.spaceLockerRegistry.addRoleTo(this.spaceLockerFactory.address, await this.spaceLockerRegistry.ROLE_FACTORY(), {
       from: coreTeam
     });
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    const fundFactory = await deployFundFactory(
-      this.galtToken.address,
-      this.spaceToken.address,
-      this.spaceLockerRegistry.address,
-      alice
-    );
+    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+  });
 
+  beforeEach(async function() {
     // build fund
-    await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
+    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
     const fund = await buildFund(
-      fundFactory,
+      this.fundFactory,
       alice,
       false,
       [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],

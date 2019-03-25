@@ -298,7 +298,6 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.FOURTH, "Requires fourth step");
 
     FundStorage _fundStorage = c.fundStorage;
-    IRSRA _rsra = c.rsra;
 
     FineMemberProposalManager fineMemberProposalManager = fineMemberProposalManagerFactory.build(_fundStorage);
     WLProposalManager wlProposalManager = wlProposalManagerFactory.build(_fundStorage);

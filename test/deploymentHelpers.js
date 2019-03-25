@@ -49,7 +49,7 @@ const ChangeMultiSigWithdrawalLimitsProposalManager = artifacts.require(
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLockerRegistryAddress, owner) {
+async function deployFundFactory(ggrAddress, owner) {
   this.rsraFactory = await MockRSRAFactory.new();
   this.fundStorageFactory = await FundStorageFactory.new();
   this.fundMultiSigFactory = await FundMultiSigFactory.new();
@@ -71,9 +71,7 @@ async function deployFundFactory(galtTokenAddress, spaceTokenAddress, spaceLocke
   this.changeMultiSigWithdrawalLimitsProposalManagerFactory = await ChangeMultiSigWithdrawalLimitsProposalManagerFactory.new();
 
   const fundFactory = await FundFactory.new(
-    galtTokenAddress,
-    spaceTokenAddress,
-    spaceLockerRegistryAddress,
+    ggrAddress,
     this.rsraFactory.address,
     this.fundMultiSigFactory.address,
     this.fundStorageFactory.address,
