@@ -28,7 +28,7 @@ contract ModifyMultiSigManagerDetailsProposalManager is AbstractFundProposalMana
 
   mapping(uint256 => Proposal) private _proposals;
 
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
+  constructor(FundStorage _fundStorage) public AbstractFundProposalManager(_fundStorage) {
   }
 
   function propose(

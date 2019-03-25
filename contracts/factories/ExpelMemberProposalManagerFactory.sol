@@ -23,11 +23,11 @@ import "../proposals/ExpelMemberProposalManager.sol";
 
 
 contract ExpelMemberProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage, IERC721 _spaceToken)
+  function build(FundStorage _fundStorage)
     external
     returns (ExpelMemberProposalManager expelMemberProposalManager)
   {
-    expelMemberProposalManager = new ExpelMemberProposalManager(_rsra, _fundStorage, _spaceToken);
+    expelMemberProposalManager = new ExpelMemberProposalManager(_fundStorage);
 
     expelMemberProposalManager.addRoleTo(msg.sender, "role_manager");
     expelMemberProposalManager.removeRoleFrom(address(this), "role_manager");

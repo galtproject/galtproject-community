@@ -23,16 +23,12 @@ import "./MockRSRA.sol";
 
 contract MockRSRAFactory is Ownable {
   function build(
-    IERC721 spaceToken,
-    ISpaceLockerRegistry spaceLockerRegistry,
     FundStorage fundStorage
   )
     external
     returns (MockRSRA)
   {
     MockRSRA rsra = new MockRSRA(
-      spaceToken,
-      spaceLockerRegistry,
       fundStorage
     );
 

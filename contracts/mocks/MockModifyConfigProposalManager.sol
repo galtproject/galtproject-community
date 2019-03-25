@@ -18,7 +18,7 @@ import "../FundStorage.sol";
 
 
 contract MockModifyConfigProposalManager is ModifyConfigProposalManager {
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public ModifyConfigProposalManager(_rsra, _fundStorage) {
+  constructor(FundStorage _fundStorage) public ModifyConfigProposalManager(_fundStorage) {
   }
 
   function ayeHack(uint256 _votingId, address _voter) external {

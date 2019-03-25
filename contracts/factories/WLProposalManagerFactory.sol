@@ -21,11 +21,11 @@ import "../proposals/WLProposalManager.sol";
 
 
 contract WLProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (WLProposalManager wlProposalManager)
   {
-    wlProposalManager = new WLProposalManager(_rsra, _fundStorage);
+    wlProposalManager = new WLProposalManager(_fundStorage);
 
     wlProposalManager.addRoleTo(msg.sender, "role_manager");
     wlProposalManager.removeRoleFrom(address(this), "role_manager");

@@ -20,11 +20,11 @@ import "./MockModifyConfigProposalManager.sol";
 
 
 contract MockModifyConfigProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (MockModifyConfigProposalManager)
   {
-    MockModifyConfigProposalManager modifyConfigProposalManager = new MockModifyConfigProposalManager(_rsra, _fundStorage);
+    MockModifyConfigProposalManager modifyConfigProposalManager = new MockModifyConfigProposalManager(_fundStorage);
 
     modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
     modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");

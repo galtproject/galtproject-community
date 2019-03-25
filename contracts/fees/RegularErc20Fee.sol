@@ -41,6 +41,6 @@ contract RegularErc20Fee  is AbstractRegularFee {
 
     _pay(_spaceTokenId, _amount);
 
-    erc20Token.transferFrom(msg.sender, address(fundStorage.multiSig()), _amount);
+    erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), _amount);
   }
 }

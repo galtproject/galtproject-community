@@ -23,21 +23,17 @@ import "../interfaces/IRSRA.sol";
 
 contract AbstractFundProposalManager is AbstractProposalManager {
   FundStorage fundStorage;
-  IRSRA rsra;
 
-//  string public constant RSRA_CONTRACT = "rsra_contract";
-
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public {
+  constructor(FundStorage _fundStorage) public {
     fundStorage = _fundStorage;
-    rsra = _rsra;
   }
 
   // GETTERS
   function getAyeShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
-    return rsra.getShare(_proposalVotings[_proposalId].ayes.elements());
+    return fundStorage.getRsra().getShare(_proposalVotings[_proposalId].ayes.elements());
   }
 
   function getNayShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
-    return rsra.getShare(_proposalVotings[_proposalId].nays.elements());
+    return fundStorage.getRsra().getShare(_proposalVotings[_proposalId].nays.elements());
   }
 }

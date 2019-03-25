@@ -21,11 +21,11 @@ import "../proposals/FineMemberProposalManager.sol";
 
 
 contract FineMemberProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (FineMemberProposalManager)
   {
-    FineMemberProposalManager fineMemberProposalManager = new FineMemberProposalManager(_rsra, _fundStorage);
+    FineMemberProposalManager fineMemberProposalManager = new FineMemberProposalManager(_fundStorage);
 
     fineMemberProposalManager.addRoleTo(msg.sender, "role_manager");
     fineMemberProposalManager.removeRoleFrom(address(this), "role_manager");

@@ -35,6 +35,6 @@ contract RegularEthFee  is AbstractRegularFee {
 
     _pay(_spaceTokenId, msg.value);
 
-    address(fundStorage.multiSig()).transfer(msg.value);
+    address(fundStorage.getMultiSig()).transfer(msg.value);
   }
 }

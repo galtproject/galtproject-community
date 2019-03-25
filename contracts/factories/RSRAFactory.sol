@@ -23,16 +23,12 @@ import "../RSRA.sol";
 
 contract RSRAFactory is Ownable {
   function build(
-    IERC721 spaceToken,
-    ISpaceLockerRegistry spaceLockerRegistry,
     FundStorage fundStorage
   )
     external
     returns (RSRA)
   {
     RSRA rsra = new RSRA(
-      spaceToken,
-      spaceLockerRegistry,
       fundStorage
     );
 

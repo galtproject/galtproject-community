@@ -27,7 +27,7 @@ contract ChangeMultiSigWithdrawalLimitsProposalManager is AbstractFundProposalMa
 
   mapping(uint256 => Proposal) private _proposals;
 
-  constructor(IRSRA _rsra, FundStorage _fundStorage) public AbstractFundProposalManager(_rsra, _fundStorage) {
+  constructor(FundStorage _fundStorage) public AbstractFundProposalManager(_fundStorage) {
   }
 
   function propose(bool _active, address _erc20Contract, uint256 _amount, string calldata _description) external onlyMember {

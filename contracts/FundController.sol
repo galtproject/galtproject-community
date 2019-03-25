@@ -31,18 +31,12 @@ contract FundController is Permissionable {
 
   address public constant ETH_CONTRACT = address(1);
 
-  IERC20 galtToken;
-  FundMultiSig multiSig;
   FundStorage fundStorage;
 
   constructor (
-    IERC20 _galtToken,
-    FundStorage _fundStorage,
-    FundMultiSig _multiSig
+    FundStorage _fundStorage
   ) public {
-    galtToken = _galtToken;
     fundStorage = _fundStorage;
-    multiSig = _multiSig;
   }
 
   function payFine(uint256 _spaceTokenId, Currency _currency, uint256 _erc20Amount, address _erc20Contract) external payable {
@@ -67,9 +61,9 @@ contract FundController is Permissionable {
     require(expectedPayment >= amount, "Amount for transfer exceeds fine value");
 
     if (_currency == Currency.ERC20) {
-      IERC20(erc20Contract).transferFrom(msg.sender, address(multiSig), amount);
+      IERC20(erc20Contract).transferFrom(msg.sender, address(fundStorage.getMultiSig()), amount);
     } else {
-      address(multiSig).transfer(amount);
+      address(fundStorage.getMultiSig()).transfer(amount);
     }
 
     fundStorage.decrementFine(_spaceTokenId, erc20Contract, amount);

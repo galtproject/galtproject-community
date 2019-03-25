@@ -18,7 +18,10 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
+import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "./FundMultiSig.sol";
+import "./interfaces/IRSRA.sol";
+import "./FundController.sol";
 
 
 contract FundStorage is Permissionable, Initializable {
@@ -104,13 +107,14 @@ contract FundStorage is Permissionable, Initializable {
   uint256 public initialTimestamp;
   uint256 public periodLength;
 
-  FundMultiSig public multiSig;
+  GaltGlobalRegistry public ggr;
 
   ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
   ArraySet.AddressSet private feeContracts;
+
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   mapping(bytes32 => bytes32) private _config;
@@ -126,6 +130,8 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
+  // role => address
+  mapping(bytes32 => address) private _coreContracts;
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
   // manager => details
@@ -142,16 +148,19 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   modifier onlyMultiSig() {
-    require(msg.sender == address(multiSig), "Not a fee contract");
+    require(msg.sender == _coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
 
     _;
   }
 
   constructor (
+    GaltGlobalRegistry _ggr,
     bool _isPrivate,
     uint256[] memory _thresholds,
     uint256 _periodLength
   ) public {
+    ggr = _ggr;
+
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
     _configKeys.add(IS_PRIVATE);
     _config[MANAGE_WL_THRESHOLD] = bytes32(_thresholds[0]);
@@ -183,8 +192,17 @@ contract FundStorage is Permissionable, Initializable {
     initialTimestamp = block.timestamp;
   }
 
-  function initialize(FundMultiSig _fundMultiSig) external isInitializer {
-    multiSig = _fundMultiSig;
+  function initialize(
+    FundMultiSig _fundMultiSig,
+    FundController _fundController,
+    IRSRA _rsra
+  )
+    external
+    isInitializer
+  {
+    _coreContracts[CONTRACT_CORE_MULTISIG] = address(_fundMultiSig);
+    _coreContracts[CONTRACT_CORE_CONTROLLER] = address(_fundController);
+    _coreContracts[CONTRACT_CORE_RSRA] = address(_rsra);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -415,6 +433,19 @@ contract FundStorage is Permissionable, Initializable {
 
   function getFineContractsBySpaceTokenCount(uint256 _spaceTokenId) external view returns (uint256) {
     return _finesContractsBySpaceToken[_spaceTokenId].size();
+  }
+
+  function getMultiSig() public view returns (FundMultiSig) {
+    address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
+    return FundMultiSig(ms);
+  }
+
+  function getRsra() public view returns (IRSRA) {
+    return IRSRA(_coreContracts[CONTRACT_CORE_RSRA]);
+  }
+
+  function getController() public view returns (FundController) {
+    return FundController(_coreContracts[CONTRACT_CORE_CONTROLLER]);
   }
 
   function getProposalContract(

@@ -24,17 +24,13 @@ import "../FundController.sol";
 
 contract FundControllerFactory is Ownable {
   function build(
-    IERC20 _galtToken,
-    FundStorage _fundStorage,
-    FundMultiSig _multiSig
+    FundStorage _fundStorage
   )
     external
     returns (FundController)
   {
     FundController fundController = new FundController(
-      _galtToken,
-      _fundStorage,
-      _multiSig
+      _fundStorage
     );
 
     fundController.addRoleTo(msg.sender, "role_manager");

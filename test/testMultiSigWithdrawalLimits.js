@@ -1,5 +1,6 @@
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
+const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
@@ -20,29 +21,29 @@ const ONE_MONTH = 2592000;
 const ETH_CONTRACT = '0x0000000000000000000000000000000000000001';
 
 contract('MultiSig Withdrawal Limits', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, spaceLockerRegistryAddress] = accounts;
+  const [coreTeam, alice, bob, charlie, dan] = accounts;
 
   before(async function() {
-    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.daiToken = await GaltToken.new({ from: coreTeam });
+    this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
+    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
 
+    await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
+
     await this.daiToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    const fundFactory = await deployFundFactory(
-      this.galtToken.address,
-      this.spaceToken.address,
-      spaceLockerRegistryAddress,
-      alice
-    );
+    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+  });
 
+  before(async function() {
     // build fund
-    await this.galtToken.approve(fundFactory.address, ether(100), { from: alice });
-    // TODO: set limit 1 month
+    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
     const fund = await buildFund(
-      fundFactory,
+      this.fundFactory,
       alice,
       false,
       [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],

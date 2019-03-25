@@ -31,12 +31,10 @@ contract RSRA is IRSRA, LiquidReputationAccounting {
   mapping(uint256 => bool) internal _tokensToExpel;
 
   constructor(
-    IERC721 _spaceToken,
-    ISpaceLockerRegistry _spaceLockerRegistry,
     FundStorage _fundStorage
   )
     public
-    LiquidReputationAccounting(_spaceToken, _spaceLockerRegistry)
+    LiquidReputationAccounting(_fundStorage.ggr())
   {
     fundStorage = _fundStorage;
   }

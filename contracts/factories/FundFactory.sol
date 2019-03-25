@@ -14,10 +14,8 @@
 pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-import "@galtproject/core/contracts/registries/interfaces/ISpaceLockerRegistry.sol";
+import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
+
 import "../FundStorage.sol";
 import "../FundController.sol";
 import "./RSRAFactory.sol";
@@ -41,6 +39,16 @@ import "./ChangeMultiSigWithdrawalLimitsProposalManagerFactory.sol";
 
 
 contract FundFactory is Ownable {
+  // Pre-defined proposal contracts
+  bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config_proposal");
+  bytes32 public constant NEW_MEMBER_TYPE = bytes32("new_member_proposal");
+  bytes32 public constant FINE_MEMBER_TYPE = bytes32("fine_member_proposal");
+  bytes32 public constant WHITE_LIST_TYPE = bytes32("white_list_proposal");
+  bytes32 public constant EXPEL_MEMBER_TYPE = bytes32("expel_member_proposal");
+  bytes32 public constant CHANGE_NAME_AND_DESCRIPTION_TYPE = bytes32("change_info_proposal");
+  bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule_proposal");
+  bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule_proposal");
+
   event CreateFundFirstStep(
     bytes32 fundId,
     address fundMultiSig,
@@ -89,39 +97,6 @@ contract FundFactory is Ownable {
     address changeMultiSigWithdrawalLimitsProposalManager
   );
 
-  bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config_proposal");
-  bytes32 public constant NEW_MEMBER_TYPE = bytes32("new_member_proposal");
-  bytes32 public constant FINE_MEMBER_TYPE = bytes32("fine_member_proposal");
-  bytes32 public constant WHITE_LIST_TYPE = bytes32("white_list_proposal");
-  bytes32 public constant EXPEL_MEMBER_TYPE = bytes32("expel_member_proposal");
-  bytes32 public constant CHANGE_NAME_AND_DESCRIPTION_TYPE = bytes32("change_info_proposal");
-  bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule_proposal");
-  bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule_proposal");
-
-  bool initialized;
-  uint256 public commission;
-
-  IERC20 public galtToken;
-  IERC721 public spaceToken;
-  ISpaceLockerRegistry public spaceLockerRegistry;
-
-  RSRAFactory rsraFactory;
-  FundStorageFactory fundStorageFactory;
-  FundMultiSigFactory fundMultiSigFactory;
-  FundControllerFactory fundControllerFactory;
-  ModifyConfigProposalManagerFactory modifyConfigProposalManagerFactory;
-  NewMemberProposalManagerFactory newMemberProposalManagerFactory;
-  FineMemberProposalManagerFactory fineMemberProposalManagerFactory;
-  ExpelMemberProposalManagerFactory expelMemberProposalManagerFactory;
-  WLProposalManagerFactory wlProposalManagerFactory;
-  ChangeNameAndDescriptionProposalManagerFactory changeNameAndDescriptionProposalManagerFactory;
-  AddFundRuleProposalManagerFactory addFundRuleProposalManagerFactory;
-  DeactivateFundRuleProposalManagerFactory deactivateFundRuleProposalManagerFactory;
-  ChangeMultiSigOwnersProposalManagerFactory changeMultiSigOwnersProposalManagerFactory;
-  ModifyFeeProposalManagerFactory modifyFeeProposalManagerFactory;
-  ModifyMultiSigManagerDetailsProposalManagerFactory modifyMultiSigManagerDetailsProposalManagerFactory;
-  ChangeMultiSigWithdrawalLimitsProposalManagerFactory changeMultiSigWithdrawalLimitsProposalManagerFactory;
-
   enum Step {
     FIRST,
     SECOND,
@@ -144,12 +119,31 @@ contract FundFactory is Ownable {
     FundController fundController;
   }
 
+  bool initialized;
+  uint256 public commission;
+
+  GaltGlobalRegistry ggr;
+
+  RSRAFactory rsraFactory;
+  FundStorageFactory fundStorageFactory;
+  FundMultiSigFactory fundMultiSigFactory;
+  FundControllerFactory fundControllerFactory;
+  ModifyConfigProposalManagerFactory modifyConfigProposalManagerFactory;
+  NewMemberProposalManagerFactory newMemberProposalManagerFactory;
+  FineMemberProposalManagerFactory fineMemberProposalManagerFactory;
+  ExpelMemberProposalManagerFactory expelMemberProposalManagerFactory;
+  WLProposalManagerFactory wlProposalManagerFactory;
+  ChangeNameAndDescriptionProposalManagerFactory changeNameAndDescriptionProposalManagerFactory;
+  AddFundRuleProposalManagerFactory addFundRuleProposalManagerFactory;
+  DeactivateFundRuleProposalManagerFactory deactivateFundRuleProposalManagerFactory;
+  ChangeMultiSigOwnersProposalManagerFactory changeMultiSigOwnersProposalManagerFactory;
+  ModifyFeeProposalManagerFactory modifyFeeProposalManagerFactory;
+  ModifyMultiSigManagerDetailsProposalManagerFactory modifyMultiSigManagerDetailsProposalManagerFactory;
+  ChangeMultiSigWithdrawalLimitsProposalManagerFactory changeMultiSigWithdrawalLimitsProposalManagerFactory;
   mapping(bytes32 => FundContracts) private fundContracts;
 
   constructor (
-    ERC20 _galtToken,
-    IERC721 _spaceToken,
-    ISpaceLockerRegistry _spaceLockerRegistry,
+    GaltGlobalRegistry _ggr,
     RSRAFactory _rsraFactory,
     FundMultiSigFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
@@ -157,9 +151,7 @@ contract FundFactory is Ownable {
   ) public {
     commission = 10 ether;
 
-    galtToken = _galtToken;
-    spaceToken = _spaceToken;
-    spaceLockerRegistry = _spaceLockerRegistry;
+    ggr = _ggr;
 
     rsraFactory = _rsraFactory;
     fundStorageFactory = _fundStorageFactory;
@@ -225,6 +217,7 @@ contract FundFactory is Ownable {
     _acceptPayment();
 
     FundStorage fundStorage = fundStorageFactory.build(
+      ggr,
       _isPrivate,
       _thresholds,
       _periodLength
@@ -235,8 +228,6 @@ contract FundFactory is Ownable {
       _initialMultiSigRequired,
       fundStorage
     );
-
-    fundStorage.initialize(fundMultiSig);
 
     c.creator = msg.sender;
     c.operator = operator;
@@ -256,9 +247,7 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundController fundController = fundControllerFactory.build(
-      galtToken,
-      c.fundStorage,
-      c.fundMultiSig
+      c.fundStorage
     );
     c.fundController = fundController;
 
@@ -278,10 +267,10 @@ contract FundFactory is Ownable {
     FundStorage _fundStorage = c.fundStorage;
     FundController _fundController = c.fundController;
 
-    c.rsra = rsraFactory.build(spaceToken, spaceLockerRegistry, _fundStorage);
+    c.rsra = rsraFactory.build(_fundStorage);
 
-    ModifyConfigProposalManager modifyConfigProposalManager = modifyConfigProposalManagerFactory.build(c.rsra, _fundStorage);
-    NewMemberProposalManager newMemberProposalManager = newMemberProposalManagerFactory.build(c.rsra, _fundStorage);
+    ModifyConfigProposalManager modifyConfigProposalManager = modifyConfigProposalManagerFactory.build(_fundStorage);
+    NewMemberProposalManager newMemberProposalManager = newMemberProposalManagerFactory.build(_fundStorage);
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.addWhiteListedContract(address(modifyConfigProposalManager), MODIFY_CONFIG_TYPE, 0x0, "");
@@ -309,11 +298,10 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.FOURTH, "Requires fourth step");
 
     FundStorage _fundStorage = c.fundStorage;
-    IRSRA _rsra = c.rsra;
 
-    FineMemberProposalManager fineMemberProposalManager = fineMemberProposalManagerFactory.build(_rsra, _fundStorage);
-    WLProposalManager wlProposalManager = wlProposalManagerFactory.build(c.rsra, _fundStorage);
-    ExpelMemberProposalManager expelMemberProposalManager = expelMemberProposalManagerFactory.build(_rsra, _fundStorage, spaceToken);
+    FineMemberProposalManager fineMemberProposalManager = fineMemberProposalManagerFactory.build(_fundStorage);
+    WLProposalManager wlProposalManager = wlProposalManagerFactory.build(_fundStorage);
+    ExpelMemberProposalManager expelMemberProposalManager = expelMemberProposalManagerFactory.build(_fundStorage);
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.addWhiteListedContract(address(fineMemberProposalManager), FINE_MEMBER_TYPE, 0x0, "");
@@ -343,7 +331,7 @@ contract FundFactory is Ownable {
     FundStorage _fundStorage = c.fundStorage;
 
     ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = changeNameAndDescriptionProposalManagerFactory
-      .build(c.rsra, _fundStorage);
+      .build(_fundStorage);
 
     _fundStorage.addRoleTo(address(changeNameAndDescriptionProposalManager), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
 
@@ -370,8 +358,8 @@ contract FundFactory is Ownable {
 
     FundStorage _fundStorage = c.fundStorage;
 
-    AddFundRuleProposalManager addFundRuleProposalManager = addFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
-    DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = deactivateFundRuleProposalManagerFactory.build(c.rsra, _fundStorage);
+    AddFundRuleProposalManager addFundRuleProposalManager = addFundRuleProposalManagerFactory.build(_fundStorage);
+    DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = deactivateFundRuleProposalManagerFactory.build(_fundStorage);
 
     _fundStorage.addRoleTo(address(addFundRuleProposalManager), _fundStorage.CONTRACT_ADD_FUND_RULE_MANAGER());
     _fundStorage.addRoleTo(address(deactivateFundRuleProposalManager), _fundStorage.CONTRACT_DEACTIVATE_FUND_RULE_MANAGER());
@@ -404,12 +392,9 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.SEVENTH, "Requires seventh step");
 
     ChangeMultiSigOwnersProposalManager changeMultiSigOwnersProposalManager = changeMultiSigOwnersProposalManagerFactory.build(
-      c.fundMultiSig,
-      c.rsra,
       c.fundStorage
     );
     ModifyFeeProposalManager modifyFeeProposalManager = modifyFeeProposalManagerFactory.build(
-      c.rsra,
       c.fundStorage
     );
 
@@ -431,16 +416,20 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.EIGHTH, "Requires eighth step");
 
     ModifyMultiSigManagerDetailsProposalManager modifyMultiSigManagerDetailsProposalManager = modifyMultiSigManagerDetailsProposalManagerFactory.build(
-      c.rsra,
       c.fundStorage
     );
     ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager = changeMultiSigWithdrawalLimitsProposalManagerFactory.build(
-      c.rsra,
       c.fundStorage
     );
 
     c.fundStorage.addRoleTo(address(modifyMultiSigManagerDetailsProposalManager), c.fundStorage.CONTRACT_MEMBER_DETAILS_MANAGER());
     c.fundStorage.addRoleTo(address(changeMultiSigWithdrawalLimitsProposalManager), c.fundStorage.CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER());
+
+    c.fundStorage.initialize(
+      c.fundMultiSig,
+      c.fundController,
+      c.rsra
+    );
 
     c.currentStep = Step.DONE;
 
@@ -452,7 +441,7 @@ contract FundFactory is Ownable {
   }
 
   function _acceptPayment() internal {
-    galtToken.transferFrom(msg.sender, address(this), commission);
+    ggr.getGaltToken().transferFrom(msg.sender, address(this), commission);
   }
 
   function setCommission(uint256 _commission) external onlyOwner {

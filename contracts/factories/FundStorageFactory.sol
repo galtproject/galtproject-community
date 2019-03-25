@@ -14,6 +14,7 @@
 pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 // This contract will be included into the current one
 import "../FundStorage.sol";
@@ -21,6 +22,7 @@ import "../FundStorage.sol";
 
 contract FundStorageFactory is Ownable {
   function build(
+    GaltGlobalRegistry _ggr,
     bool _isPrivate,
     uint256[] calldata _thresholds,
     uint256 _periodLength
@@ -29,6 +31,7 @@ contract FundStorageFactory is Ownable {
     returns (FundStorage)
   {
     FundStorage fundStorage = new FundStorage(
+      _ggr,
       _isPrivate,
       _thresholds,
       _periodLength

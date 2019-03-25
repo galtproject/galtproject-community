@@ -21,11 +21,11 @@ import "../proposals/ModifyMultiSigManagerDetailsProposalManager.sol";
 
 
 contract ModifyMultiSigManagerDetailsProposalManagerFactory is Ownable {
-  function build(IRSRA _rsra, FundStorage _fundStorage)
+  function build(FundStorage _fundStorage)
     external
     returns (ModifyMultiSigManagerDetailsProposalManager modifyConfigProposalManager)
   {
-    modifyConfigProposalManager = new ModifyMultiSigManagerDetailsProposalManager(_rsra, _fundStorage);
+    modifyConfigProposalManager = new ModifyMultiSigManagerDetailsProposalManager(_fundStorage);
 
     modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
     modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
