@@ -11,26 +11,30 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity 0.5.3;
+pragma solidity ^0.5.3;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../FundStorage.sol";
-import "../interfaces/IFundRA.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 
 // This contract will be included into the current one
-import "../proposals/ModifyConfigProposalManager.sol";
+import "./MockFundRA.sol";
 
 
-contract ModifyConfigProposalManagerFactory is Ownable {
-  function build(FundStorage _fundStorage)
+contract MockFundRAFactory is Ownable {
+  function build(
+    FundStorage fundStorage
+  )
     external
-    returns (ModifyConfigProposalManager)
+    returns (MockFundRA)
   {
-    ModifyConfigProposalManager modifyConfigProposalManager = new ModifyConfigProposalManager(_fundStorage);
+    MockFundRA fundRA = new MockFundRA(
+      fundStorage
+    );
 
-    modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
+    fundRA.addRoleTo(msg.sender, "role_manager");
+    fundRA.removeRoleFrom(address(this), "role_manager");
 
-    return modifyConfigProposalManager;
+    return fundRA;
   }
 }

@@ -20,7 +20,7 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "./FundMultiSig.sol";
-import "./interfaces/IRSRA.sol";
+import "./interfaces/IFundRA.sol";
 import "./FundController.sol";
 
 
@@ -44,7 +44,7 @@ contract FundStorage is Permissionable, Initializable {
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
   string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
 
-  bytes32 public constant CONTRACT_CORE_RSRA = "contract_core_rsra";
+  bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
   bytes32 public constant CONTRACT_CORE_CONTROLLER = "contract_core_controller";
 
@@ -195,14 +195,14 @@ contract FundStorage is Permissionable, Initializable {
   function initialize(
     FundMultiSig _fundMultiSig,
     FundController _fundController,
-    IRSRA _rsra
+    IFundRA _fundRA
   )
     external
     isInitializer
   {
     _coreContracts[CONTRACT_CORE_MULTISIG] = address(_fundMultiSig);
     _coreContracts[CONTRACT_CORE_CONTROLLER] = address(_fundController);
-    _coreContracts[CONTRACT_CORE_RSRA] = address(_rsra);
+    _coreContracts[CONTRACT_CORE_RA] = address(_fundRA);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -440,8 +440,8 @@ contract FundStorage is Permissionable, Initializable {
     return FundMultiSig(ms);
   }
 
-  function getRsra() public view returns (IRSRA) {
-    return IRSRA(_coreContracts[CONTRACT_CORE_RSRA]);
+  function getRA() public view returns (IFundRA) {
+    return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
   }
 
   function getController() public view returns (FundController) {

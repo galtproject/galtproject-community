@@ -1,6 +1,6 @@
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const SpaceLockerRegistry = artifacts.require('./SpaceLockerRegistry.sol');
+const LockerRegistry = artifacts.require('./LockerRegistry.sol');
 const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
 const SpaceLocker = artifacts.require('./SpaceLocker.sol');
 const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
@@ -22,7 +22,7 @@ const ONE_DAY = 86400;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-contract('RSRA', accounts => {
+contract('FundRA', accounts => {
   const [coreTeam, minter, alice, bob, charlie, unauthorized, geoDateManagement] = accounts;
 
   before(async function() {
@@ -30,7 +30,7 @@ contract('RSRA', accounts => {
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
-    this.spaceLockerRegistry = await SpaceLockerRegistry.new({ from: coreTeam });
+    this.spaceLockerRegistry = await LockerRegistry.new({ from: coreTeam });
 
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
@@ -70,7 +70,7 @@ contract('RSRA', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
-    this.rsraX = fund.fundRsra;
+    this.fundRAX = fund.fundRA;
     this.modifyFeeProposalManager = fund.modifyFeeProposalManager;
 
     let res = await this.spaceToken.mint(alice, { from: minter });
@@ -119,17 +119,17 @@ contract('RSRA', accounts => {
     await this.charlieLocker.deposit(this.token3, { from: charlie });
 
     // APPROVE REPUTATION MINT
-    await this.aliceLocker.approveMint(this.rsraX.address, { from: alice });
-    await this.bobLocker.approveMint(this.rsraX.address, { from: bob });
-    await this.charlieLocker.approveMint(this.rsraX.address, { from: charlie });
-    await this.rsraX.mint(this.aliceLockerAddress, { from: alice });
-    await this.rsraX.mint(this.bobLockerAddress, { from: bob });
-    await this.rsraX.mint(this.charlieLockerAddress, { from: charlie });
+    await this.aliceLocker.approveMint(this.fundRAX.address, { from: alice });
+    await this.bobLocker.approveMint(this.fundRAX.address, { from: bob });
+    await this.charlieLocker.approveMint(this.fundRAX.address, { from: charlie });
+    await this.fundRAX.mint(this.aliceLockerAddress, { from: alice });
+    await this.fundRAX.mint(this.bobLockerAddress, { from: bob });
+    await this.fundRAX.mint(this.charlieLockerAddress, { from: charlie });
   });
 
   describe('lock', () => {
     it('should handle basic reputation transfer case', async function() {
-      let res = await this.rsraX.balanceOf(alice);
+      let res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 
       res = await lastBlockTimestamp();
@@ -161,97 +161,97 @@ contract('RSRA', accounts => {
       res = await this.fundStorageX.isSpaceTokenLocked(this.token1);
       assert.equal(res, true);
 
-      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice }));
 
       await increaseTime(ONE_DAY + 2 * ONE_HOUR);
       await this.regularEthFee.pay(this.token1, { from: alice, value: ether(4) });
 
       await this.regularEthFee.unlockSpaceToken(this.token1, { from: unauthorized });
-      this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice });
+      this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice });
     });
   });
 
   describe('transfer', () => {
     it('should handle basic reputation transfer case', async function() {
-      let res = await this.rsraX.balanceOf(alice);
+      let res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 
       // TRANSFER #1
-      await this.rsraX.delegate(bob, alice, 350, { from: alice });
+      await this.fundRAX.delegate(bob, alice, 350, { from: alice });
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 450);
 
-      res = await this.rsraX.balanceOf(bob);
+      res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 350);
 
       // TRANSFER #2
-      await this.rsraX.delegate(charlie, alice, 100, { from: bob });
+      await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 450);
 
-      res = await this.rsraX.balanceOf(bob);
+      res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 250);
 
-      res = await this.rsraX.balanceOf(charlie);
+      res = await this.fundRAX.balanceOf(charlie);
       assert.equal(res, 100);
 
       // TRANSFER #3
-      await this.rsraX.delegate(alice, alice, 50, { from: charlie });
+      await this.fundRAX.delegate(alice, alice, 50, { from: charlie });
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 500);
 
-      res = await this.rsraX.balanceOf(bob);
+      res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 250);
 
-      res = await this.rsraX.balanceOf(charlie);
+      res = await this.fundRAX.balanceOf(charlie);
       assert.equal(res, 50);
 
       // REVOKE #1
-      await this.rsraX.revoke(bob, 200, { from: alice });
+      await this.fundRAX.revoke(bob, 200, { from: alice });
 
-      await assertRevert(this.rsraX.revoke(bob, 200, { from: charlie }));
-      await assertRevert(this.rsraX.revoke(alice, 200, { from: charlie }));
+      await assertRevert(this.fundRAX.revoke(bob, 200, { from: charlie }));
+      await assertRevert(this.fundRAX.revoke(alice, 200, { from: charlie }));
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 700);
 
-      res = await this.rsraX.balanceOf(bob);
+      res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 50);
 
-      res = await this.rsraX.balanceOf(charlie);
+      res = await this.fundRAX.balanceOf(charlie);
       assert.equal(res, 50);
 
       // BURN REPUTATION UNSUCCESSFUL ATTEMPTS
-      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice }));
 
       // UNSUCCESSFUL WITHDRAW SPACE TOKEN
-      await assertRevert(this.aliceLocker.burn(this.rsraX.address, { from: alice }));
+      await assertRevert(this.aliceLocker.burn(this.fundRAX.address, { from: alice }));
       await assertRevert(this.aliceLocker.withdraw(this.token1, { from: alice }));
 
       // REVOKE REPUTATION
-      await this.rsraX.revoke(bob, 50, { from: alice });
-      await this.rsraX.revoke(charlie, 50, { from: alice });
+      await this.fundRAX.revoke(bob, 50, { from: alice });
+      await this.fundRAX.revoke(charlie, 50, { from: alice });
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 
-      res = await this.rsraX.balanceOf(bob);
+      res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 0);
 
-      res = await this.rsraX.balanceOf(charlie);
+      res = await this.fundRAX.balanceOf(charlie);
       assert.equal(res, 0);
 
       // WITHDRAW TOKEN
-      await assertRevert(this.rsraX.approveBurn(this.aliceLockerAddress, { from: charlie }));
-      await this.rsraX.approveBurn(this.aliceLockerAddress, { from: alice });
+      await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: charlie }));
+      await this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice });
 
-      await this.aliceLocker.burn(this.rsraX.address, { from: alice });
+      await this.aliceLocker.burn(this.fundRAX.address, { from: alice });
       await this.aliceLocker.withdraw(this.token1, { from: alice });
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 0);
 
       res = await this.aliceLocker.reputation();

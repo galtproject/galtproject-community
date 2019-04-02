@@ -16,7 +16,7 @@ pragma solidity 0.5.3;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "../FundStorage.sol";
-import "../interfaces/IRSRA.sol";
+import "../interfaces/IFundRA.sol";
 
 // This contract will be included into the current one
 import "../proposals/ExpelMemberProposalManager.sol";

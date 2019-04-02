@@ -11,30 +11,10 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity ^0.5.3;
+pragma solidity 0.5.3;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
+interface IFundRA {
 
-// This contract will be included into the current one
-import "./MockRSRA.sol";
-
-
-contract MockRSRAFactory is Ownable {
-  function build(
-    FundStorage fundStorage
-  )
-    external
-    returns (MockRSRA)
-  {
-    MockRSRA rsra = new MockRSRA(
-      fundStorage
-    );
-
-    rsra.addRoleTo(msg.sender, "role_manager");
-    rsra.removeRoleFrom(address(this), "role_manager");
-
-    return rsra;
-  }
+  function balanceOf(address _owner) external view returns (uint256);
+  function getShare(address[] calldata _addresses) external view returns (uint256);
 }

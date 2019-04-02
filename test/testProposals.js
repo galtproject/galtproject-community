@@ -55,7 +55,7 @@ contract('Proposals', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
-    this.rsraX = fund.fundRsra;
+    this.fundRAX = fund.fundRA;
     this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
     this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
     this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
@@ -71,7 +71,7 @@ contract('Proposals', accounts => {
   describe('ModifyConfigProposal', () => {
     describe('proposal creation', () => {
       it('should allow user who has reputation creating a new proposal', async function() {
-        await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+        await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
           bytes32('modify_config_threshold'),
@@ -91,9 +91,9 @@ contract('Proposals', accounts => {
       });
     });
 
-    describe('(Proposal contracts queries RSRA for addresses locked reputation share)', () => {
+    describe('(Proposal contracts queries FundRA for addresses locked reputation share)', () => {
       it('should allow reverting a proposal if negative votes threshold is reached', async function() {
-        await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+        await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
           bytes32('modify_config_threshold'),
@@ -159,7 +159,7 @@ contract('Proposals', accounts => {
       });
 
       it('should allow approving proposal if positive votes threshold is reached', async function() {
-        await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+        await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         let res = await this.modifyConfigProposalManagerX.propose(
           bytes32('modify_config_threshold'),
@@ -228,7 +228,7 @@ contract('Proposals', accounts => {
 
   describe('SetAddFundRuleProposalManager', () => {
     it('should add a new active rule for ADD action', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let res = await this.addFundRuleProposalManagerX.propose(
         ActiveRuleAction.ADD,
@@ -369,7 +369,7 @@ contract('Proposals', accounts => {
 
   describe('ChangeMultiSigOwnersProposalManager && ModifyMultiSigManagerDetailsProposalManager', () => {
     it('should be able to change the list of MultiSig owners', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       // approve Alice
       let res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
@@ -519,7 +519,7 @@ contract('Proposals', accounts => {
 
   describe('ChangeMultiSigWithdrawalLimitsProposalManager', () => {
     it('should be able to change limit the for each erc20 contract', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
       assert.equal(limit.active, false);

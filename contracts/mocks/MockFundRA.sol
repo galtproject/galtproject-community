@@ -15,11 +15,11 @@ pragma solidity ^0.5.3;
 
 import "openzeppelin-solidity/contracts/drafts/Counter.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/core/contracts/registries/interfaces/ISpaceLockerRegistry.sol";
-import "../RSRA.sol";
+import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
+import "../FundRA.sol";
 
 
-contract MockRSRA is RSRA {
+contract MockFundRA is FundRA {
   using Counter for Counter.Counter;
 
   Counter.Counter spaceCounter;
@@ -28,12 +28,13 @@ contract MockRSRA is RSRA {
     FundStorage _fundStorage
   )
     public
-    RSRA(_fundStorage)
+    FundRA(_fundStorage)
   {
   }
 
-  function mintHack(address _beneficiary, uint256 _amount, uint256 spaceToken) external {
-    _mint(_beneficiary, _amount, spaceToken);
+  function mintHack(address _beneficiary, uint256 _amount, uint256 _spaceTokenId) external {
+    _mint(_beneficiary, _amount);
+    _cacheSpaceTokenOwner(_beneficiary, _spaceTokenId);
   }
 
   function delegateHack(address _to, address _from, address _owner, uint256 _amount) external {
@@ -42,7 +43,8 @@ contract MockRSRA is RSRA {
 
   function mintAll(address[] calldata _addresses, uint256[] calldata _spaceTokens, uint256 _amount) external {
     for (uint256 i = 0; i < _addresses.length; i++) {
-      _mint(_addresses[i], _amount, _spaceTokens[i]);
+      _mint(_addresses[i], _amount);
+      _cacheSpaceTokenOwner(_addresses[i], _spaceTokens[i]);
     }
   }
 }

@@ -18,7 +18,7 @@ import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 import "../FundStorage.sol";
 import "../FundController.sol";
-import "./RSRAFactory.sol";
+import "./FundRAFactory.sol";
 
 import "./FundStorageFactory.sol";
 import "./FundMultiSigFactory.sol";
@@ -62,7 +62,7 @@ contract FundFactory is Ownable {
 
   event CreateFundThirdStep(
     bytes32 fundId,
-    address fundRsra,
+    address fundRA,
     address modifyConfigProposalManager,
     address newMemberProposalManager
   );
@@ -113,7 +113,7 @@ contract FundFactory is Ownable {
     address creator;
     address operator;
     Step currentStep;
-    IRSRA rsra;
+    FundRA fundRA;
     FundMultiSig fundMultiSig;
     FundStorage fundStorage;
     FundController fundController;
@@ -124,7 +124,7 @@ contract FundFactory is Ownable {
 
   GaltGlobalRegistry ggr;
 
-  RSRAFactory rsraFactory;
+  FundRAFactory fundRAFactory;
   FundStorageFactory fundStorageFactory;
   FundMultiSigFactory fundMultiSigFactory;
   FundControllerFactory fundControllerFactory;
@@ -144,7 +144,7 @@ contract FundFactory is Ownable {
 
   constructor (
     GaltGlobalRegistry _ggr,
-    RSRAFactory _rsraFactory,
+    FundRAFactory _fundRAFactory,
     FundMultiSigFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
     FundControllerFactory _fundControllerFactory
@@ -153,7 +153,7 @@ contract FundFactory is Ownable {
 
     ggr = _ggr;
 
-    rsraFactory = _rsraFactory;
+    fundRAFactory = _fundRAFactory;
     fundStorageFactory = _fundStorageFactory;
     fundMultiSigFactory = _fundMultiSigFactory;
     fundControllerFactory = _fundControllerFactory;
@@ -267,7 +267,7 @@ contract FundFactory is Ownable {
     FundStorage _fundStorage = c.fundStorage;
     FundController _fundController = c.fundController;
 
-    c.rsra = rsraFactory.build(_fundStorage);
+    c.fundRA = fundRAFactory.build(_fundStorage);
 
     ModifyConfigProposalManager modifyConfigProposalManager = modifyConfigProposalManagerFactory.build(_fundStorage);
     NewMemberProposalManager newMemberProposalManager = newMemberProposalManagerFactory.build(_fundStorage);
@@ -279,14 +279,14 @@ contract FundFactory is Ownable {
 
     _fundStorage.addRoleTo(address(modifyConfigProposalManager), _fundStorage.CONTRACT_CONFIG_MANAGER());
     _fundStorage.addRoleTo(address(newMemberProposalManager), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(address(c.rsra), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
+    _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
     _fundStorage.addRoleTo(address(_fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
 
     c.currentStep = Step.FOURTH;
 
     emit CreateFundThirdStep(
       _fundId,
-      address(c.rsra),
+      address(c.fundRA),
       address(modifyConfigProposalManager),
       address(newMemberProposalManager)
     );
@@ -428,7 +428,7 @@ contract FundFactory is Ownable {
     c.fundStorage.initialize(
       c.fundMultiSig,
       c.fundController,
-      c.rsra
+      c.fundRA
     );
 
     c.currentStep = Step.DONE;
@@ -451,7 +451,7 @@ contract FundFactory is Ownable {
   function getLastCreatedContracts(bytes32 _fundId) external view returns (
     address operator,
     Step currentStep,
-    IRSRA rsra,
+    IFundRA fundRA,
     FundMultiSig fundMultiSig,
     FundStorage fundStorage,
     FundController fundController
@@ -461,7 +461,7 @@ contract FundFactory is Ownable {
     return (
       c.operator,
       c.currentStep,
-      c.rsra,
+      c.fundRA,
       c.fundMultiSig,
       c.fundStorage,
       c.fundController

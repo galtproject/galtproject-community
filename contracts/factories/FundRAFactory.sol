@@ -18,23 +18,23 @@ import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "../FundStorage.sol";
 
 // This contract will be included into the current one
-import "../RSRA.sol";
+import "../FundRA.sol";
 
 
-contract RSRAFactory is Ownable {
+contract FundRAFactory is Ownable {
   function build(
     FundStorage fundStorage
   )
     external
-    returns (RSRA)
+    returns (FundRA)
   {
-    RSRA rsra = new RSRA(
+    FundRA fundRA = new FundRA(
       fundStorage
     );
 
-    rsra.addRoleTo(msg.sender, "role_manager");
-    rsra.removeRoleFrom(address(this), "role_manager");
+    fundRA.addRoleTo(msg.sender, "role_manager");
+    fundRA.removeRoleFrom(address(this), "role_manager");
 
-    return rsra;
+    return fundRA;
   }
 }
