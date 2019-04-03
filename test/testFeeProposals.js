@@ -48,7 +48,7 @@ contract('Fee Proposals', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSigX;
-    this.rsraX = fund.fundRsra;
+    this.fundRAX = fund.fundRA;
     this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
     this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
     this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
@@ -61,7 +61,7 @@ contract('Fee Proposals', accounts => {
 
   describe('Create Fee Proposal', () => {
     it('should encode', async function() {
-      await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const feeContract = alice;
       const calldata = this.fundStorageX.contract.methods.addFeeContract(feeContract).encodeABI();

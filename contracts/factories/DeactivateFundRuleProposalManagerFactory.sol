@@ -14,7 +14,7 @@
 pragma solidity 0.5.3;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../interfaces/IRSRA.sol";
+import "../interfaces/IFundRA.sol";
 import "../FundStorage.sol";
 
 // This contract will be included into the current one

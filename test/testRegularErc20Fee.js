@@ -55,7 +55,7 @@ contract('Regular ERC20 Fees', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
-    this.rsraX = fund.fundRsra;
+    this.fundRAX = fund.fundRA;
     this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
     this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
     this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
@@ -66,7 +66,7 @@ contract('Regular ERC20 Fees', accounts => {
     this.beneficiaries = [alice, bob, charlie];
     this.benefeciarSpaceTokens = ['1', '2', '3'];
 
-    await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
     this.regularErc20FeeFactory = await RegularErc20FeeFactory.new({ from: coreTeam });
   });

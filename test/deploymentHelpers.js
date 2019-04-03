@@ -2,7 +2,7 @@ const FundFactory = artifacts.require('./FundFactory.sol');
 const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
 const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
 const FundControllerFactory = artifacts.require('./FundControllerFactory.sol');
-const MockRSRAFactory = artifacts.require('./MockRSRAFactory.sol');
+const MockFundRAFactory = artifacts.require('./MockFundRAFactory.sol');
 const NewMemberProposalManagerFactory = artifacts.require('./NewMemberProposalManagerFactory.sol');
 const ExpelMemberProposalManagerFactory = artifacts.require('./ExpelMemberProposalManagerFactory.sol');
 const FineMemberProposalManagerFactory = artifacts.require('./FineMemberProposalManagerFactory.sol');
@@ -25,7 +25,7 @@ const ChangeMultiSigWithdrawalLimitsProposalManagerFactory = artifacts.require(
 const FundStorage = artifacts.require('./FundStorage.sol');
 const FundController = artifacts.require('./FundController.sol');
 const FundMultiSig = artifacts.require('./FundMultiSig.sol');
-const MockRSRA = artifacts.require('./MockRSRA.sol');
+const MockFundRA = artifacts.require('./MockFundRA.sol');
 
 const MockModifyConfigProposalManager = artifacts.require('./MockModifyConfigProposalManager.sol');
 const NewMemberProposalManager = artifacts.require('./NewMemberProposalManager.sol');
@@ -50,7 +50,7 @@ const ChangeMultiSigWithdrawalLimitsProposalManager = artifacts.require(
 const ONE_MONTH = 2592000;
 
 async function deployFundFactory(ggrAddress, owner) {
-  this.rsraFactory = await MockRSRAFactory.new();
+  this.fundRAFactory = await MockFundRAFactory.new();
   this.fundStorageFactory = await FundStorageFactory.new();
   this.fundMultiSigFactory = await FundMultiSigFactory.new();
   this.fundControllerFactory = await FundControllerFactory.new();
@@ -72,7 +72,7 @@ async function deployFundFactory(ggrAddress, owner) {
 
   const fundFactory = await FundFactory.new(
     ggrAddress,
-    this.rsraFactory.address,
+    this.fundRAFactory.address,
     this.fundMultiSigFactory.address,
     this.fundStorageFactory.address,
     this.fundControllerFactory.address,
@@ -150,7 +150,7 @@ async function buildFund(
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
   // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
-  const fundRsra = await MockRSRA.at(res.logs[0].args.fundRsra);
+  const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
   const modifyConfigProposalManager = await MockModifyConfigProposalManager.at(
     res.logs[0].args.modifyConfigProposalManager
   );
@@ -201,7 +201,7 @@ async function buildFund(
   return {
     fundStorage,
     fundMultiSig,
-    fundRsra,
+    fundRA,
     fundController,
     modifyConfigProposalManager,
     fineMemberProposalManager,

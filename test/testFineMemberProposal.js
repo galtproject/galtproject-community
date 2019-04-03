@@ -1,6 +1,6 @@
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const SpaceLockerRegistry = artifacts.require('./SpaceLockerRegistry.sol');
+const LockerRegistry = artifacts.require('./LockerRegistry.sol');
 const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
 const SpaceLocker = artifacts.require('./SpaceLocker.sol');
 const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
@@ -35,12 +35,12 @@ contract('FineFundMemberProposal', accounts => {
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
-    this.spaceLockerRegistry = await SpaceLockerRegistry.new({ from: coreTeam });
+    this.lockerRegistry = await LockerRegistry.new({ from: coreTeam });
 
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPLIT_MERGE(), this.splitMerge.address, { from: coreTeam });
-    await this.ggr.setContract(await this.ggr.SPACE_LOCKER_REGISTRY(), this.spaceLockerRegistry.address, {
+    await this.ggr.setContract(await this.ggr.SPACE_LOCKER_REGISTRY(), this.lockerRegistry.address, {
       from: coreTeam
     });
 
@@ -49,7 +49,7 @@ contract('FineFundMemberProposal', accounts => {
     this.spaceLockerFactory = await SpaceLockerFactory.new(this.ggr.address, { from: coreTeam });
 
     // assign roles
-    this.spaceLockerRegistry.addRoleTo(this.spaceLockerFactory.address, await this.spaceLockerRegistry.ROLE_FACTORY(), {
+    this.lockerRegistry.addRoleTo(this.spaceLockerFactory.address, await this.lockerRegistry.ROLE_FACTORY(), {
       from: coreTeam
     });
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
@@ -73,13 +73,13 @@ contract('FineFundMemberProposal', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
-    this.rsraX = fund.fundRsra;
+    this.fundRAX = fund.fundRA;
     this.fineMemberProposalManagerX = fund.fineMemberProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     // NOTICE: hardcoded token IDs, increment when new tests added
     this.benefeciarSpaceTokens = ['4', '5', '6', '7', '8'];
-    await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -115,13 +115,13 @@ contract('FineFundMemberProposal', accounts => {
       res = await locker.tokenDeposited();
       assert.equal(res, true);
 
-      res = await this.spaceLockerRegistry.isValid(this.lockerAddress);
+      res = await this.lockerRegistry.isValid(this.lockerAddress);
       assert.equal(res, true);
 
       // MINT REPUTATION
-      await locker.approveMint(this.rsraX.address, { from: alice });
-      await assertRevert(this.rsraX.mint(this.lockerAddress, { from: minter }));
-      await this.rsraX.mint(this.lockerAddress, { from: alice });
+      await locker.approveMint(this.fundRAX.address, { from: alice });
+      await assertRevert(this.fundRAX.mint(this.lockerAddress, { from: minter }));
+      await this.fundRAX.mint(this.lockerAddress, { from: alice });
     });
 
     it('should allow proposals an payments in GALT (ERC20)', async function() {
@@ -163,7 +163,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       // BURN SHOULD BE REJECTED IF THERE ARE SOME FINES REGARDING THIS TOKEN
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       res = await this.fundStorageX.getFineAmount(this.token1, this.galtToken.address);
       assert.equal(res, 350);
@@ -191,7 +191,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, 50);
 
       // STILL UNABLE TO BURN REPUTATION
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       await this.galtToken.approve(this.fundControllerX.address, 51, { from: alice });
       await assertRevert(
@@ -206,7 +206,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, 0);
 
       // EVENTUALLY BURN REPUTATION
-      await this.rsraX.approveBurn(this.lockerAddress, { from: alice });
+      await this.fundRAX.approveBurn(this.lockerAddress, { from: alice });
     });
 
     it('should allow proposals an payments in ETH', async function() {
@@ -241,7 +241,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       // BURN SHOULD BE REJECTED IF THERE ARE SOME FINES REGARDING THIS TOKEN
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       res = await this.fundStorageX.getFineAmount(this.token1, ETH_CONTRACT);
       assert.equal(res, ether(350));
@@ -256,7 +256,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, ether(50));
 
       // STILL UNABLE TO BURN REPUTATION
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       await assertRevert(
         this.fundControllerX.payFine(this.token1, Currency.ETH, 0, zeroAddress, { from: alice, value: ether(51) })
@@ -270,7 +270,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, 0);
 
       // EVENTUALLY BURN REPUTATION
-      await this.rsraX.approveBurn(this.lockerAddress, { from: alice });
+      await this.fundRAX.approveBurn(this.lockerAddress, { from: alice });
     });
 
     it('should allow multiple proposals in ETH, GALT and other ERC20 tokens', async function() {
@@ -292,9 +292,9 @@ contract('FineFundMemberProposal', accounts => {
       // DEPOSIT SPACE TOKEN
       await this.spaceToken.approve(this.lockerAddress2, this.token2, { from: bob });
       await locker2.deposit(this.token2, { from: bob });
-      await locker2.approveMint(this.rsraX.address, { from: bob });
-      await assertRevert(this.rsraX.mint(this.lockerAddress2, { from: minter }));
-      await this.rsraX.mint(this.lockerAddress2, { from: bob });
+      await locker2.approveMint(this.fundRAX.address, { from: bob });
+      await assertRevert(this.fundRAX.mint(this.lockerAddress2, { from: minter }));
+      await this.fundRAX.mint(this.lockerAddress2, { from: bob });
 
       // Scenario:
       // FINE in ETH 350
@@ -320,7 +320,7 @@ contract('FineFundMemberProposal', accounts => {
       await this.fineMemberProposalManagerX.aye(ethProposalId, { from: frank });
       await this.fineMemberProposalManagerX.triggerApprove(ethProposalId);
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       res = await this.fundStorageX.getFineAmount(this.token1, ETH_CONTRACT);
       assert.equal(res, ether(350));
@@ -346,7 +346,7 @@ contract('FineFundMemberProposal', accounts => {
       await this.fineMemberProposalManagerX.aye(galtProposalId, { from: frank });
       await this.fineMemberProposalManagerX.triggerApprove(galtProposalId);
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       res = await this.fundStorageX.getFineAmount(this.token1, this.galtToken.address);
       assert.equal(res, ether(450));
@@ -372,7 +372,7 @@ contract('FineFundMemberProposal', accounts => {
       await this.fineMemberProposalManagerX.aye(daiProposalId, { from: frank });
       await this.fineMemberProposalManagerX.triggerApprove(daiProposalId);
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
       res = await this.fundStorageX.getFineAmount(this.token1, this.dai.address);
       assert.equal(res, ether(550));
@@ -398,7 +398,7 @@ contract('FineFundMemberProposal', accounts => {
       await this.fineMemberProposalManagerX.aye(anotherGaltProposalId, { from: frank });
       await this.fineMemberProposalManagerX.triggerApprove(anotherGaltProposalId);
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: alice }));
 
       res = await this.fundStorageX.getFineAmount(this.token1, this.dai.address);
       assert.equal(res, ether(550));
@@ -409,8 +409,8 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token2);
       assert.equal(res, ether(650));
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: bob }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // COMPLETE PAY in GALT
       await this.galtToken.approve(this.fundControllerX.address, ether(450), { from: alice });
@@ -430,8 +430,8 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token2);
       assert.equal(res, ether(650));
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: bob }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // PARTIAL PAY in ETH
       await this.fundControllerX.payFine(this.token1, Currency.ETH, 0, zeroAddress, {
@@ -453,8 +453,8 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token2);
       assert.equal(res, ether(650));
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: bob }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // COMPLETE PAY in ERC20
       await this.dai.approve(this.fundControllerX.address, ether(550), { from: alice });
@@ -476,8 +476,8 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token2);
       assert.equal(res, ether(650));
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: bob }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // ANOTHER FINE in ETH
       res = await this.fineMemberProposalManagerX.propose(this.token1, Currency.ETH, ether(150), zeroAddress, 'blah', {
@@ -505,8 +505,8 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token2);
       assert.equal(res, ether(650));
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress, { from: alice }));
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: bob }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // COMPLETE PAY in ETH
       await this.fundControllerX.payFine(this.token1, Currency.ETH, 0, zeroAddress, {
@@ -528,10 +528,10 @@ contract('FineFundMemberProposal', accounts => {
       res = await this.fundStorageX.getTotalFineAmount(this.token2);
       assert.equal(res, ether(650));
 
-      await assertRevert(this.rsraX.approveBurn(this.lockerAddress2, { from: bob }));
+      await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // TOKEN 1 REPUTATION BURN
-      this.rsraX.approveBurn(this.lockerAddress, { from: alice });
+      this.fundRAX.approveBurn(this.lockerAddress, { from: alice });
 
       // TOKEN2 COMPLETE PAY in GALT
       await this.galtToken.approve(this.fundControllerX.address, ether(650), { from: alice });
@@ -554,7 +554,7 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, ether(0));
 
       // TOKEN 2 REPUTATION BURN
-      this.rsraX.approveBurn(this.lockerAddress2, { from: bob });
+      this.fundRAX.approveBurn(this.lockerAddress2, { from: bob });
 
       // CHECK MULTISIG BALANCES
       res = await this.galtToken.balanceOf(this.fundMultiSigX.address);

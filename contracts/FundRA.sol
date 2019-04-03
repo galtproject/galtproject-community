@@ -16,13 +16,17 @@ pragma solidity 0.5.3;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/core/contracts/LiquidReputationAccounting.sol";
-import "@galtproject/core/contracts/registries/interfaces/ISpaceLockerRegistry.sol";
+import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
+import "@galtproject/core/contracts/reputation/components/SpaceInputRA.sol";
+import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
+import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
 import "./FundStorage.sol";
-import "./interfaces/IRSRA.sol";
+import "./interfaces/IFundRA.sol";
 
 
-contract RSRA is IRSRA, LiquidReputationAccounting {
+contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
+
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
@@ -34,7 +38,7 @@ contract RSRA is IRSRA, LiquidReputationAccounting {
     FundStorage _fundStorage
   )
     public
-    LiquidReputationAccounting(_fundStorage.ggr())
+    LiquidRA(_fundStorage.ggr())
   {
     fundStorage = _fundStorage;
   }

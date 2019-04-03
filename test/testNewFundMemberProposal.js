@@ -1,6 +1,6 @@
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const SpaceLockerRegistry = artifacts.require('./SpaceLockerRegistry.sol');
+const LockerRegistry = artifacts.require('./LockerRegistry.sol');
 const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
 const SpaceLocker = artifacts.require('./SpaceLocker.sol');
 const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
@@ -28,7 +28,7 @@ contract('NewFundMemberProposal', accounts => {
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
-    this.spaceLockerRegistry = await SpaceLockerRegistry.new({ from: coreTeam });
+    this.spaceLockerRegistry = await LockerRegistry.new({ from: coreTeam });
 
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
@@ -65,12 +65,12 @@ contract('NewFundMemberProposal', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
-    this.rsraX = fund.fundRsra;
+    this.fundRAX = fund.fundRA;
     this.newMemberProposalManagerX = fund.newMemberProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
-    await this.rsraX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -110,9 +110,9 @@ contract('NewFundMemberProposal', accounts => {
       assert.equal(res, true);
 
       // MINT REPUTATION
-      await locker.approveMint(this.rsraX.address, { from: alice });
-      await assertRevert(this.rsraX.mint(lockerAddress, { from: minter }));
-      await assertRevert(this.rsraX.mint(lockerAddress, { from: alice }));
+      await locker.approveMint(this.fundRAX.address, { from: alice });
+      await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
+      await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
 
       res = await this.newMemberProposalManagerX.propose(token1, 'blah', { from: unauthorized });
 
@@ -161,9 +161,9 @@ contract('NewFundMemberProposal', accounts => {
       res = await this.fundStorageX.isMintApproved(token1);
       assert.equal(res, true);
 
-      await this.rsraX.mint(lockerAddress, { from: alice });
+      await this.fundRAX.mint(lockerAddress, { from: alice });
 
-      res = await this.rsraX.balanceOf(alice);
+      res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
     });
   });

@@ -18,7 +18,7 @@ import "openzeppelin-solidity/contracts/drafts/Counter.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/core/contracts/multisig/proposals/AbstractProposalManager.sol";
 import "../FundStorage.sol";
-import "../interfaces/IRSRA.sol";
+import "../interfaces/IFundRA.sol";
 
 
 contract AbstractFundProposalManager is AbstractProposalManager {
@@ -30,10 +30,10 @@ contract AbstractFundProposalManager is AbstractProposalManager {
 
   // GETTERS
   function getAyeShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
-    return fundStorage.getRsra().getShare(_proposalVotings[_proposalId].ayes.elements());
+    return fundStorage.getRA().getShare(_proposalVotings[_proposalId].ayes.elements());
   }
 
   function getNayShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
-    return fundStorage.getRsra().getShare(_proposalVotings[_proposalId].nays.elements());
+    return fundStorage.getRA().getShare(_proposalVotings[_proposalId].nays.elements());
   }
 }
