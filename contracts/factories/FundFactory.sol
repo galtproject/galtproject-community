@@ -207,7 +207,7 @@ contract FundFactory is Ownable {
     external
     returns (bytes32 fundId)
   {
-    require(_thresholds.length == 12, "Thresholds length should be 10");
+    require(_thresholds.length == 12, "Thresholds length should be 12");
 
     fundId = keccak256(abi.encode(blockhash(block.number - 1), _initialMultiSigRequired, _initialMultiSigOwners, msg.sender));
 
