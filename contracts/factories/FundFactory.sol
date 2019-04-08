@@ -120,9 +120,12 @@ contract FundFactory is Ownable {
   }
 
   bool initialized;
-  uint256 public commission;
 
-  GaltGlobalRegistry ggr;
+  uint256 public ethFee;
+  uint256 public galtFee;
+  address internal collector;
+
+  GaltGlobalRegistry internal ggr;
 
   FundRAFactory fundRAFactory;
   FundStorageFactory fundStorageFactory;
@@ -149,7 +152,8 @@ contract FundFactory is Ownable {
     FundStorageFactory _fundStorageFactory,
     FundControllerFactory _fundControllerFactory
   ) public {
-    commission = 10 ether;
+    galtFee = 10 ether;
+    ethFee = 5 ether;
 
     ggr = _ggr;
 
@@ -194,6 +198,14 @@ contract FundFactory is Ownable {
     changeMultiSigWithdrawalLimitsProposalManagerFactory = _changeMultiSigWithdrawalLimitsProposalManagerFactory;
 
     initialized = true;
+  }
+
+  function _acceptPayment() internal {
+    if (msg.value == 0) {
+      ggr.getGaltToken().transferFrom(msg.sender, address(this), galtFee);
+    } else {
+      require(msg.value == ethFee, "Fee and msg.value not equal");
+    }
   }
 
   function buildFirstStep(
@@ -440,12 +452,16 @@ contract FundFactory is Ownable {
     );
   }
 
-  function _acceptPayment() internal {
-    ggr.getGaltToken().transferFrom(msg.sender, address(this), commission);
+  function setEthFee(uint256 _ethFee) external onlyOwner {
+    ethFee = _ethFee;
   }
 
-  function setCommission(uint256 _commission) external onlyOwner {
-    commission = _commission;
+  function setGaltFee(uint256 _galtFee) external onlyOwner {
+    galtFee = _galtFee;
+  }
+
+  function setCollectorAddress(address _collector) external onlyOwner {
+    collector = _collector;
   }
 
   function getLastCreatedContracts(bytes32 _fundId) external view returns (
