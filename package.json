@@ -1,12 +1,12 @@
 {
   "name": "@galtproject/fund-basic",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "GaltProject Basic Fund Implementation",
   "directories": {
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#c5b4c52",
+    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#ef5c29d",
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
     "@galtproject/libs": "git+ssh://git@github.com/galtspace/galtproject-libs.git",
     "@galtproject/utils": "^0.9.1",

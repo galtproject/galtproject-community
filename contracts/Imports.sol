@@ -15,8 +15,10 @@ pragma solidity 0.5.3;
 
 import "@galtproject/core/contracts/SpaceToken.sol";
 import "@galtproject/core/contracts/GaltToken.sol";
+import "@galtproject/core/contracts/ACL.sol";
 import "@galtproject/core/contracts/factories/SpaceLockerFactory.sol";
 import "@galtproject/core/contracts/registries/LockerRegistry.sol";
+import "@galtproject/core/contracts/registries/FeeRegistry.sol";
 
 
 // solium-disable-next-line no-empty-blocks

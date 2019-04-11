@@ -7,11 +7,15 @@ const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
 const RegularEthFee = artifacts.require('./RegularEthFee.sol');
 const RegularEthFeeFactory = artifacts.require('./RegularEthFeeFactory.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
+const FeeRegistry = artifacts.require('./FeeRegistry.sol');
+const ACL = artifacts.require('./ACL.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, paymentMethods } = require('./helpers');
 
 const { web3 } = SpaceToken;
+const { utf8ToHex } = web3.utils;
+const bytes32 = utf8ToHex;
 
 initHelperWeb3(web3);
 
@@ -28,10 +32,16 @@ contract('FundRA', accounts => {
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
+    this.acl = await ACL.new({ from: coreTeam });
     this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
-    this.spaceLockerRegistry = await LockerRegistry.new({ from: coreTeam });
+    this.spaceLockerRegistry = await LockerRegistry.new(this.ggr.address, bytes32('SPACE_LOCKER_REGISTRAR'), {
+      from: coreTeam
+    });
+    this.feeRegistry = await FeeRegistry.new({ from: coreTeam });
 
+    await this.ggr.setContract(await this.ggr.ACL(), this.acl.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.FEE_REGISTRY(), this.feeRegistry.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPLIT_MERGE(), this.splitMerge.address, { from: coreTeam });
@@ -40,17 +50,21 @@ contract('FundRA', accounts => {
     });
 
     this.spaceToken.addRoleTo(minter, 'minter', { from: coreTeam });
-
-    this.spaceLockerFactory = await SpaceLockerFactory.new(this.ggr.address, { from: coreTeam });
-
-    // assign roles
-    this.spaceLockerRegistry.addRoleTo(this.spaceLockerFactory.address, await this.spaceLockerRegistry.ROLE_FACTORY(), {
-      from: coreTeam
-    });
-
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
+
+    this.spaceLockerFactory = await SpaceLockerFactory.new(this.ggr.address, { from: coreTeam });
+
+    await this.feeRegistry.setGaltFee(await this.spaceLockerFactory.FEE_KEY(), ether(10), { from: coreTeam });
+    await this.feeRegistry.setEthFee(await this.spaceLockerFactory.FEE_KEY(), ether(5), { from: coreTeam });
+    await this.feeRegistry.setPaymentMethod(await this.spaceLockerFactory.FEE_KEY(), paymentMethods.ETH_AND_GALT, {
+      from: coreTeam
+    });
+
+    await this.acl.setRole(bytes32('SPACE_LOCKER_REGISTRAR'), this.spaceLockerFactory.address, true, {
+      from: coreTeam
+    });
 
     // fund factory contracts
     this.fundFactory = await deployFundFactory(this.ggr.address, alice);
