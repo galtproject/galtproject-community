@@ -1,4 +1,4 @@
-const FundFactory = artifacts.require('./FundFactory.sol');
+const MockFundFactory = artifacts.require('./MockFundFactory.sol');
 const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
 const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
 const FundControllerFactory = artifacts.require('./FundControllerFactory.sol');
@@ -70,7 +70,7 @@ async function deployFundFactory(ggrAddress, owner) {
   // eslint-disable-next-line
   this.changeMultiSigWithdrawalLimitsProposalManagerFactory = await ChangeMultiSigWithdrawalLimitsProposalManagerFactory.new();
 
-  const fundFactory = await FundFactory.new(
+  const fundFactory = await MockFundFactory.new(
     ggrAddress,
     this.fundRAFactory.address,
     this.fundMultiSigFactory.address,
@@ -146,6 +146,8 @@ async function buildFund(
   res = await factory.buildSecondStep(fundId, { from: creator });
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
+
+  // await factory.hackAddRoleManagerRole(fundId, creator, { from: creator });
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });

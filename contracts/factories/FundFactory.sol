@@ -143,7 +143,7 @@ contract FundFactory is Ownable {
   ModifyFeeProposalManagerFactory modifyFeeProposalManagerFactory;
   ModifyMultiSigManagerDetailsProposalManagerFactory modifyMultiSigManagerDetailsProposalManagerFactory;
   ChangeMultiSigWithdrawalLimitsProposalManagerFactory changeMultiSigWithdrawalLimitsProposalManagerFactory;
-  mapping(bytes32 => FundContracts) private fundContracts;
+  mapping(bytes32 => FundContracts) internal fundContracts;
 
   constructor (
     GaltGlobalRegistry _ggr,
