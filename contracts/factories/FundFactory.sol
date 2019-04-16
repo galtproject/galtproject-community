@@ -217,6 +217,7 @@ contract FundFactory is Ownable {
     uint256 _periodLength
   )
     external
+    payable
     returns (bytes32 fundId)
   {
     require(_thresholds.length == 12, "Thresholds length should be 12");
