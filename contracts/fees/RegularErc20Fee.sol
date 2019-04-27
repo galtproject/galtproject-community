@@ -16,9 +16,9 @@ pragma solidity 0.5.3;
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "../FundStorage.sol";
 import "./AbstractRegularFee.sol";
-import "./AbstractDetailedFee.sol";
+import "./traits/DetailableFee.sol";
 
-contract RegularErc20Fee  is AbstractRegularFee, AbstractDetailedFee {
+contract RegularErc20Fee  is AbstractRegularFee, DetailableFee {
   IERC20 public erc20Token;
 
   constructor (

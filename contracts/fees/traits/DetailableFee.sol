@@ -13,24 +13,30 @@
 
 pragma solidity 0.5.3;
 
-contract AbstractDetailedFee {
+contract DetailableFee {
   
-  bytes32 public type;
+  // "regular_erc20" or "regular_eth"
+  bytes32 public feeType;
   string public title;
   string public description;
   string public docLink;
   
-  bool detailsSet;
+  bool public detailsSet;
+  
+  constructor() public {
+    
+  }
 
   function setDetails(
-    bytes32 _type,
-    string _title,
-    string _description,
-    string _docLink
+    bytes32 _feeType,
+    string memory _title,
+    string memory _description,
+    string memory _docLink
   ) public {
     require(!detailsSet, "Details already set");
-    
-    type = _type;
+    //TODO: maybe use ownable for restrict setDetails only for owners?
+
+    feeType = _feeType;
     title = _title;
     description = _description;
     docLink = _docLink;
@@ -39,14 +45,14 @@ contract AbstractDetailedFee {
   }
 
   function getDetails() public view returns (
-    bytes32 _type,
-    string _title,
-    string _description,
-    string _docLink
+    bytes32 _feeType,
+    string memory _title,
+    string memory _description,
+    string memory _docLink
   ) {
     
     return (
-      type,
+      feeType,
       title,
       description,
       docLink
