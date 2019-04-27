@@ -18,7 +18,7 @@ import "../FundStorage.sol";
 import "./AbstractRegularFee.sol";
 import "./traits/DetailableFee.sol";
 
-contract RegularErc20Fee  is AbstractRegularFee, DetailableFee {
+contract RegularErc20Fee is AbstractRegularFee, DetailableFee {
   IERC20 public erc20Token;
 
   constructor (
@@ -28,8 +28,8 @@ contract RegularErc20Fee  is AbstractRegularFee, DetailableFee {
     uint256 _periodLength,
     uint256 _rate
   )
-    public
-    AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
+  public
+  AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
   {
     erc20Token = _token;
   }
@@ -45,7 +45,7 @@ contract RegularErc20Fee  is AbstractRegularFee, DetailableFee {
   }
 
   function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external payable {
-    for(uint i = 0; i < _spaceTokensIds.length; i++) {
+    for (uint i = 0; i < _spaceTokensIds.length; i++) {
       pay(_spaceTokensIds[i], _amounts[i]);
     }
   }

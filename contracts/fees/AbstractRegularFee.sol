@@ -58,9 +58,9 @@ contract AbstractRegularFee is IRegularFee {
     require(paidUntil[_spaceTokenId] < getNextPeriodTimestamp(), "paidUntil too small");
     fundStorage.lockSpaceToken(_spaceTokenId);
   }
-  
+
   function lockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
-    for(uint i = 0; i < _spaceTokensIds.length; i++) {
+    for (uint i = 0; i < _spaceTokensIds.length; i++) {
       lockSpaceToken(_spaceTokensIds[i]);
     }
   }
@@ -71,7 +71,7 @@ contract AbstractRegularFee is IRegularFee {
   }
 
   function unlockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
-    for(uint i = 0; i < _spaceTokensIds.length; i++) {
+    for (uint i = 0; i < _spaceTokensIds.length; i++) {
       unlockSpaceToken(_spaceTokensIds[i]);
     }
   }

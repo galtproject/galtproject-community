@@ -17,15 +17,15 @@ import "../FundStorage.sol";
 import "./AbstractRegularFee.sol";
 import "./traits/DetailableFee.sol";
 
-contract RegularEthFee  is AbstractRegularFee, DetailableFee {
+contract RegularEthFee is AbstractRegularFee, DetailableFee {
   constructor (
     FundStorage _fundStorage,
     uint256 _initialTimestamp,
     uint256 _periodLength,
     uint256 _rate
   )
-    public
-    AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
+  public
+  AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
   {
   }
 
@@ -41,9 +41,9 @@ contract RegularEthFee  is AbstractRegularFee, DetailableFee {
 
     address(fundStorage.getMultiSig()).transfer(_amount);
   }
-  
+
   function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external payable {
-    for(uint i = 0; i < _spaceTokensIds.length; i++) {
+    for (uint i = 0; i < _spaceTokensIds.length; i++) {
       pay(_spaceTokensIds[i], _amounts[i]);
     }
   }

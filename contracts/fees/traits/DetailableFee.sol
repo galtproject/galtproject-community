@@ -14,15 +14,15 @@
 pragma solidity 0.5.3;
 
 contract DetailableFee {
-  
+
   // "regular_erc20" or "regular_eth"
   bytes32 public feeType;
   string public title;
   string public description;
   string public docLink;
-  
+
   bool public detailsSet;
-  
+
   constructor() public {
     
   }
@@ -32,7 +32,9 @@ contract DetailableFee {
     string memory _title,
     string memory _description,
     string memory _docLink
-  ) public {
+  ) 
+    public 
+  {
     require(!detailsSet, "Details already set");
     //TODO: maybe use ownable for restrict setDetails only for owners?
 
@@ -49,8 +51,9 @@ contract DetailableFee {
     string memory _title,
     string memory _description,
     string memory _docLink
-  ) {
-    
+  ) 
+  {
+
     return (
       feeType,
       title,
