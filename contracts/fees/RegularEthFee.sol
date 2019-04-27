@@ -15,9 +15,10 @@ pragma solidity 0.5.3;
 
 import "../FundStorage.sol";
 import "./AbstractRegularFee.sol";
+import "./AbstractDetailedFee.sol";
 
 
-contract RegularEthFee  is AbstractRegularFee {
+contract RegularEthFee  is AbstractRegularFee, AbstractDetailedFee {
   constructor (
     FundStorage _fundStorage,
     uint256 _initialTimestamp,
