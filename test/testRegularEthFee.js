@@ -211,19 +211,26 @@ contract('Regular ETH Fees', accounts => {
     // not locked yet
     await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
-    await this.regularEthFee.lockSpaceToken('1', { from: unauthorized });
+    await this.regularEthFee.lockSpaceTokensArray(['1', '2'], { from: unauthorized });
     res = await this.fundStorageX.isSpaceTokenLocked('1');
+    assert.equal(res, true);
+    res = await this.fundStorageX.isSpaceTokenLocked('2');
     assert.equal(res, true);
 
     // unable to unlock
     await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
     // the current period is completely paid upfront
-    await this.regularEthFee.pay('1', { from: alice, value: ether(1) });
+    await this.regularEthFee.payArray(['1', '2'], [ether(1), ether(4)], { from: alice, value: ether(5) });
     // unlock
-    this.regularEthFee.unlockSpaceToken('1', { from: unauthorized });
+    this.regularEthFee.unlockSpaceTokensArray(['1', '2'], { from: unauthorized });
 
     // unable to lock again
     await assertRevert(this.regularEthFee.lockSpaceToken('1', { from: unauthorized }));
+
+    res = await this.fundStorageX.isSpaceTokenLocked('1');
+    assert.equal(res, false);
+    res = await this.fundStorageX.isSpaceTokenLocked('2');
+    assert.equal(res, false);
   });
 });

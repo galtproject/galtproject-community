@@ -33,6 +33,8 @@ contract AbstractRegularFee is IRegularFee {
 
   // tokenId => timestamp
   mapping(uint256 => uint256) public paidUntil;
+  // tokenId => amount
+  mapping(uint256 => uint256) public totalPaid;
 
   constructor (
     FundStorage _fundStorage,
@@ -52,14 +54,26 @@ contract AbstractRegularFee is IRegularFee {
     prePaidPeriodGap = 2592000;
   }
 
-  function lockSpaceToken(uint256 _spaceTokenId) external {
+  function lockSpaceToken(uint256 _spaceTokenId) public {
     require(paidUntil[_spaceTokenId] < getNextPeriodTimestamp(), "paidUntil too small");
     fundStorage.lockSpaceToken(_spaceTokenId);
   }
+  
+  function lockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
+    for(uint i = 0; i < _spaceTokensIds.length; i++) {
+      lockSpaceToken(_spaceTokensIds[i]);
+    }
+  }
 
-  function unlockSpaceToken(uint256 _spaceTokenId) external {
+  function unlockSpaceToken(uint256 _spaceTokenId) public {
     require(paidUntil[_spaceTokenId] >= getNextPeriodTimestamp(), "paidUntil too big");
     fundStorage.unlockSpaceToken(_spaceTokenId);
+  }
+
+  function unlockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
+    for(uint i = 0; i < _spaceTokensIds.length; i++) {
+      unlockSpaceToken(_spaceTokensIds[i]);
+    }
   }
 
   function _pay(uint256 _spaceTokenId, uint256 _amount) internal {
@@ -74,6 +88,7 @@ contract AbstractRegularFee is IRegularFee {
     require(newPaidUntil <= permittedPaidUntil, "Payment exceeds permitted pre-payment timestamp");
 
     paidUntil[_spaceTokenId] = newPaidUntil;
+    totalPaid[_spaceTokenId] += _amount;
   }
 
   // GETTERS
