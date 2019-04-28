@@ -17,10 +17,6 @@ const bytes32 = utf8ToHex;
 
 initHelperWeb3(web3);
 
-web3.utils.BN.prototype.toString = function() {
-  return this.toString(10);
-};
-
 const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
