@@ -6,9 +6,9 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#8748d3d",
+    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#c6ddc8e",
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
-    "@galtproject/libs": "git+ssh://git@github.com/galtspace/galtproject-libs.git",
+    "@galtproject/libs": "git+ssh://git@github.com/galtspace/galtproject-libs.git#1b2e5ae",
     "@galtproject/utils": "^0.9.1",
     "cli-table": "^0.3.1",
     "eslint": "^5.16.0",
@@ -32,7 +32,7 @@
     "test": "truffle test --network test"
   },
   "engines": {
-    "node": ">=10.15.0"
+    "node": ">=10.15.3"
   },
   "author": "",
   "license": "ISC"
