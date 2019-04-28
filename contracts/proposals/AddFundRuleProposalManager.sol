@@ -35,7 +35,8 @@ contract AddFundRuleProposalManager is AbstractFundProposalManager {
   }
 
   function propose(Action _action, bytes32 _ipfsHash, string calldata _description) external onlyMember {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       action: _action,

@@ -13,7 +13,6 @@
 
 pragma solidity ^0.5.7;
 
-import "openzeppelin-solidity/contracts/drafts/Counter.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
 import "../factories/FundFactory.sol";

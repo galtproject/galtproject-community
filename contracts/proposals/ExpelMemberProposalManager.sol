@@ -36,7 +36,8 @@ contract ExpelMemberProposalManager is AbstractFundProposalManager {
   }
 
   function propose(uint256 _spaceTokenId, string calldata _description) external {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       spaceTokenId: _spaceTokenId,

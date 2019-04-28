@@ -32,7 +32,8 @@ contract DeactivateFundRuleProposalManager is AbstractFundProposalManager {
     (bool active,,,,,) = fundStorage.getFundRule(_frpId);
     require(active == true, "Proposal is not active");
 
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       frpId: _frpId,

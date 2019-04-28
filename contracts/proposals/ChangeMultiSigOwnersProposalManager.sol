@@ -40,7 +40,8 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
     require(_required <= _newOwners.length, "Required too big");
     require(_required > 0, "Required too low");
 
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       newOwners: _newOwners,

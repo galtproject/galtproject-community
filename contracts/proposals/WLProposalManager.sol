@@ -46,7 +46,8 @@ contract WLProposalManager is AbstractFundProposalManager {
     external
     onlyMember
   {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       action: _action,

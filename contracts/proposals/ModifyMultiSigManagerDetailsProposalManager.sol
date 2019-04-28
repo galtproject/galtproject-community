@@ -40,7 +40,8 @@ contract ModifyMultiSigManagerDetailsProposalManager is AbstractFundProposalMana
   )
     external
   {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       active: _active,

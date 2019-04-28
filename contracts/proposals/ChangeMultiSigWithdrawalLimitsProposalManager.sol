@@ -31,7 +31,8 @@ contract ChangeMultiSigWithdrawalLimitsProposalManager is AbstractFundProposalMa
   }
 
   function propose(bool _active, address _erc20Contract, uint256 _amount, string calldata _description) external onlyMember {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       active: _active,

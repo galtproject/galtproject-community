@@ -30,7 +30,8 @@ contract ModifyConfigProposalManager is AbstractFundProposalManager {
   }
 
   function propose(bytes32 _key, bytes32 _value, string calldata _description) external onlyMember {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       key: _key,

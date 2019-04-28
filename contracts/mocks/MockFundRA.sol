@@ -13,16 +13,16 @@
 
 pragma solidity ^0.5.7;
 
-import "openzeppelin-solidity/contracts/drafts/Counter.sol";
+import "openzeppelin-solidity/contracts/drafts/Counters.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
 import "../FundRA.sol";
 
 
 contract MockFundRA is FundRA {
-  using Counter for Counter.Counter;
+  using Counters for Counters.Counter;
 
-  Counter.Counter spaceCounter;
+  Counters.Counter internal spaceCounter;
 
   constructor(
     FundStorage _fundStorage

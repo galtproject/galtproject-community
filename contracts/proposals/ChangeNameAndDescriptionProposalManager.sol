@@ -29,7 +29,8 @@ contract ChangeNameAndDescriptionProposalManager is AbstractFundProposalManager 
   }
 
   function propose(string calldata _name, string calldata _description) external onlyMember {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       name: _name,
