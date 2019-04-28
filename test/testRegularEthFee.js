@@ -5,7 +5,7 @@ const RegularEthFee = artifacts.require('./RegularEthFee.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime } = require('./helpers');
+const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, hex } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -78,6 +78,7 @@ contract('Regular ETH Fees', accounts => {
     );
     this.feeAddress = res.logs[0].args.addr;
     this.regularEthFee = await RegularEthFee.at(this.feeAddress);
+    await this.regularEthFee.setDetails(hex('regular_eth'), 'Fee title', 'Fee description', 'Q...');
   });
 
   it('should instantiate contract correctly', async function() {
@@ -87,6 +88,8 @@ contract('Regular ETH Fees', accounts => {
     assert.equal(res, ONE_MONTH);
     res = await this.regularEthFee.rate();
     assert.equal(res, ether(4));
+
+    await assertRevert(this.regularEthFee.setDetails(hex('regular_eth'), 'New title', 'New description', 'Q...'));
   });
 
   describe('period detection', () => {
@@ -208,19 +211,26 @@ contract('Regular ETH Fees', accounts => {
     // not locked yet
     await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
-    await this.regularEthFee.lockSpaceToken('1', { from: unauthorized });
+    await this.regularEthFee.lockSpaceTokensArray(['1', '2'], { from: unauthorized });
     res = await this.fundStorageX.isSpaceTokenLocked('1');
+    assert.equal(res, true);
+    res = await this.fundStorageX.isSpaceTokenLocked('2');
     assert.equal(res, true);
 
     // unable to unlock
     await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
     // the current period is completely paid upfront
-    await this.regularEthFee.pay('1', { from: alice, value: ether(1) });
+    await this.regularEthFee.payArray(['1', '2'], [ether(1), ether(4)], { from: alice, value: ether(5) });
     // unlock
-    this.regularEthFee.unlockSpaceToken('1', { from: unauthorized });
+    this.regularEthFee.unlockSpaceTokensArray(['1', '2'], { from: unauthorized });
 
     // unable to lock again
     await assertRevert(this.regularEthFee.lockSpaceToken('1', { from: unauthorized }));
+
+    res = await this.fundStorageX.isSpaceTokenLocked('1');
+    assert.equal(res, false);
+    res = await this.fundStorageX.isSpaceTokenLocked('2');
+    assert.equal(res, false);
   });
 });

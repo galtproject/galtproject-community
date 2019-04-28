@@ -15,26 +15,36 @@ pragma solidity 0.5.7;
 
 import "../FundStorage.sol";
 import "./AbstractRegularFee.sol";
+import "./traits/DetailableFee.sol";
 
-
-contract RegularEthFee  is AbstractRegularFee {
+contract RegularEthFee is AbstractRegularFee, DetailableFee {
   constructor (
     FundStorage _fundStorage,
     uint256 _initialTimestamp,
     uint256 _periodLength,
     uint256 _rate
   )
-    public
-    AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
+  public
+  AbstractRegularFee(_fundStorage, _initialTimestamp, _periodLength, _rate)
   {
   }
 
   // Each paidUntil point shifts by the current `rate`
-  function pay(uint256 _spaceTokenId) external payable {
-    require(msg.value > 0, "Expect ETH payment");
+  function pay(uint256 _spaceTokenId) public payable {
+    pay(_spaceTokenId, msg.value);
+  }
 
-    _pay(_spaceTokenId, msg.value);
+  function pay(uint256 _spaceTokenId, uint256 _amount) public payable {
+    require(_amount > 0, "Expect ETH payment");
 
-    address(fundStorage.getMultiSig()).transfer(msg.value);
+    _pay(_spaceTokenId, _amount);
+
+    address(fundStorage.getMultiSig()).transfer(_amount);
+  }
+
+  function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external payable {
+    for (uint i = 0; i < _spaceTokensIds.length; i++) {
+      pay(_spaceTokensIds[i], _amounts[i]);
+    }
   }
 }
