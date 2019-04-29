@@ -40,14 +40,18 @@ import "./ChangeMultiSigWithdrawalLimitsProposalManagerFactory.sol";
 
 contract FundFactory is Ownable {
   // Pre-defined proposal contracts
-  bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config_proposal");
-  bytes32 public constant NEW_MEMBER_TYPE = bytes32("new_member_proposal");
-  bytes32 public constant FINE_MEMBER_TYPE = bytes32("fine_member_proposal");
-  bytes32 public constant WHITE_LIST_TYPE = bytes32("white_list_proposal");
-  bytes32 public constant EXPEL_MEMBER_TYPE = bytes32("expel_member_proposal");
-  bytes32 public constant CHANGE_NAME_AND_DESCRIPTION_TYPE = bytes32("change_info_proposal");
-  bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule_proposal");
-  bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule_proposal");
+  bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config");
+  bytes32 public constant NEW_MEMBER_TYPE = bytes32("new_member");
+  bytes32 public constant FINE_MEMBER_TYPE = bytes32("fine_member");
+  bytes32 public constant WHITE_LIST_TYPE = bytes32("white_list");
+  bytes32 public constant EXPEL_MEMBER_TYPE = bytes32("expel_member");
+  bytes32 public constant CHANGE_NAME_AND_DESCRIPTION_TYPE = bytes32("change_info");
+  bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule");
+  bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule");
+  bytes32 public constant CHANGE_MULTISIG_OWNERS_TYPE = bytes32("change_ms_owners");
+  bytes32 public constant MODIFY_FEE_TYPE = bytes32("modify_fee");
+  bytes32 public constant MODIFY_MULTISIG_MANAGER_DETAILS_TYPE = bytes32("modify_ms_manager_details");
+  bytes32 public constant CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE = bytes32("change_ms_withdrawal_limits");
 
   event CreateFundFirstStep(
     bytes32 fundId,
@@ -414,6 +418,11 @@ contract FundFactory is Ownable {
     c.fundMultiSig.addRoleTo(address(changeMultiSigOwnersProposalManager), c.fundMultiSig.OWNER_MANAGER());
     c.fundStorage.addRoleTo(address(modifyFeeProposalManager), c.fundStorage.CONTRACT_FEE_MANAGER());
 
+    c.fundStorage.addRoleTo(address(this), c.fundStorage.CONTRACT_WHITELIST_MANAGER());
+    c.fundStorage.addWhiteListedContract(address(changeMultiSigOwnersProposalManager), CHANGE_MULTISIG_OWNERS_TYPE, 0x0, "");
+    c.fundStorage.addWhiteListedContract(address(modifyFeeProposalManager), MODIFY_FEE_TYPE, 0x0, "");
+    c.fundStorage.removeRoleFrom(address(this), c.fundStorage.CONTRACT_WHITELIST_MANAGER());
+
     c.currentStep = Step.EIGHTH;
 
     emit CreateFundSeventhStep(
@@ -437,6 +446,11 @@ contract FundFactory is Ownable {
 
     c.fundStorage.addRoleTo(address(modifyMultiSigManagerDetailsProposalManager), c.fundStorage.CONTRACT_MEMBER_DETAILS_MANAGER());
     c.fundStorage.addRoleTo(address(changeMultiSigWithdrawalLimitsProposalManager), c.fundStorage.CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER());
+
+    c.fundStorage.addRoleTo(address(this), c.fundStorage.CONTRACT_WHITELIST_MANAGER());
+    c.fundStorage.addWhiteListedContract(address(modifyMultiSigManagerDetailsProposalManager), MODIFY_MULTISIG_MANAGER_DETAILS_TYPE, 0x0, "");
+    c.fundStorage.addWhiteListedContract(address(changeMultiSigWithdrawalLimitsProposalManager), CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE, 0x0, "");
+    c.fundStorage.removeRoleFrom(address(this), c.fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     c.fundStorage.initialize(
       c.fundMultiSig,
