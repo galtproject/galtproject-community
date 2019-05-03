@@ -25,6 +25,8 @@ import "./FundMultiSigFactory.sol";
 import "./FundControllerFactory.sol";
 import "./AbstractProposalManagerFactory.sol";
 
+import "./AddFundRuleProposalManagerFactory.sol";
+import "./DeactivateFundRuleProposalManagerFactory.sol";
 import "./NewMemberProposalManagerFactory.sol";
 import "./ExpelMemberProposalManagerFactory.sol";
 import "./WLProposalManagerFactory.sol";
