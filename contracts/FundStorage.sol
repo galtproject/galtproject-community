@@ -43,6 +43,7 @@ contract FundStorage is Permissionable, Initializable {
   string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
   string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
+  string public constant CONTRACT_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
 
   bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -60,6 +61,7 @@ contract FundStorage is Permissionable, Initializable {
   bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
   bytes32 public constant MODIFY_MANAGER_DETAILS_THRESHOLD = bytes32("modify_manager_details_threshold");
   bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
+  bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -140,6 +142,8 @@ contract FundStorage is Permissionable, Initializable {
   mapping(address => PeriodLimit) private _periodLimits;
   // periodId => (erc20Contract => runningTotal)
   mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
+  // member => identification hash
+  mapping(address => bytes32) private _membersIdentification;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -187,6 +191,8 @@ contract FundStorage is Permissionable, Initializable {
     _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
     _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
     _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
+    _config[MEMBER_IDENTIFICATION_THRESHOLD] = bytes32(_thresholds[12]);
+    _configKeys.add(MEMBER_IDENTIFICATION_THRESHOLD);
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
@@ -304,6 +310,14 @@ contract FundStorage is Permissionable, Initializable {
 
   function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
     feeContracts.add(_feeContract);
+  }
+  
+  function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(CONTRACT_MEMBER_IDENTIFICATION_MANAGER) {
+    _membersIdentification[_member] = _identificationHash;
+  }
+
+  function getMemberIdentification(address _member) external view returns(bytes32) {
+    return _membersIdentification[_member];
   }
 
   function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
