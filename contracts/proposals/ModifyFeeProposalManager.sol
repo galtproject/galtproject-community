@@ -15,70 +15,17 @@ pragma solidity 0.5.3;
 
 import "../FundStorage.sol";
 import "./AbstractFundProposalManager.sol";
+import "./AbstractFundProposalDataManager.sol";
 
 
 // Contract has FEE_MANAGER role in FunStorage, so it is granted performing all
 // fee-related permissions.
 // A proposal should contain already encoded data to call (method + arguments).
-contract ModifyFeeProposalManager is AbstractFundProposalManager {
-  struct Proposal {
-    bytes data;
-    bytes response;
-    string description;
+contract ModifyFeeProposalManager is AbstractFundProposalDataManager {
+  
+  constructor(FundStorage _fundStorage) public AbstractFundProposalDataManager(_fundStorage) {
   }
-
-  mapping(uint256 => Proposal) private _proposals;
-
-  constructor(FundStorage _fundStorage) public AbstractFundProposalManager(_fundStorage) {
-  }
-
-  function propose(
-    bytes calldata _data,
-    string calldata _description
-  )
-    external
-    onlyMember
-  {
-    uint256 id = idCounter.next();
-
-    Proposal storage p = _proposals[id];
-    p.data = _data;
-    p.description = _description;
-
-    emit NewProposal(id, msg.sender);
-    _onNewProposal(id);
-
-    ProposalVoting storage proposalVoting = _proposalVotings[id];
-
-    proposalVoting.status = ProposalStatus.ACTIVE;
-  }
-
-  function _execute(uint256 _proposalId) internal {
-    Proposal storage p = _proposals[_proposalId];
-
-    (bool x, bytes memory response) = address(fundStorage).call.gas(gasleft() - 50000)(p.data);
-
-    assert(x == true);
-
-    p.response = response;
-  }
-
-  function getProposal(
-    uint256 _proposalId
-  )
-    external
-    view
-    returns (
-      bytes memory data,
-      bytes memory response,
-      string memory description
-    )
-  {
-    Proposal storage p = _proposals[_proposalId];
-
-    return (p.data, p.response, p.description);
-  }
-
+  
   function getThreshold() public view returns (uint256) {
     return uint256(fundStorage.getConfigValue(fundStorage.MODIFY_FEE_THRESHOLD()));
   }
