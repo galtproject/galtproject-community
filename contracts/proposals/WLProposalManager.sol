@@ -11,7 +11,7 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity 0.5.3;
+pragma solidity 0.5.7;
 
 import "../FundStorage.sol";
 import "./AbstractFundProposalManager.sol";
@@ -46,7 +46,8 @@ contract WLProposalManager is AbstractFundProposalManager {
     external
     onlyMember
   {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     _proposals[id] = Proposal({
       action: _action,
