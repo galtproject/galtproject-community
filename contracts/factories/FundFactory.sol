@@ -25,6 +25,18 @@ import "./FundMultiSigFactory.sol";
 import "./FundControllerFactory.sol";
 import "./AbstractProposalManagerFactory.sol";
 
+import "./NewMemberProposalManagerFactory.sol";
+import "./ExpelMemberProposalManagerFactory.sol";
+import "./WLProposalManagerFactory.sol";
+import "./FineMemberProposalManagerFactory.sol";
+import "./ModifyConfigProposalManagerFactory.sol";
+import "./ModifyFeeProposalManagerFactory.sol";
+import "./ChangeNameAndDescriptionProposalManagerFactory.sol";
+import "./ChangeMultiSigOwnersProposalManagerFactory.sol";
+import "./ModifyMultiSigManagerDetailsProposalManagerFactory.sol";
+import "./ChangeMultiSigWithdrawalLimitsProposalManagerFactory.sol";
+import "./MemberIdentificationProposalManagerFactory.sol";
+
 contract FundFactory is Ownable {
   // Pre-defined proposal contracts
   bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config");
