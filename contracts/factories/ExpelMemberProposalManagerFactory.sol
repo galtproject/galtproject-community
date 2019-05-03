@@ -13,23 +13,17 @@
 
 pragma solidity 0.5.3;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "../FundStorage.sol";
-import "../interfaces/IFundRA.sol";
-
-// This contract will be included into the current one
+import "./AbstractProposalManagerFactory.sol";
 import "../proposals/ExpelMemberProposalManager.sol";
 
-
-contract ExpelMemberProposalManagerFactory is Ownable {
-  function build(FundStorage _fundStorage)
-    external
-    returns (ExpelMemberProposalManager expelMemberProposalManager)
+contract ExpelMemberProposalManagerFactory is AbstractProposalManagerFactory {
+  function build(FundStorage _fundStorage) external returns (address)
   {
-    expelMemberProposalManager = new ExpelMemberProposalManager(_fundStorage);
+    ExpelMemberProposalManager expelMemberProposalManager = new ExpelMemberProposalManager(_fundStorage);
 
     expelMemberProposalManager.addRoleTo(msg.sender, "role_manager");
     expelMemberProposalManager.removeRoleFrom(address(this), "role_manager");
+
+    return address(expelMemberProposalManager);
   }
 }

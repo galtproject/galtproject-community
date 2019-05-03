@@ -13,17 +13,20 @@
 
 pragma solidity 0.5.3;
 
-import "./AbstractProposalManagerFactory.sol";
-import "../proposals/FineMemberProposalManager.sol";
+import "../FundStorage.sol";
+import "./AbstractFundProposalManager.sol";
+import "./AbstractFundProposalDataManager.sol";
 
-contract FineMemberProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
-    FineMemberProposalManager fineMemberProposalManager = new FineMemberProposalManager(_fundStorage);
 
-    fineMemberProposalManager.addRoleTo(msg.sender, "role_manager");
-    fineMemberProposalManager.removeRoleFrom(address(this), "role_manager");
-
-    return address(fineMemberProposalManager);
+// Contract has FEE_MANAGER role in FunStorage, so it is granted performing all
+// fee-related permissions.
+// A proposal should contain already encoded data to call (method + arguments).
+contract MemberIdentificationProposalManager is AbstractFundProposalDataManager {
+  
+  constructor(FundStorage _fundStorage) public AbstractFundProposalDataManager(_fundStorage) {
+  }
+  
+  function getThreshold() public view returns (uint256) {
+    return uint256(fundStorage.getConfigValue(fundStorage.MEMBER_IDENTIFICATION_THRESHOLD()));
   }
 }

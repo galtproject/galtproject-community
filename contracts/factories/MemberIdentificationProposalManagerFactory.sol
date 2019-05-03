@@ -13,19 +13,17 @@
 
 pragma solidity 0.5.3;
 
+import "../proposals/MemberIdentificationProposalManager.sol";
 import "./AbstractProposalManagerFactory.sol";
-import "../proposals/ChangeNameAndDescriptionProposalManager.sol";
 
-contract ChangeNameAndDescriptionProposalManagerFactory is AbstractProposalManagerFactory {
+contract MemberIdentificationProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address)
   {
-    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = new ChangeNameAndDescriptionProposalManager(
-      _fundStorage
-    );
+    MemberIdentificationProposalManager memberIdentificationProposalManager = new MemberIdentificationProposalManager(_fundStorage);
 
-    changeNameAndDescriptionProposalManager.addRoleTo(msg.sender, "role_manager");
-    changeNameAndDescriptionProposalManager.removeRoleFrom(address(this), "role_manager");
+    memberIdentificationProposalManager.addRoleTo(msg.sender, "role_manager");
+    memberIdentificationProposalManager.removeRoleFrom(address(this), "role_manager");
 
-    return address(changeNameAndDescriptionProposalManager);
+    return address(memberIdentificationProposalManager);
   }
 }

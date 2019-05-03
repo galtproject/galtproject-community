@@ -13,22 +13,17 @@
 
 pragma solidity 0.5.3;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../FundStorage.sol";
-import "../interfaces/IFundRA.sol";
-
-// This contract will be included into the current one
+import "./AbstractProposalManagerFactory.sol";
 import "../proposals/ChangeMultiSigWithdrawalLimitsProposalManager.sol";
 
-
-contract ChangeMultiSigWithdrawalLimitsProposalManagerFactory is Ownable {
-  function build(FundStorage _fundStorage)
-    external
-    returns (ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager)
+contract ChangeMultiSigWithdrawalLimitsProposalManagerFactory is AbstractProposalManagerFactory {
+  function build(FundStorage _fundStorage) external returns (address)
   {
-    changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_fundStorage);
+    ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_fundStorage);
 
     changeMultiSigWithdrawalLimitsProposalManager.addRoleTo(msg.sender, "role_manager");
     changeMultiSigWithdrawalLimitsProposalManager.removeRoleFrom(address(this), "role_manager");
+
+    return address(changeMultiSigWithdrawalLimitsProposalManager);
   }
 }

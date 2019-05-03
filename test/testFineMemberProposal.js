@@ -80,7 +80,7 @@ contract('FineFundMemberProposal', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],
+      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
       2
     );
