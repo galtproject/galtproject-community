@@ -150,33 +150,25 @@ async function buildFund(
   initialSpaceTokens = []
 ) {
   // >>> Step #1
-  let res = await factory.buildFirstStep(
-    creator,
-    isPrivate,
-    thresholds,
-    initialMultiSigOwners,
-    initialMultiSigRequired,
-    periodLength,
-    {
-      from: creator
-    }
-  );
-  // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  let res = await factory.buildFirstStep(creator, isPrivate, thresholds, periodLength, {
+    from: creator
+  });
+  console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
-  const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
 
   // >>> Step #2
-  res = await factory.buildSecondStep(fundId, { from: creator });
-  // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
+  console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
   const memberIdentificationProposalManager = await MemberIdentificationProposalManager.at(
     res.logs[0].args.memberIdentificationProposalManager
   );
+  const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
-  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
   const modifyConfigProposalManager = await MockModifyConfigProposalManager.at(
     res.logs[0].args.modifyConfigProposalManager
@@ -185,21 +177,21 @@ async function buildFund(
 
   // >>> Step #4
   res = await factory.buildFourthStep(fundId, { from: creator });
-  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
   const fineMemberProposalManager = await FineMemberProposalManager.at(res.logs[0].args.fineMemberProposalManager);
   const whiteListProposalManager = await WLProposalManager.at(res.logs[0].args.whiteListProposalManager);
   const expelMemberProposalManager = await ExpelMemberProposalManager.at(res.logs[0].args.expelMemberProposalManager);
 
   // >>> Step #5
   res = await factory.buildFifthStep(fundId, name, description, { from: creator });
-  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
   const changeNameAndDescriptionProposalManager = await ChangeNameAndDescriptionProposalManager.at(
     res.logs[0].args.changeNameAndDescriptionProposalManager
   );
 
   // >>> Step #6
   res = await factory.buildSixthStep(fundId, initialSpaceTokens, { from: creator });
-  // console.log('buildSixthStep gasUsed', res.receipt.gasUsed);
+  console.log('buildSixthStep gasUsed', res.receipt.gasUsed);
 
   const addFundRuleProposalManager = await AddFundRuleProposalManager.at(res.logs[0].args.addFundRuleProposalManager);
   const deactivateFundRuleProposalManager = await DeactivateFundRuleProposalManager.at(
@@ -208,7 +200,7 @@ async function buildFund(
 
   // >>> Step #7
   res = await factory.buildSeventhStep(fundId, { from: creator });
-  // console.log('buildSeventhStep gasUsed', res.receipt.gasUsed);
+  console.log('buildSeventhStep gasUsed', res.receipt.gasUsed);
 
   const changeMultiSigOwnersProposalManager = await ChangeMultiSigOwnersProposalManager.at(
     res.logs[0].args.changeMultiSigOwnersProposalManager
@@ -217,7 +209,7 @@ async function buildFund(
 
   // >>> Step #8
   res = await factory.buildEighthStep(fundId, { from: creator });
-  // console.log('buildEighthStep gasUsed', res.receipt.gasUsed);
+  console.log('buildEighthStep gasUsed', res.receipt.gasUsed);
   const modifyMultiSigManagerDetailsProposalManager = await ModifyMultiSigManagerDetailsProposalManager.at(
     res.logs[0].args.modifyMultiSigManagerDetailsProposalManager
   );

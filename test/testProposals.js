@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, fullHex } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -404,6 +404,11 @@ contract('Proposals', accounts => {
       await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
       await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
       await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+
+      res = await this.fundStorageX.getMultisigManager(george);
+      assert.deepEqual(res.documents.map(doc => doc.toString(10)), [fullHex(bytes32('asdf'))]);
+      res = await this.fundStorageX.getActiveMultisigManagers();
+      assert.deepEqual(res, [alice, george]);
 
       //
       let required = await this.fundMultiSigX.required();

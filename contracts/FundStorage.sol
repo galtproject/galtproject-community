@@ -119,6 +119,8 @@ contract FundStorage is Permissionable, Initializable {
 
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
+  ArraySet.AddressSet private _activeMultisigManagers;
+
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
   mapping(uint256 => bool) private _mintApprovals;
@@ -137,7 +139,7 @@ contract FundStorage is Permissionable, Initializable {
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
   // manager => details
-  mapping(address => MultiSigManager) private _multiSigManagers;
+  mapping(address => MultiSigManager) public _multiSigManagers;
   // erc20Contract => details
   mapping(address => PeriodLimit) private _periodLimits;
   // periodId => (erc20Contract => runningTotal)
@@ -359,6 +361,12 @@ contract FundStorage is Permissionable, Initializable {
     m.active = _active;
     m.name = _name;
     m.documents = _documents;
+    
+    if(_active) {
+      _activeMultisigManagers.addSilent(_manager);
+    } else {
+      _activeMultisigManagers.removeSilent(_manager);
+    }
   }
 
   function setPeriodLimit(
@@ -523,6 +531,14 @@ contract FundStorage is Permissionable, Initializable {
     return true;
   }
 
+  function getActiveMultisigManagers() external view returns (address[] memory) {
+    return _activeMultisigManagers.elements();
+  }
+
+  function getActiveMultisigManagersCount() external view returns (uint256) {
+    return _activeMultisigManagers.size();
+  }
+
   function getFeeContracts() external view returns (address[] memory) {
     return feeContracts.elements();
   }
@@ -533,6 +549,18 @@ contract FundStorage is Permissionable, Initializable {
 
   function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
     return _lockedSpaceTokens[_spaceTokenId];
+  }
+
+  function getMultisigManager(address _manager) external view returns (
+    bool active,
+    string memory name,
+    bytes32[] memory documents
+  ) {
+    return (
+      _multiSigManagers[_manager].active,
+      _multiSigManagers[_manager].name,
+      _multiSigManagers[_manager].documents
+    );
   }
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {

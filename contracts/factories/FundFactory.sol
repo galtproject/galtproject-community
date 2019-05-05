@@ -57,12 +57,12 @@ contract FundFactory is Ownable {
 
   event CreateFundFirstStep(
     bytes32 fundId,
-    address fundMultiSig,
     address fundStorage
   );
 
   event CreateFundSecondStep(
     bytes32 fundId,
+    address fundMultiSig,
     address fundController,
     address memberIdentificationProposalManager
   );
@@ -189,8 +189,6 @@ contract FundFactory is Ownable {
     address operator,
     bool _isPrivate,
     uint256[] calldata _thresholds,
-    address[] calldata _initialMultiSigOwners,
-    uint256 _initialMultiSigRequired,
     uint256 _periodLength
   )
     external
@@ -199,7 +197,7 @@ contract FundFactory is Ownable {
   {
     require(_thresholds.length == 13, "Thresholds length should be 13");
 
-    fundId = keccak256(abi.encode(blockhash(block.number - 1), _initialMultiSigRequired, _initialMultiSigOwners, msg.sender));
+    fundId = keccak256(abi.encode(blockhash(block.number - 1), msg.sender));
 
     FundContracts storage c = fundContracts[fundId];
     require(c.currentStep == Step.FIRST, "Requires first step");
@@ -213,30 +211,31 @@ contract FundFactory is Ownable {
       _periodLength
     );
 
-    FundMultiSig fundMultiSig = fundMultiSigFactory.build(
-      _initialMultiSigOwners,
-      _initialMultiSigRequired,
-      fundStorage
-    );
-
     c.creator = msg.sender;
     c.operator = operator;
     c.fundStorage = fundStorage;
-    c.fundMultiSig = fundMultiSig;
 
     c.currentStep = Step.SECOND;
 
-    emit CreateFundFirstStep(fundId, address(fundMultiSig), address(fundStorage));
+    emit CreateFundFirstStep(fundId, address(fundStorage));
 
     return fundId;
   }
 
-  function buildSecondStep(bytes32 _fundId) external {
+  function buildSecondStep(bytes32 _fundId, address[] calldata _initialMultiSigOwners, uint256 _initialMultiSigRequired) external {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundStorage _fundStorage = c.fundStorage;
+    
+    FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
+      _initialMultiSigOwners,
+      _initialMultiSigRequired,
+        _fundStorage
+    );
+    c.fundMultiSig = _fundMultiSig;
+    
     c.fundController = fundControllerFactory.build(_fundStorage);
 
     address memberIdentificationProposalManager = buildProposalFactory(MEMBER_IDENTIFICATION_TYPE, _fundStorage);
@@ -249,6 +248,7 @@ contract FundFactory is Ownable {
 
     emit CreateFundSecondStep(
       _fundId,
+      address(_fundMultiSig),
       address(c.fundController),
       memberIdentificationProposalManager
     );

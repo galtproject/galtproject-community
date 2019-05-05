@@ -53,7 +53,7 @@ contract('Identification Proposals', accounts => {
   });
 
   describe('Create Member Identifier Proposal', () => {
-    it.only('should correctly set and get', async function() {
+    it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const calldata = this.fundStorageX.contract.methods.setMemberIdentification(alice, hex('alice_id')).encodeABI();
