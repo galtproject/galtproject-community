@@ -68,7 +68,7 @@ contract ChangeMultiSigOwnersProposalManager is AbstractFundProposalManager {
     return uint256(fundStorage.getConfigValue(fundStorage.CHANGE_MS_OWNERS_THRESHOLD()));
   }
 
-  function getProposal(uint256 _proposalId) external view returns (address[] memory newOwners, bool required, string memory description) {
+  function getProposal(uint256 _proposalId) external view returns (address[] memory newOwners, uint256 required, string memory description) {
     Proposal storage p = _proposals[_proposalId];
 
     return (p.newOwners, p.required, p.description);

@@ -13,22 +13,20 @@
 
 pragma solidity ^0.5.3;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../FundStorage.sol";
+import "../proposals/AddFundRuleProposalManager.sol";
 
-// This contract will be included into the current one
-import "./MockModifyConfigProposalManager.sol";
+contract MockAddFundRuleProposalManager is AddFundRuleProposalManager {
+  constructor(FundStorage _fundStorage) public AddFundRuleProposalManager(_fundStorage) {
+  }
 
+  function ayeHack(uint256 _votingId, address _voter) external {
+    _aye(_votingId, _voter);
+  }
 
-contract MockModifyConfigProposalManagerFactory is Ownable {
-  function build(FundStorage _fundStorage)
-    external
-    returns (MockModifyConfigProposalManager)
-  {
-    MockModifyConfigProposalManager modifyConfigProposalManager = new MockModifyConfigProposalManager(_fundStorage);
-
-    modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
-
-    return modifyConfigProposalManager;
+  function ayeAllHack(uint256 _votingId, address[] calldata _voters) external {
+    for (uint256 i = 0; i < _voters.length; i++) {
+      _aye(_votingId, _voters[i]);
+    }
   }
 }
