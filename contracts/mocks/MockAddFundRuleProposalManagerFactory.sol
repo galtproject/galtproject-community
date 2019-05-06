@@ -16,7 +16,7 @@ pragma solidity 0.5.3;
 import "./MockAddFundRuleProposalManager.sol";
 import "../factories/AbstractProposalManagerFactory.sol";
 
-contract AddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
+contract MockAddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address)
   {
     MockAddFundRuleProposalManager addFundRuleProposalManager = new MockAddFundRuleProposalManager(_fundStorage);
