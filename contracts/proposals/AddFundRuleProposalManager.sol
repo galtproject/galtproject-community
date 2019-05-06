@@ -29,7 +29,7 @@ contract AddFundRuleProposalManager is AbstractFundProposalManager {
     string description;
   }
 
-  mapping(uint256 => Proposal) private _proposals;
+  mapping(uint256 => Proposal) internal _proposals;
 
   constructor(FundStorage _fundStorage) public AbstractFundProposalManager(_fundStorage) {
   }
