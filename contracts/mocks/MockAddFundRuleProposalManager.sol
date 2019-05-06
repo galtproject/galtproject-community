@@ -20,6 +20,24 @@ contract MockAddFundRuleProposalManager is AddFundRuleProposalManager {
   constructor(FundStorage _fundStorage) public AddFundRuleProposalManager(_fundStorage) {
   }
 
+
+  function proposeHack(Action _action, bytes32 _ipfsHash, string calldata _description) external {
+    uint256 id = idCounter.next();
+
+    _proposals[id] = Proposal({
+      action: _action,
+      ipfsHash: _ipfsHash,
+      description: _description
+    });
+
+    emit NewProposal(id, msg.sender);
+    _onNewProposal(id);
+
+    ProposalVoting storage proposalVoting = _proposalVotings[id];
+
+    proposalVoting.status = ProposalStatus.ACTIVE;
+  }
+
   function ayeHack(uint256 _votingId, address _voter) external {
     _aye(_votingId, _voter);
   }
