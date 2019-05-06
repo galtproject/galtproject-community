@@ -17,9 +17,7 @@ import "../FundStorage.sol";
 import "../proposals/AddFundRuleProposalManager.sol";
 
 contract MockAddFundRuleProposalManager is AddFundRuleProposalManager {
-  constructor(FundStorage _fundStorage) public AddFundRuleProposalManager(_fundStorage) {
-  }
-
+  constructor(FundStorage _fundStorage) public AddFundRuleProposalManager(_fundStorage) { }
 
   function proposeHack(Action _action, bytes32 _ipfsHash, string calldata _description) external {
     uint256 id = idCounter.next();

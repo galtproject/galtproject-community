@@ -11,21 +11,18 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity ^0.5.3;
+pragma solidity 0.5.3;
 
 import "./MockAddFundRuleProposalManager.sol";
 import "../factories/AbstractProposalManagerFactory.sol";
 
-contract MockAddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage)
-    external
-    returns (address)
+contract AddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
+  function build(FundStorage _fundStorage) external returns (address)
   {
-    MockAddFundRuleProposalManager modifyAddFundRuleProposalManager = new MockAddFundRuleProposalManager(_fundStorage);
+    MockAddFundRuleProposalManager addFundRuleProposalManager = new MockAddFundRuleProposalManager(_fundStorage);
 
-    modifyAddFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyAddFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
-
-    return address(modifyAddFundRuleProposalManager);
+    addFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
+    addFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
+    return address(addFundRuleProposalManager);
   }
 }
