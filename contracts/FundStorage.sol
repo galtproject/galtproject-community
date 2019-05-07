@@ -331,6 +331,7 @@ contract FundStorage is Permissionable, Initializable {
     _lockedSpaceTokens[_spaceTokenId] = true;
   }
 
+  //TODO: possibility to unlock from removed contracts
   function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = false;
   }
