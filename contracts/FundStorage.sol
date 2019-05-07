@@ -120,6 +120,7 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   ArraySet.AddressSet private _activeMultisigManagers;
+  ArraySet.AddressSet private _activePeriodLimitsContracts;
 
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
@@ -379,6 +380,12 @@ contract FundStorage is Permissionable, Initializable {
   {
     _periodLimits[_erc20Contract].active = _active;
     _periodLimits[_erc20Contract].amount = _amount;
+    
+    if(_active) {
+      _activePeriodLimitsContracts.addSilent(_erc20Contract);
+    } else {
+      _activePeriodLimitsContracts.removeSilent(_erc20Contract);
+    }
   }
 
   function handleMultiSigTransaction(
@@ -537,6 +544,14 @@ contract FundStorage is Permissionable, Initializable {
 
   function getActiveMultisigManagersCount() external view returns (uint256) {
     return _activeMultisigManagers.size();
+  }
+
+  function getActivePeriodLimits() external view returns (address[] memory) {
+    return _activePeriodLimitsContracts.elements();
+  }
+
+  function getActivePeriodLimitsCount() external view returns (uint256) {
+    return _activePeriodLimitsContracts.size();
   }
 
   function getFeeContracts() external view returns (address[] memory) {

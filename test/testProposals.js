@@ -549,6 +549,9 @@ contract('Proposals', accounts => {
       limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
       assert.equal(limit.active, true);
       assert.equal(limit.amount, ether(3000));
+
+      assert.deepEqual(await this.fundStorageX.getActivePeriodLimits(), [this.galtToken.address]);
+      assert.deepEqual((await this.fundStorageX.getActivePeriodLimitsCount()).toString(10), '1');
     });
   });
 });
