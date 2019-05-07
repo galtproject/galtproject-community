@@ -314,6 +314,10 @@ contract FundStorage is Permissionable, Initializable {
   function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
     feeContracts.add(_feeContract);
   }
+
+  function removeFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
+    feeContracts.remove(_feeContract);
+  }
   
   function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(CONTRACT_MEMBER_IDENTIFICATION_MANAGER) {
     _membersIdentification[_member] = _identificationHash;
