@@ -62,8 +62,10 @@ contract('WLProposal', accounts => {
 
   describe('pipeline', () => {
     it('should allow address addition to the WL', async function() {
+      console.log('this.fundRAX.mintAll');
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
+      console.log('this.wlProposalManagerX.propose');
       let res = await this.wlProposalManagerX.propose(
         Action.ADD,
         address4wl,
@@ -75,11 +77,13 @@ contract('WLProposal', accounts => {
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
+      console.log('this.wlProposalManagerX.aye');
       await this.wlProposalManagerX.aye(proposalId, { from: bob });
       await this.wlProposalManagerX.nay(proposalId, { from: charlie });
       await this.wlProposalManagerX.aye(proposalId, { from: dan });
       await this.wlProposalManagerX.aye(proposalId, { from: eve });
 
+      console.log('this.wlProposalManagerX.aye');
       res = await this.wlProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob, dan, eve]);
       assert.sameMembers(res.nays, [charlie]);
@@ -91,6 +95,7 @@ contract('WLProposal', accounts => {
       res = await this.wlProposalManagerX.getNayShare(proposalId);
       assert.equal(res, 20);
 
+      console.log('this.wlProposalManagerX.triggerApprove');
       await this.wlProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       res = await this.wlProposalManagerX.getProposalVoting(proposalId);
