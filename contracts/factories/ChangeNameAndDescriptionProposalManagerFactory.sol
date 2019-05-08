@@ -17,8 +17,7 @@ import "./AbstractProposalManagerFactory.sol";
 import "../proposals/ChangeNameAndDescriptionProposalManager.sol";
 
 contract ChangeNameAndDescriptionProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = new ChangeNameAndDescriptionProposalManager(
       _fundStorage
     );

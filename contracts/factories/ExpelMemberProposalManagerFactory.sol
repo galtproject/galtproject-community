@@ -17,8 +17,7 @@ import "./AbstractProposalManagerFactory.sol";
 import "../proposals/ExpelMemberProposalManager.sol";
 
 contract ExpelMemberProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     ExpelMemberProposalManager expelMemberProposalManager = new ExpelMemberProposalManager(_fundStorage);
 
     expelMemberProposalManager.addRoleTo(msg.sender, "role_manager");

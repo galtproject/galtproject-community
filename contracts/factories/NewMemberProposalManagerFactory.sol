@@ -17,8 +17,7 @@ import "./AbstractProposalManagerFactory.sol";
 import "../proposals/NewMemberProposalManager.sol";
 
 contract NewMemberProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     NewMemberProposalManager newMemberProposalManager = new NewMemberProposalManager(_fundStorage);
 
     newMemberProposalManager.addRoleTo(msg.sender, "role_manager");

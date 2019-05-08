@@ -368,7 +368,7 @@ contract FundStorage is Permissionable, Initializable {
     m.name = _name;
     m.documents = _documents;
     
-    if(_active) {
+    if (_active) {
       _activeMultisigManagers.addSilent(_manager);
     } else {
       _activeMultisigManagers.removeSilent(_manager);
@@ -386,7 +386,7 @@ contract FundStorage is Permissionable, Initializable {
     _periodLimits[_erc20Contract].active = _active;
     _periodLimits[_erc20Contract].amount = _amount;
     
-    if(_active) {
+    if (_active) {
       _activePeriodLimitsContracts.addSilent(_erc20Contract);
     } else {
       _activePeriodLimitsContracts.removeSilent(_erc20Contract);
@@ -575,7 +575,8 @@ contract FundStorage is Permissionable, Initializable {
     bool active,
     string memory name,
     bytes32[] memory documents
-  ) {
+  ) 
+  {
     return (
       _multiSigManagers[_manager].active,
       _multiSigManagers[_manager].name,

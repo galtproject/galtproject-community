@@ -18,8 +18,7 @@ import "../proposals/WLProposalManager.sol";
 
 
 contract WLProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     WLProposalManager wlProposalManager = new WLProposalManager(_fundStorage);
 
     wlProposalManager.addRoleTo(msg.sender, "role_manager");

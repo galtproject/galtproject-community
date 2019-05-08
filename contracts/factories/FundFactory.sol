@@ -138,7 +138,7 @@ contract FundFactory is Ownable {
   FundStorageFactory fundStorageFactory;
   FundMultiSigFactory fundMultiSigFactory;
   FundControllerFactory fundControllerFactory;
-  
+
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) internal fundContracts;
 
@@ -154,7 +154,7 @@ contract FundFactory is Ownable {
     fundMultiSigFactory = _fundMultiSigFactory;
     fundRAFactory = _fundRAFactory;
     ggr = _ggr;
-    
+
     galtFee = 10 ether;
     ethFee = 5 ether;
   }
@@ -168,9 +168,9 @@ contract FundFactory is Ownable {
     external
     onlyOwner
   {
-    require (initialized == false);
-    
-    for(uint i = 0; i < _managerFactories.length; i++) {
+    require(initialized == false);
+
+    for (uint i = 0; i < _managerFactories.length; i++) {
       managerFactories[_managerFactoriesNames[i]] = _managerFactories[i];
     }
 
@@ -228,14 +228,14 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundStorage _fundStorage = c.fundStorage;
-    
+
     FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
       _initialMultiSigOwners,
       _initialMultiSigRequired,
-        _fundStorage
+      _fundStorage
     );
     c.fundMultiSig = _fundMultiSig;
-    
+
     c.fundController = fundControllerFactory.build(_fundStorage);
 
     address memberIdentificationProposalManager = buildProposalFactory(MEMBER_IDENTIFICATION_TYPE, _fundStorage);
@@ -352,7 +352,7 @@ contract FundFactory is Ownable {
 
     _fundStorage.addWhiteListedContract(addFundRuleProposalManager, ADD_FUND_RULE_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(deactivateFundRuleProposalManager, DEACTIVATE_FUND_RULE_TYPE, 0x0, "");
-    
+
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
 
     for (uint i = 0; i < _initialSpaceTokensToApprove.length; i++) {
@@ -426,8 +426,8 @@ contract FundFactory is Ownable {
       changeMultiSigWithdrawalLimitsProposalManager
     );
   }
-  
-  function buildProposalFactory(bytes32 _proposalType, FundStorage _fundStorage) internal returns(address) {
+
+  function buildProposalFactory(bytes32 _proposalType, FundStorage _fundStorage) internal returns (address) {
     return AbstractProposalManagerFactory(managerFactories[_proposalType]).build(_fundStorage);
   }
 
@@ -454,12 +454,12 @@ contract FundFactory is Ownable {
   {
     FundContracts storage c = fundContracts[_fundId];
     return (
-      c.operator,
-      c.currentStep,
-      c.fundRA,
-      c.fundMultiSig,
-      c.fundStorage,
-      c.fundController
+    c.operator,
+    c.currentStep,
+    c.fundRA,
+    c.fundMultiSig,
+    c.fundStorage,
+    c.fundController
     );
   }
 

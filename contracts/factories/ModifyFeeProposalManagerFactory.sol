@@ -17,8 +17,7 @@ import "./AbstractProposalManagerFactory.sol";
 import "../proposals/ModifyFeeProposalManager.sol";
 
 contract ModifyFeeProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     ModifyFeeProposalManager modifyFeeProposalManager = new ModifyFeeProposalManager(_fundStorage);
 
     modifyFeeProposalManager.addRoleTo(msg.sender, "role_manager");

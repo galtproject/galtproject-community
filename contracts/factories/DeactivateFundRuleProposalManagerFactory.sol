@@ -17,8 +17,7 @@ import "./AbstractProposalManagerFactory.sol";
 import "../proposals/DeactivateFundRuleProposalManager.sol";
 
 contract DeactivateFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = new DeactivateFundRuleProposalManager(_fundStorage);
 
     deactivateFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");

@@ -17,8 +17,7 @@ import "../proposals/AddFundRuleProposalManager.sol";
 import "./AbstractProposalManagerFactory.sol";
 
 contract AddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     AddFundRuleProposalManager addFundRuleProposalManager = new AddFundRuleProposalManager(_fundStorage);
 
     addFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");

@@ -17,8 +17,7 @@ import "../proposals/ChangeMultiSigOwnersProposalManager.sol";
 import "./AbstractProposalManagerFactory.sol";
 
 contract ChangeMultiSigOwnersProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     ChangeMultiSigOwnersProposalManager changeNameAndDescriptionProposalManager = new ChangeMultiSigOwnersProposalManager(
       _fundStorage
     );

@@ -17,8 +17,7 @@ import "./AbstractProposalManagerFactory.sol";
 import "../proposals/ChangeMultiSigWithdrawalLimitsProposalManager.sol";
 
 contract ChangeMultiSigWithdrawalLimitsProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address)
-  {
+  function build(FundStorage _fundStorage) external returns (address) {
     ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_fundStorage);
 
     changeMultiSigWithdrawalLimitsProposalManager.addRoleTo(msg.sender, "role_manager");
