@@ -140,7 +140,7 @@ contract FundStorage is Permissionable, Initializable {
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
   // manager => details
-  mapping(address => MultiSigManager) public _multiSigManagers;
+  mapping(address => MultiSigManager) private _multiSigManagers;
   // erc20Contract => details
   mapping(address => PeriodLimit) private _periodLimits;
   // periodId => (erc20Contract => runningTotal)
