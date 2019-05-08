@@ -24,7 +24,7 @@ const ActiveRuleAction = {
   REMOVE: 1
 };
 
-contract.only('Proposals', accounts => {
+contract('Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
