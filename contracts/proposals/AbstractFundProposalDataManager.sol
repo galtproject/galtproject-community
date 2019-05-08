@@ -39,7 +39,8 @@ contract AbstractFundProposalDataManager is AbstractFundProposalManager {
     external
     onlyMember
   {
-    uint256 id = idCounter.next();
+    idCounter.increment();
+    uint256 id = idCounter.current();
 
     Proposal storage p = _proposals[id];
     p.data = _data;
