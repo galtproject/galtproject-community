@@ -13,7 +13,10 @@ const Helpers = {
   },
   zeroAddress: '0x0000000000000000000000000000000000000000',
   hex(input) {
-    return web3.utils.toHex(input);
+    return web3.utils.fromAscii(input).padEnd(66, '0');
+  },
+  fullHex(cutHex) {
+    return web3.utils.padRight(cutHex, 64);
   },
   gwei(number) {
     return web3.utils.toWei(number.toString(), 'gwei');

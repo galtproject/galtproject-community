@@ -13,16 +13,20 @@
 
 pragma solidity 0.5.7;
 
-import "./AbstractProposalManagerFactory.sol";
-import "../proposals/DeactivateFundRuleProposalManager.sol";
+import "../FundStorage.sol";
+import "./AbstractFundProposalManager.sol";
+import "./AbstractFundProposalDataManager.sol";
 
-contract DeactivateFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address) {
-    DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = new DeactivateFundRuleProposalManager(_fundStorage);
 
-    deactivateFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
-    deactivateFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
-
-    return address(deactivateFundRuleProposalManager);
+// Contract has FEE_MANAGER role in FunStorage, so it is granted performing all
+// fee-related permissions.
+// A proposal should contain already encoded data to call (method + arguments).
+contract MemberIdentificationProposalManager is AbstractFundProposalDataManager {
+  
+  constructor(FundStorage _fundStorage) public AbstractFundProposalDataManager(_fundStorage) {
+  }
+  
+  function getThreshold() public view returns (uint256) {
+    return uint256(fundStorage.getConfigValue(fundStorage.MEMBER_IDENTIFICATION_THRESHOLD()));
   }
 }

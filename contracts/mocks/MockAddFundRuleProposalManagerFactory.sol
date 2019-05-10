@@ -13,18 +13,15 @@
 
 pragma solidity 0.5.7;
 
-import "./AbstractProposalManagerFactory.sol";
-import "../proposals/ChangeNameAndDescriptionProposalManager.sol";
+import "./MockAddFundRuleProposalManager.sol";
+import "../factories/AbstractProposalManagerFactory.sol";
 
-contract ChangeNameAndDescriptionProposalManagerFactory is AbstractProposalManagerFactory {
+contract MockAddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
-    ChangeNameAndDescriptionProposalManager changeNameAndDescriptionProposalManager = new ChangeNameAndDescriptionProposalManager(
-      _fundStorage
-    );
+    MockAddFundRuleProposalManager addFundRuleProposalManager = new MockAddFundRuleProposalManager(_fundStorage);
 
-    changeNameAndDescriptionProposalManager.addRoleTo(msg.sender, "role_manager");
-    changeNameAndDescriptionProposalManager.removeRoleFrom(address(this), "role_manager");
-
-    return address(changeNameAndDescriptionProposalManager);
+    addFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
+    addFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
+    return address(addFundRuleProposalManager);
   }
 }

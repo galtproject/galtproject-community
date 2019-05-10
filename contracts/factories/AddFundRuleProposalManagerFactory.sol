@@ -13,21 +13,15 @@
 
 pragma solidity 0.5.7;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../FundStorage.sol";
-
-// This contract will be included into the current one
 import "../proposals/AddFundRuleProposalManager.sol";
+import "./AbstractProposalManagerFactory.sol";
 
-
-contract AddFundRuleProposalManagerFactory is Ownable {
-  function build(FundStorage _fundStorage)
-    external
-    returns (AddFundRuleProposalManager addFundRuleProposalManager)
-  {
-    addFundRuleProposalManager = new AddFundRuleProposalManager(_fundStorage);
+contract AddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
+  function build(FundStorage _fundStorage) external returns (address) {
+    AddFundRuleProposalManager addFundRuleProposalManager = new AddFundRuleProposalManager(_fundStorage);
 
     addFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
     addFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
+    return address(addFundRuleProposalManager);
   }
 }

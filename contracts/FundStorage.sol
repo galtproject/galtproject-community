@@ -43,6 +43,7 @@ contract FundStorage is Permissionable, Initializable {
   string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
   string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
+  string public constant CONTRACT_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
 
   bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -60,6 +61,7 @@ contract FundStorage is Permissionable, Initializable {
   bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
   bytes32 public constant MODIFY_MANAGER_DETAILS_THRESHOLD = bytes32("modify_manager_details_threshold");
   bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
+  bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   struct FundRule {
@@ -117,6 +119,9 @@ contract FundStorage is Permissionable, Initializable {
 
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
+  ArraySet.AddressSet private _activeMultisigManagers;
+  ArraySet.AddressSet private _activePeriodLimitsContracts;
+
   mapping(bytes32 => bytes32) private _config;
   // spaceTokenId => isMintApproved
   mapping(uint256 => bool) private _mintApprovals;
@@ -140,6 +145,8 @@ contract FundStorage is Permissionable, Initializable {
   mapping(address => PeriodLimit) private _periodLimits;
   // periodId => (erc20Contract => runningTotal)
   mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
+  // member => identification hash
+  mapping(address => bytes32) private _membersIdentification;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -187,6 +194,8 @@ contract FundStorage is Permissionable, Initializable {
     _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
     _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
     _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
+    _config[MEMBER_IDENTIFICATION_THRESHOLD] = bytes32(_thresholds[12]);
+    _configKeys.add(MEMBER_IDENTIFICATION_THRESHOLD);
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
@@ -306,10 +315,23 @@ contract FundStorage is Permissionable, Initializable {
     feeContracts.add(_feeContract);
   }
 
+  function removeFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
+    feeContracts.remove(_feeContract);
+  }
+  
+  function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(CONTRACT_MEMBER_IDENTIFICATION_MANAGER) {
+    _membersIdentification[_member] = _identificationHash;
+  }
+
+  function getMemberIdentification(address _member) external view returns(bytes32) {
+    return _membersIdentification[_member];
+  }
+
   function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = true;
   }
 
+  //TODO: possibility to unlock from removed contracts
   function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = false;
   }
@@ -345,6 +367,12 @@ contract FundStorage is Permissionable, Initializable {
     m.active = _active;
     m.name = _name;
     m.documents = _documents;
+    
+    if (_active) {
+      _activeMultisigManagers.addSilent(_manager);
+    } else {
+      _activeMultisigManagers.removeSilent(_manager);
+    }
   }
 
   function setPeriodLimit(
@@ -357,6 +385,12 @@ contract FundStorage is Permissionable, Initializable {
   {
     _periodLimits[_erc20Contract].active = _active;
     _periodLimits[_erc20Contract].amount = _amount;
+    
+    if (_active) {
+      _activePeriodLimitsContracts.addSilent(_erc20Contract);
+    } else {
+      _activePeriodLimitsContracts.removeSilent(_erc20Contract);
+    }
   }
 
   function handleMultiSigTransaction(
@@ -509,6 +543,22 @@ contract FundStorage is Permissionable, Initializable {
     return true;
   }
 
+  function getActiveMultisigManagers() external view returns (address[] memory) {
+    return _activeMultisigManagers.elements();
+  }
+
+  function getActiveMultisigManagersCount() external view returns (uint256) {
+    return _activeMultisigManagers.size();
+  }
+
+  function getActivePeriodLimits() external view returns (address[] memory) {
+    return _activePeriodLimitsContracts.elements();
+  }
+
+  function getActivePeriodLimitsCount() external view returns (uint256) {
+    return _activePeriodLimitsContracts.size();
+  }
+
   function getFeeContracts() external view returns (address[] memory) {
     return feeContracts.elements();
   }
@@ -519,6 +569,19 @@ contract FundStorage is Permissionable, Initializable {
 
   function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
     return _lockedSpaceTokens[_spaceTokenId];
+  }
+
+  function getMultisigManager(address _manager) external view returns (
+    bool active,
+    string memory name,
+    bytes32[] memory documents
+  ) 
+  {
+    return (
+      _multiSigManagers[_manager].active,
+      _multiSigManagers[_manager].name,
+      _multiSigManagers[_manager].documents
+    );
   }
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {

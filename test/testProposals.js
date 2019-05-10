@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, fullHex } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -47,7 +47,7 @@ contract('Proposals', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],
+      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
       2
     );
@@ -405,6 +405,11 @@ contract('Proposals', accounts => {
       await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
       await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
 
+      res = await this.fundStorageX.getMultisigManager(george);
+      assert.deepEqual(res.documents.map(doc => doc.toString(10)), [fullHex(bytes32('asdf'))]);
+      res = await this.fundStorageX.getActiveMultisigManagers();
+      assert.deepEqual(res, [alice, george]);
+
       //
       let required = await this.fundMultiSigX.required();
       let owners = await this.fundMultiSigX.getOwners();
@@ -544,6 +549,9 @@ contract('Proposals', accounts => {
       limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
       assert.equal(limit.active, true);
       assert.equal(limit.amount, ether(3000));
+
+      assert.deepEqual(await this.fundStorageX.getActivePeriodLimits(), [this.galtToken.address]);
+      assert.deepEqual((await this.fundStorageX.getActivePeriodLimitsCount()).toString(10), '1');
     });
   });
 });

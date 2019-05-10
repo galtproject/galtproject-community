@@ -17,32 +17,34 @@ import "../FundStorage.sol";
 import "./AbstractFundProposalManager.sol";
 
 
-contract AddFundRuleProposalManager is AbstractFundProposalManager {
-  enum Action {
-    ADD,
-    DISABLE
-  }
-
+// Contract has FEE_MANAGER role in FunStorage, so it is granted performing all
+// fee-related permissions.
+// A proposal should contain already encoded data to call (method + arguments).
+contract AbstractFundProposalDataManager is AbstractFundProposalManager {
   struct Proposal {
-    Action action;
-    bytes32 ipfsHash;
+    bytes data;
+    bytes response;
     string description;
   }
 
-  mapping(uint256 => Proposal) internal _proposals;
+  mapping(uint256 => Proposal) private _proposals;
 
   constructor(FundStorage _fundStorage) public AbstractFundProposalManager(_fundStorage) {
   }
 
-  function propose(Action _action, bytes32 _ipfsHash, string calldata _description) external onlyMember {
+  function propose(
+    bytes calldata _data,
+    string calldata _description
+  )
+    external
+    onlyMember
+  {
     idCounter.increment();
     uint256 id = idCounter.current();
 
-    _proposals[id] = Proposal({
-      action: _action,
-      ipfsHash: _ipfsHash,
-      description: _description
-    });
+    Proposal storage p = _proposals[id];
+    p.data = _data;
+    p.description = _description;
 
     emit NewProposal(id, msg.sender);
     _onNewProposal(id);
@@ -55,11 +57,11 @@ contract AddFundRuleProposalManager is AbstractFundProposalManager {
   function _execute(uint256 _proposalId) internal {
     Proposal storage p = _proposals[_proposalId];
 
-    if (p.action == Action.ADD) {
-      fundStorage.addFundRule(_proposalId, p.ipfsHash, p.description);
-    } else {
-      fundStorage.disableFundRule(_proposalId);
-    }
+    (bool x, bytes memory response) = address(fundStorage).call.gas(gasleft() - 50000)(p.data);
+
+    assert(x == true);
+
+    p.response = response;
   }
 
   function getProposal(
@@ -68,17 +70,13 @@ contract AddFundRuleProposalManager is AbstractFundProposalManager {
     external
     view
     returns (
-      bytes32 ipfsHash,
-      Action action,
+      bytes memory data,
+      bytes memory response,
       string memory description
     )
   {
     Proposal storage p = _proposals[_proposalId];
 
-    return (p.ipfsHash, p.action, p.description);
-  }
-
-  function getThreshold() public view returns (uint256) {
-    return uint256(fundStorage.getConfigValue(fundStorage.ADD_FUND_RULE_THRESHOLD()));
+    return (p.data, p.response, p.description);
   }
 }

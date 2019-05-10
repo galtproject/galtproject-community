@@ -38,12 +38,16 @@ const ChangeNameAndDescriptionProposalManager = artifacts.require('./ChangeNameA
 const AddFundRuleProposalManagerFactory = artifacts.require('./AddFundRuleProposalManagerFactory.sol');
 const DeactivateFundRuleProposalManagerFactory = artifacts.require('./DeactivateFundRuleProposalManagerFactory.sol');
 const ModifyFeeProposalManager = artifacts.require('./ModifyFeeProposalManager.sol');
+const MemberIdentificationProposalManager = artifacts.require('./MemberIdentificationProposalManager.sol');
 const WLProposalManager = artifacts.require('./WLProposalManager.sol');
 const ModifyMultiSigManagerDetailsProposalManager = artifacts.require(
   './ModifyMultiSigManagerDetailsProposalManager.sol'
 );
 const ChangeMultiSigWithdrawalLimitsProposalManager = artifacts.require(
   './ChangeMultiSigWithdrawalLimitsProposalManager.sol'
+);
+const MemberIdentificationProposalManagerFactory = artifacts.require(
+  './MemberIdentificationProposalManagerFactory.sol'
 );
 
 // 60 * 60 * 24 * 30
@@ -69,6 +73,8 @@ async function deployFundFactory(ggrAddress, owner) {
   this.modifyMultiSigManagerDetailsProposalManagerFactory = await ModifyMultiSigManagerDetailsProposalManagerFactory.new();
   // eslint-disable-next-line
   this.changeMultiSigWithdrawalLimitsProposalManagerFactory = await ChangeMultiSigWithdrawalLimitsProposalManagerFactory.new();
+  // eslint-disable-next-line
+  this.memberIdentificationProposalManagerFactory = await MemberIdentificationProposalManagerFactory.new();
 
   const fundFactory = await FundFactory.new(
     ggrAddress,
@@ -80,18 +86,36 @@ async function deployFundFactory(ggrAddress, owner) {
   );
 
   await fundFactory.initialize(
-    this.modifyConfigProposalManagerFactory.address,
-    this.newMemberProposalManagerFactory.address,
-    this.fineMemberProposalManagerFactory.address,
-    this.expelMemberProposalManagerFactory.address,
-    this.wlProposalManagerFactory.address,
-    this.changeNameAndDescriptionProposalManagerFactory.address,
-    this.addFundRuleProposalManagerFactory.address,
-    this.deactivateFundRuleProposalManagerFactory.address,
-    this.changeMultiSigOwnersProposalManagerFactory.address,
-    this.modifyFeeProposalManagerFactory.address,
-    this.modifyMultiSigManagerDetailsProposalManagerFactory.address,
-    this.changeMultiSigWithdrawalLimitsProposalManagerFactory.address,
+    [
+      this.modifyConfigProposalManagerFactory.address,
+      this.newMemberProposalManagerFactory.address,
+      this.fineMemberProposalManagerFactory.address,
+      this.expelMemberProposalManagerFactory.address,
+      this.wlProposalManagerFactory.address,
+      this.changeNameAndDescriptionProposalManagerFactory.address,
+      this.addFundRuleProposalManagerFactory.address,
+      this.deactivateFundRuleProposalManagerFactory.address,
+      this.changeMultiSigOwnersProposalManagerFactory.address,
+      this.modifyFeeProposalManagerFactory.address,
+      this.modifyMultiSigManagerDetailsProposalManagerFactory.address,
+      this.changeMultiSigWithdrawalLimitsProposalManagerFactory.address,
+      this.memberIdentificationProposalManagerFactory.address
+    ],
+    [
+      await fundFactory.MODIFY_CONFIG_TYPE(),
+      await fundFactory.NEW_MEMBER_TYPE(),
+      await fundFactory.FINE_MEMBER_TYPE(),
+      await fundFactory.EXPEL_MEMBER_TYPE(),
+      await fundFactory.WHITE_LIST_TYPE(),
+      await fundFactory.CHANGE_NAME_AND_DESCRIPTION_TYPE(),
+      await fundFactory.ADD_FUND_RULE_TYPE(),
+      await fundFactory.DEACTIVATE_FUND_RULE_TYPE(),
+      await fundFactory.CHANGE_MULTISIG_OWNERS_TYPE(),
+      await fundFactory.MODIFY_FEE_TYPE(),
+      await fundFactory.MODIFY_MULTISIG_MANAGER_DETAILS_TYPE(),
+      await fundFactory.CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE(),
+      await fundFactory.MEMBER_IDENTIFICATION_TYPE()
+    ],
     { from: owner }
   );
 
@@ -126,26 +150,21 @@ async function buildFund(
   initialSpaceTokens = []
 ) {
   // >>> Step #1
-  let res = await factory.buildFirstStep(
-    creator,
-    isPrivate,
-    thresholds,
-    initialMultiSigOwners,
-    initialMultiSigRequired,
-    periodLength,
-    {
-      from: creator
-    }
-  );
+  let res = await factory.buildFirstStep(creator, isPrivate, thresholds, periodLength, {
+    from: creator
+  });
   // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
-  const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
 
   // >>> Step #2
-  res = await factory.buildSecondStep(fundId, { from: creator });
+  res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
+  const memberIdentificationProposalManager = await MemberIdentificationProposalManager.at(
+    res.logs[0].args.memberIdentificationProposalManager
+  );
+  const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
@@ -213,6 +232,7 @@ async function buildFund(
     deactivateFundRuleProposalManager,
     changeMultiSigOwnersProposalManager,
     modifyFeeProposalManager,
+    memberIdentificationProposalManager,
     modifyMultiSigManagerDetailsProposalManager,
     changeMultiSigWithdrawalLimitsProposalManager
   };
