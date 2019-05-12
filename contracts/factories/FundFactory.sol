@@ -70,8 +70,7 @@ contract FundFactory is Ownable {
   event CreateFundThirdStep(
     bytes32 fundId,
     address fundRA,
-    address modifyConfigProposalManager,
-    address newMemberProposalManager
+    address modifyConfigProposalManager
   );
 
   event CreateFundFourthStep(
@@ -83,7 +82,8 @@ contract FundFactory is Ownable {
 
   event CreateFundFifthStep(
     bytes32 fundId,
-    address changeNameAndDescriptionProposalManager
+    address changeNameAndDescriptionProposalManager,
+    address newMemberProposalManager
   );
 
   event CreateFundSixthStep(
@@ -263,13 +263,10 @@ contract FundFactory is Ownable {
     c.fundRA = fundRAFactory.build(_fundStorage);
 
     address modifyConfigProposalManager = buildProposalFactory(MODIFY_CONFIG_TYPE, _fundStorage);
-    address newMemberProposalManager = buildProposalFactory(NEW_MEMBER_TYPE, _fundStorage);
 
     _fundStorage.addWhiteListedContract(modifyConfigProposalManager, MODIFY_CONFIG_TYPE, 0x0, "");
-    _fundStorage.addWhiteListedContract(newMemberProposalManager, NEW_MEMBER_TYPE, 0x0, "");
 
     _fundStorage.addRoleTo(modifyConfigProposalManager, _fundStorage.CONTRACT_CONFIG_MANAGER());
-    _fundStorage.addRoleTo(newMemberProposalManager, _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
     _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
     _fundStorage.addRoleTo(address(c.fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
 
@@ -278,8 +275,7 @@ contract FundFactory is Ownable {
     emit CreateFundThirdStep(
       _fundId,
       address(c.fundRA),
-      modifyConfigProposalManager,
-      newMemberProposalManager
+      modifyConfigProposalManager
     );
   }
 
@@ -320,9 +316,12 @@ contract FundFactory is Ownable {
     FundStorage _fundStorage = c.fundStorage;
 
     address changeNameAndDescriptionProposalManager = buildProposalFactory(CHANGE_NAME_AND_DESCRIPTION_TYPE, c.fundStorage);
+    address newMemberProposalManager = buildProposalFactory(NEW_MEMBER_TYPE, _fundStorage);
 
     _fundStorage.addRoleTo(changeNameAndDescriptionProposalManager, _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    _fundStorage.addRoleTo(newMemberProposalManager, _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
 
+    _fundStorage.addWhiteListedContract(newMemberProposalManager, NEW_MEMBER_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(changeNameAndDescriptionProposalManager, CHANGE_NAME_AND_DESCRIPTION_TYPE, 0x0, "");
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
@@ -333,7 +332,8 @@ contract FundFactory is Ownable {
 
     emit CreateFundFifthStep(
       _fundId,
-      changeNameAndDescriptionProposalManager
+      changeNameAndDescriptionProposalManager,
+      newMemberProposalManager
     );
   }
 

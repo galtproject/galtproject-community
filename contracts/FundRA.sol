@@ -30,8 +30,14 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
+  struct Checkpoint {
+    uint128 fromBlock;
+    uint128 value;
+  }
+
   FundStorage public fundStorage;
 
+  mapping(address => Checkpoint[]) _cachedBalances;
   mapping(uint256 => bool) internal _tokensToExpel;
 
   constructor(
@@ -74,7 +80,71 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     }
   }
 
+  function _creditAccount(address _account, address _owner, uint256 _amount) internal {
+    LiquidRA._creditAccount(_account, _owner, _amount);
+
+    updateValueAtNow(_cachedBalances[_account], balanceOf(_account));
+  }
+
+  function _debitAccount(address _account, address _owner, uint256 _amount) internal {
+    LiquidRA._debitAccount(_account, _owner, _amount);
+
+    updateValueAtNow(_cachedBalances[_account], balanceOf(_account));
+  }
+
+  function updateValueAtNow(Checkpoint[] storage checkpoints, uint _value) internal  {
+    if ((checkpoints.length == 0) || (checkpoints[checkpoints.length -1].fromBlock < block.number)) {
+       Checkpoint storage newCheckPoint = checkpoints[checkpoints.length++];
+       newCheckPoint.fromBlock =  uint128(block.number);
+       newCheckPoint.value = uint128(_value);
+     } else {
+       Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length-1];
+       oldCheckPoint.value = uint128(_value);
+     }
+  }
+
+  function getValueAt(Checkpoint[] storage checkpoints, uint _block) internal view returns (uint256) {
+    if (checkpoints.length == 0) return 0;
+
+    // Shortcut for the actual value
+    if (_block >= checkpoints[checkpoints.length-1].fromBlock) {
+      return checkpoints[checkpoints.length-1].value;
+    }
+
+    if (_block < checkpoints[0].fromBlock) {
+      return 0;
+    }
+
+    // Binary search of the value in the array
+    uint min = 0;
+    uint max = checkpoints.length-1;
+    while (max > min) {
+      uint mid = (max + min + 1)/ 2;
+      if (checkpoints[mid].fromBlock<=_block) {
+        min = mid;
+      } else {
+        max = mid-1;
+      }
+    }
+    return checkpoints[min].value;
+  }
+
   // GETTERS
+
+  function balanceOfAt(address _address, uint256 _blockNumber) public view returns (uint256) {
+    // These next few lines are used when the balance of the token is
+    //  requested before a check point was ever created for this token, it
+    //  requires that the `parentToken.balanceOfAt` be queried at the
+    //  genesis block for that token as this contains initial balance of
+    //  this token
+    if ((_cachedBalances[_address].length == 0) || (_cachedBalances[_address][0].fromBlock > _blockNumber)) {
+      // Has no parent
+      return 0;
+    // This will return the expected balance during normal situations
+    } else {
+        return getValueAt(_cachedBalances[_address], _blockNumber);
+    }
+  }
 
   function getShare(address[] calldata _addresses) external view returns (uint256) {
     uint256 aggregator = 0;

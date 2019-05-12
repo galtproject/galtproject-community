@@ -50,6 +50,8 @@ const MemberIdentificationProposalManagerFactory = artifacts.require(
   './MemberIdentificationProposalManagerFactory.sol'
 );
 
+MockFundRA.numberFormat = 'String';
+
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
@@ -173,7 +175,6 @@ async function buildFund(
   const modifyConfigProposalManager = await MockModifyConfigProposalManager.at(
     res.logs[0].args.modifyConfigProposalManager
   );
-  const newMemberProposalManager = await NewMemberProposalManager.at(res.logs[0].args.newMemberProposalManager);
 
   // >>> Step #4
   res = await factory.buildFourthStep(fundId, { from: creator });
@@ -188,6 +189,7 @@ async function buildFund(
   const changeNameAndDescriptionProposalManager = await ChangeNameAndDescriptionProposalManager.at(
     res.logs[0].args.changeNameAndDescriptionProposalManager
   );
+  const newMemberProposalManager = await NewMemberProposalManager.at(res.logs[0].args.newMemberProposalManager);
 
   // >>> Step #6
   res = await factory.buildSixthStep(fundId, initialSpaceTokens, { from: creator });
