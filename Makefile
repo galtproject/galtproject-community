@@ -19,5 +19,5 @@ test:
 check-size:
 	node scripts/checkContractSize.js
 
-retest: cleanup test
+ctest: cleanup test
 
