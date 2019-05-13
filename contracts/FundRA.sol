@@ -105,23 +105,25 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     updateValueAtNow(_cachedTotalSupply, totalSupply());
   }
 
-  function updateValueAtNow(Checkpoint[] storage checkpoints, uint _value) internal  {
-    if ((checkpoints.length == 0) || (checkpoints[checkpoints.length -1].fromBlock < block.number)) {
-       Checkpoint storage newCheckPoint = checkpoints[checkpoints.length++];
-       newCheckPoint.fromBlock =  uint128(block.number);
-       newCheckPoint.value = uint128(_value);
-     } else {
-       Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length-1];
-       oldCheckPoint.value = uint128(_value);
-     }
+  function updateValueAtNow(Checkpoint[] storage checkpoints, uint256 _value) internal {
+    if ((checkpoints.length == 0) || (checkpoints[checkpoints.length - 1].fromBlock < block.number)) {
+      Checkpoint storage newCheckPoint = checkpoints[checkpoints.length++];
+      newCheckPoint.fromBlock = uint128(block.number);
+      newCheckPoint.value = uint128(_value);
+    } else {
+      Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length - 1];
+      oldCheckPoint.value = uint128(_value);
+    }
   }
 
   function getValueAt(Checkpoint[] storage checkpoints, uint _block) internal view returns (uint256) {
-    if (checkpoints.length == 0) return 0;
+    if (checkpoints.length == 0) {
+      return 0;
+    }
 
     // Shortcut for the actual value
-    if (_block >= checkpoints[checkpoints.length-1].fromBlock) {
-      return checkpoints[checkpoints.length-1].value;
+    if (_block >= checkpoints[checkpoints.length - 1].fromBlock) {
+      return checkpoints[checkpoints.length - 1].value;
     }
 
     if (_block < checkpoints[0].fromBlock) {
@@ -130,13 +132,13 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
 
     // Binary search of the value in the array
     uint min = 0;
-    uint max = checkpoints.length-1;
+    uint max = checkpoints.length - 1;
     while (max > min) {
-      uint mid = (max + min + 1)/ 2;
+      uint mid = (max + min + 1) / 2;
       if (checkpoints[mid].fromBlock<=_block) {
         min = mid;
       } else {
-        max = mid-1;
+        max = mid - 1;
       }
     }
     return checkpoints[min].value;
@@ -153,19 +155,19 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     if ((_cachedBalances[_address].length == 0) || (_cachedBalances[_address][0].fromBlock > _blockNumber)) {
       // Has no parent
       return 0;
-    // This will return the expected balance during normal situations
+      // This will return the expected balance during normal situations
     } else {
-        return getValueAt(_cachedBalances[_address], _blockNumber);
+      return getValueAt(_cachedBalances[_address], _blockNumber);
     }
   }
 
   function totalSupplyAt(uint256 _blockNumber) public view returns(uint256) {
-   // These next few lines are used when the totalSupply of the token is
-   //  requested before a check point was ever created for this token, it
-   //  requires that the `parentToken.totalSupplyAt` be queried at the
-   //  genesis block for this token as that contains totalSupply of this
-   //  token at this block number.
-   if ((_cachedTotalSupply.length == 0) || (_cachedTotalSupply[0].fromBlock > _blockNumber)) {
+    // These next few lines are used when the totalSupply of the token is
+    //  requested before a check point was ever created for this token, it
+    //  requires that the `parentToken.totalSupplyAt` be queried at the
+    //  genesis block for this token as that contains totalSupply of this
+    //  token at this block number.
+    if ((_cachedTotalSupply.length == 0) || (_cachedTotalSupply[0].fromBlock > _blockNumber)) {
       return 0;
     // This will return the expected totalSupply during normal situations
     } else {
