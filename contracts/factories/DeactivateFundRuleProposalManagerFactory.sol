@@ -20,9 +20,6 @@ contract DeactivateFundRuleProposalManagerFactory is AbstractProposalManagerFact
   function build(FundStorage _fundStorage) external returns (address) {
     DeactivateFundRuleProposalManager deactivateFundRuleProposalManager = new DeactivateFundRuleProposalManager(_fundStorage);
 
-    deactivateFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
-    deactivateFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(deactivateFundRuleProposalManager);
   }
 }

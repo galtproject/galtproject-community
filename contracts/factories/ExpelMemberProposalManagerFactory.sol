@@ -20,9 +20,6 @@ contract ExpelMemberProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
     ExpelMemberProposalManager expelMemberProposalManager = new ExpelMemberProposalManager(_fundStorage);
 
-    expelMemberProposalManager.addRoleTo(msg.sender, "role_manager");
-    expelMemberProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(expelMemberProposalManager);
   }
 }

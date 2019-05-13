@@ -22,9 +22,8 @@ import "../FundStorage.sol";
 import "../interfaces/IFundRA.sol";
 
 
-contract AbstractFundProposalManager is Permissionable {
-  FundStorage fundStorage;
-
+contract AbstractFundProposalManager {
+  using SafeMath for uint256;
   using Counters for Counters.Counter;
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
@@ -33,6 +32,18 @@ contract AbstractFundProposalManager is Permissionable {
   event Approved(uint256 ayeShare, uint256 threshold);
   event Rejected(uint256 nayShare, uint256 threshold);
 
+  struct ProposalVoting {
+    uint256 creationBlock;
+    uint256 creationTotalSupply;
+    uint256 totalAyes;
+    uint256 totalNays;
+    ProposalStatus status;
+    mapping(address => Choice) participants;
+    ArraySet.AddressSet ayes;
+    ArraySet.AddressSet nays;
+  }
+
+  FundStorage fundStorage;
   Counters.Counter internal idCounter;
 
   ArraySet.Uint256Set private _activeProposals;
@@ -42,8 +53,6 @@ contract AbstractFundProposalManager is Permissionable {
 
   uint256[] private _approvedProposals;
   uint256[] private _rejectedProposals;
-
-  //  string public constant RSRA_CONTRACT = "rsra_contract";
 
   mapping(uint256 => ProposalVoting) internal _proposalVotings;
 
@@ -58,13 +67,6 @@ contract AbstractFundProposalManager is Permissionable {
     PENDING,
     AYE,
     NAY
-  }
-
-  struct ProposalVoting {
-    ProposalStatus status;
-    mapping(address => Choice) participants;
-    ArraySet.AddressSet ayes;
-    ArraySet.AddressSet nays;
   }
 
   modifier onlyMember() {
@@ -143,34 +145,47 @@ contract AbstractFundProposalManager is Permissionable {
 
   // INTERNAL
   function _aye(uint256 _proposalId, address _voter) internal {
-    if (_proposalVotings[_proposalId].participants[_voter] == Choice.NAY) {
-      _proposalVotings[_proposalId].nays.remove(_voter);
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+    uint256 reputation = reputationOf(_voter, p.creationBlock);
+
+    if (p.participants[_voter] == Choice.NAY) {
+      p.nays.remove(_voter);
+      p.totalNays = p.totalNays.sub(reputation);
     }
 
-    _proposalVotings[_proposalId].participants[_voter] = Choice.AYE;
-    _proposalVotings[_proposalId].ayes.add(_voter);
+    p.participants[_voter] = Choice.AYE;
+    p.ayes.add(_voter);
+    p.totalAyes = p.totalAyes.add(reputation);
   }
 
   function _nay(uint256 _proposalId, address _voter) internal {
-    if (_proposalVotings[_proposalId].participants[_voter] == Choice.AYE) {
-      _proposalVotings[_proposalId].ayes.remove(_voter);
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+    uint256 reputation = reputationOf(_voter, p.creationBlock);
+
+    if (p.participants[_voter] == Choice.AYE) {
+      p.ayes.remove(_voter);
+      p.totalAyes = p.totalAyes.sub(reputation);
     }
 
-    _proposalVotings[_proposalId].participants[msg.sender] = Choice.NAY;
-    _proposalVotings[_proposalId].nays.add(msg.sender);
+    p.participants[msg.sender] = Choice.NAY;
+    p.nays.add(msg.sender);
+    p.totalNays = p.totalNays.add(reputation);
   }
 
   function _onNewProposal(uint256 _proposalId) internal {
     _activeProposals.add(_proposalId);
     _activeProposalsBySender[msg.sender].add(_proposalId);
     _proposalToSender[_proposalId] = msg.sender;
+
+    uint256 blockNumber = block.number.sub(1);
+    uint256 totalSupply = fundStorage.getRA().totalSupplyAt(blockNumber);
+    require(totalSupply > 0, "Total reputation is 0");
+
+    _proposalVotings[_proposalId].creationBlock = blockNumber;
+    _proposalVotings[_proposalId].creationTotalSupply = totalSupply;
   }
 
   // GETTERS
-
-//  function getAyeShare(uint256 _proposalId) public view returns (uint256 approvedShare);
-//
-//  function getNayShare(uint256 _proposalId) public view returns (uint256 approvedShare);
 
   function getActiveProposals() public view returns (uint256[] memory) {
     return _activeProposals.elements();
@@ -210,6 +225,10 @@ contract AbstractFundProposalManager is Permissionable {
     external
     view
     returns (
+      uint256 creationBlock,
+      uint256 creationTotalSupply,
+      uint256 totalAyes,
+      uint256 totalNays,
       ProposalStatus status,
       address[] memory ayes,
       address[] memory nays
@@ -217,7 +236,15 @@ contract AbstractFundProposalManager is Permissionable {
   {
     ProposalVoting storage p = _proposalVotings[_proposalId];
 
-    return (p.status, p.ayes.elements(), p.nays.elements());
+    return (
+      p.creationBlock,
+      p.creationTotalSupply,
+      p.totalAyes,
+      p.totalNays,
+      p.status,
+      p.ayes.elements(),
+      p.nays.elements()
+    );
   }
 
   function getProposalStatus(
@@ -240,13 +267,20 @@ contract AbstractFundProposalManager is Permissionable {
     return _proposalVotings[_proposalId].participants[_participant];
   }
 
-  function getAyeShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
-    return fundStorage.getRA().getShare(_proposalVotings[_proposalId].ayes.elements());
+  function reputationOf(address _address, uint256 _blockNumber) public view returns (uint256) {
+    return fundStorage.getRA().balanceOfAt(_address, _blockNumber);
   }
 
-  function getNayShare(uint256 _proposalId) public view returns (uint256 approvedShare) {
-    return fundStorage.getRA().getShare(_proposalVotings[_proposalId].nays.elements());
+  function getAyeShare(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    return p.totalAyes * 100 / p.creationTotalSupply;
   }
 
+  function getNayShare(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    return p.totalNays * 100 / p.creationTotalSupply;
+  }
 }
 

@@ -51,6 +51,7 @@ const MemberIdentificationProposalManagerFactory = artifacts.require(
 );
 
 MockFundRA.numberFormat = 'String';
+ExpelMemberProposalManager.numberFormat = 'String';
 
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
@@ -189,7 +190,6 @@ async function buildFund(
   const changeNameAndDescriptionProposalManager = await ChangeNameAndDescriptionProposalManager.at(
     res.logs[0].args.changeNameAndDescriptionProposalManager
   );
-  const newMemberProposalManager = await NewMemberProposalManager.at(res.logs[0].args.newMemberProposalManager);
 
   // >>> Step #6
   res = await factory.buildSixthStep(fundId, initialSpaceTokens, { from: creator });
@@ -218,6 +218,11 @@ async function buildFund(
   const changeMultiSigWithdrawalLimitsProposalManager = await ChangeMultiSigWithdrawalLimitsProposalManager.at(
     res.logs[0].args.changeMultiSigWithdrawalLimitsProposalManager
   );
+
+  // >>> Step #9
+  res = await factory.buildNinthStep(fundId, { from: creator });
+  // console.log('buildNinthStep gasUsed', res.receipt.gasUsed);
+  const newMemberProposalManager = await NewMemberProposalManager.at(res.logs[0].args.newMemberProposalManager);
 
   return {
     fundStorage,

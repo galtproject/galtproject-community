@@ -33,9 +33,6 @@ contract FundControllerFactory is Ownable {
       _fundStorage
     );
 
-    fundController.addRoleTo(msg.sender, "role_manager");
-    fundController.removeRoleFrom(address(this), "role_manager");
-
     return fundController;
   }
 }

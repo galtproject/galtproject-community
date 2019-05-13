@@ -20,8 +20,6 @@ contract NewMemberProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
     NewMemberProposalManager newMemberProposalManager = new NewMemberProposalManager(_fundStorage);
 
-    newMemberProposalManager.addRoleTo(msg.sender, "role_manager");
-    newMemberProposalManager.removeRoleFrom(address(this), "role_manager");
     return address(newMemberProposalManager);
   }
 }

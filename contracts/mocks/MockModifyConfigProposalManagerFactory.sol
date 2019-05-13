@@ -24,9 +24,6 @@ contract MockModifyConfigProposalManagerFactory is AbstractProposalManagerFactor
   {
     MockModifyConfigProposalManager modifyConfigProposalManager = new MockModifyConfigProposalManager(_fundStorage);
 
-    modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(modifyConfigProposalManager);
   }
 }

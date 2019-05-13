@@ -22,9 +22,6 @@ contract ChangeNameAndDescriptionProposalManagerFactory is AbstractProposalManag
       _fundStorage
     );
 
-    changeNameAndDescriptionProposalManager.addRoleTo(msg.sender, "role_manager");
-    changeNameAndDescriptionProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(changeNameAndDescriptionProposalManager);
   }
 }

@@ -39,6 +39,7 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
 
   mapping(address => Checkpoint[]) _cachedBalances;
   mapping(uint256 => bool) internal _tokensToExpel;
+  Checkpoint[] _cachedTotalSupply;
 
   constructor(
     FundStorage _fundStorage
@@ -90,6 +91,18 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     LiquidRA._debitAccount(_account, _owner, _amount);
 
     updateValueAtNow(_cachedBalances[_account], balanceOf(_account));
+  }
+
+  function _mint(address _beneficiary, uint256 _amount) internal {
+    LiquidRA._mint(_beneficiary, _amount);
+
+    updateValueAtNow(_cachedTotalSupply, totalSupply());
+  }
+
+  function _burn(address _benefactor, uint256 _amount) internal {
+    LiquidRA._burn(_benefactor, _amount);
+
+    updateValueAtNow(_cachedTotalSupply, totalSupply());
   }
 
   function updateValueAtNow(Checkpoint[] storage checkpoints, uint _value) internal  {
@@ -146,13 +159,17 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     }
   }
 
-  function getShare(address[] calldata _addresses) external view returns (uint256) {
-    uint256 aggregator = 0;
-
-    for (uint256 i = 0; i < _addresses.length; i++) {
-      aggregator += balanceOf(_addresses[i]);
+  function totalSupplyAt(uint256 _blockNumber) public view returns(uint256) {
+   // These next few lines are used when the totalSupply of the token is
+   //  requested before a check point was ever created for this token, it
+   //  requires that the `parentToken.totalSupplyAt` be queried at the
+   //  genesis block for this token as that contains totalSupply of this
+   //  token at this block number.
+   if ((_cachedTotalSupply.length == 0) || (_cachedTotalSupply[0].fromBlock > _blockNumber)) {
+      return 0;
+    // This will return the expected totalSupply during normal situations
+    } else {
+      return getValueAt(_cachedTotalSupply, _blockNumber);
     }
-
-    return aggregator * 100 / totalSupply();
   }
 }
