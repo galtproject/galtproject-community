@@ -41,12 +41,13 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   mapping(uint256 => bool) internal _tokensToExpel;
   Checkpoint[] _cachedTotalSupply;
 
-  constructor(
+  function initialize(
     FundStorage _fundStorage
   )
     public
-    LiquidRA(_fundStorage.ggr())
   {
+    LiquidRA.initializeInternal(_fundStorage.ggr());
+
     fundStorage = _fundStorage;
   }
 
