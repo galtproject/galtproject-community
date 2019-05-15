@@ -64,7 +64,6 @@ contract('WLProposal', accounts => {
     it('should allow address addition to the WL', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      console.log('this.wlProposalManagerX.propose');
       let res = await this.wlProposalManagerX.propose(
         Action.ADD,
         address4wl,

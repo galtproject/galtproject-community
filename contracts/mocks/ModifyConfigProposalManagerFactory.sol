@@ -11,15 +11,22 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity 0.5.7;
+pragma solidity ^0.5.3;
 
-import "./AbstractProposalManagerFactory.sol";
-import "../proposals/ChangeMultiSigWithdrawalLimitsProposalManager.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract ChangeMultiSigWithdrawalLimitsProposalManagerFactory is AbstractProposalManagerFactory {
-  function build(FundStorage _fundStorage) external returns (address) {
-    ChangeMultiSigWithdrawalLimitsProposalManager changeMultiSigWithdrawalLimitsProposalManager = new ChangeMultiSigWithdrawalLimitsProposalManager(_fundStorage);
+// This contract will be included into the current one
+import "./MockModifyConfigProposalManager.sol";
 
-    return address(changeMultiSigWithdrawalLimitsProposalManager);
+
+contract MockModifyConfigProposalManagerFactory is Ownable {
+  function build(FundStorage _fundStorage)
+    external
+    returns (MockModifyConfigProposalManager)
+  {
+    MockModifyConfigProposalManager modifyConfigProposalManager = new MockModifyConfigProposalManager(_fundStorage);
+
+
+    return modifyConfigProposalManager;
   }
 }

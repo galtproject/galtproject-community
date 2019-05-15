@@ -22,8 +22,6 @@ contract ChangeMultiSigOwnersProposalManagerFactory is AbstractProposalManagerFa
       _fundStorage
     );
 
-    changeNameAndDescriptionProposalManager.addRoleTo(msg.sender, "role_manager");
-    changeNameAndDescriptionProposalManager.removeRoleFrom(address(this), "role_manager");
     return address(changeNameAndDescriptionProposalManager);
   }
 }

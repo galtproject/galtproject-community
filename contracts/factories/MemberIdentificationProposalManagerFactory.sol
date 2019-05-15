@@ -20,9 +20,6 @@ contract MemberIdentificationProposalManagerFactory is AbstractProposalManagerFa
   function build(FundStorage _fundStorage) external returns (address) {
     MemberIdentificationProposalManager memberIdentificationProposalManager = new MemberIdentificationProposalManager(_fundStorage);
 
-    memberIdentificationProposalManager.addRoleTo(msg.sender, "role_manager");
-    memberIdentificationProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(memberIdentificationProposalManager);
   }
 }

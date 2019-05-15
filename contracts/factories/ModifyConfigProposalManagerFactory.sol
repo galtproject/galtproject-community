@@ -20,9 +20,6 @@ contract ModifyConfigProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
     ModifyConfigProposalManager modifyConfigProposalManager = new ModifyConfigProposalManager(_fundStorage);
 
-    modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(modifyConfigProposalManager);
   }
 }

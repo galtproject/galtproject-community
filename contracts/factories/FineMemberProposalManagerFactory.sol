@@ -20,9 +20,6 @@ contract FineMemberProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
     FineMemberProposalManager fineMemberProposalManager = new FineMemberProposalManager(_fundStorage);
 
-    fineMemberProposalManager.addRoleTo(msg.sender, "role_manager");
-    fineMemberProposalManager.removeRoleFrom(address(this), "role_manager");
-
     return address(fineMemberProposalManager);
   }
 }

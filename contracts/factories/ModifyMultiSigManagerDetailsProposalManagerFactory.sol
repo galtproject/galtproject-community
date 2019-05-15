@@ -20,8 +20,6 @@ contract ModifyMultiSigManagerDetailsProposalManagerFactory is AbstractProposalM
   function build(FundStorage _fundStorage) external returns (address) {
     ModifyMultiSigManagerDetailsProposalManager modifyConfigProposalManager = new ModifyMultiSigManagerDetailsProposalManager(_fundStorage);
 
-    modifyConfigProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyConfigProposalManager.removeRoleFrom(address(this), "role_manager");
     return address(modifyConfigProposalManager);
   }
 }

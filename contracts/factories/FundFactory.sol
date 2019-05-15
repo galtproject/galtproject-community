@@ -70,8 +70,7 @@ contract FundFactory is Ownable {
   event CreateFundThirdStep(
     bytes32 fundId,
     address fundRA,
-    address modifyConfigProposalManager,
-    address newMemberProposalManager
+    address modifyConfigProposalManager
   );
 
   event CreateFundFourthStep(
@@ -104,6 +103,11 @@ contract FundFactory is Ownable {
     address changeMultiSigWithdrawalLimitsProposalManager
   );
 
+  event CreateFundNinthStep(
+    bytes32 fundId,
+    address newMemberProposalManager
+  );
+
   enum Step {
     FIRST,
     SECOND,
@@ -113,6 +117,7 @@ contract FundFactory is Ownable {
     SIXTH,
     SEVENTH,
     EIGHTH,
+    NINTH,
     DONE
   }
 
@@ -263,13 +268,10 @@ contract FundFactory is Ownable {
     c.fundRA = fundRAFactory.build(_fundStorage);
 
     address modifyConfigProposalManager = buildProposalFactory(MODIFY_CONFIG_TYPE, _fundStorage);
-    address newMemberProposalManager = buildProposalFactory(NEW_MEMBER_TYPE, _fundStorage);
 
     _fundStorage.addWhiteListedContract(modifyConfigProposalManager, MODIFY_CONFIG_TYPE, 0x0, "");
-    _fundStorage.addWhiteListedContract(newMemberProposalManager, NEW_MEMBER_TYPE, 0x0, "");
 
     _fundStorage.addRoleTo(modifyConfigProposalManager, _fundStorage.CONTRACT_CONFIG_MANAGER());
-    _fundStorage.addRoleTo(newMemberProposalManager, _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
     _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
     _fundStorage.addRoleTo(address(c.fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
 
@@ -278,8 +280,7 @@ contract FundFactory is Ownable {
     emit CreateFundThirdStep(
       _fundId,
       address(c.fundRA),
-      modifyConfigProposalManager,
-      newMemberProposalManager
+      modifyConfigProposalManager
     );
   }
 
@@ -410,7 +411,6 @@ contract FundFactory is Ownable {
 
     _fundStorage.addWhiteListedContract(modifyMultiSigManagerDetailsProposalManager, MODIFY_MULTISIG_MANAGER_DETAILS_TYPE, 0x0, "");
     _fundStorage.addWhiteListedContract(changeMultiSigWithdrawalLimitsProposalManager, CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE, 0x0, "");
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
 
     _fundStorage.initialize(
       c.fundMultiSig,
@@ -418,12 +418,35 @@ contract FundFactory is Ownable {
       c.fundRA
     );
 
-    c.currentStep = Step.DONE;
+    c.currentStep = Step.NINTH;
 
     emit CreateFundEighthStep(
       _fundId,
       modifyMultiSigManagerDetailsProposalManager,
       changeMultiSigWithdrawalLimitsProposalManager
+    );
+  }
+
+  function buildNinthStep(bytes32 _fundId) external {
+    FundContracts storage c = fundContracts[_fundId];
+    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
+    require(c.currentStep == Step.NINTH, "Requires ninth step");
+
+    FundStorage _fundStorage = c.fundStorage;
+
+    address newMemberProposalManager = buildProposalFactory(NEW_MEMBER_TYPE, _fundStorage);
+
+    _fundStorage.addRoleTo(newMemberProposalManager, _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
+
+    _fundStorage.addWhiteListedContract(newMemberProposalManager, NEW_MEMBER_TYPE, 0x0, "");
+
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_WHITELIST_MANAGER());
+
+    c.currentStep = Step.DONE;
+
+    emit CreateFundNinthStep(
+      _fundId,
+      newMemberProposalManager
     );
   }
 
@@ -443,23 +466,26 @@ contract FundFactory is Ownable {
     collector = _collector;
   }
 
-  function getLastCreatedContracts(bytes32 _fundId) external view returns (
-    address operator,
-    Step currentStep,
-    IFundRA fundRA,
-    FundMultiSig fundMultiSig,
-    FundStorage fundStorage,
-    FundController fundController
-  )
+  function getLastCreatedContracts(bytes32 _fundId)
+    external
+    view
+    returns (
+      address operator,
+      Step currentStep,
+      IFundRA fundRA,
+      FundMultiSig fundMultiSig,
+      FundStorage fundStorage,
+      FundController fundController
+    )
   {
     FundContracts storage c = fundContracts[_fundId];
     return (
-    c.operator,
-    c.currentStep,
-    c.fundRA,
-    c.fundMultiSig,
-    c.fundStorage,
-    c.fundController
+      c.operator,
+      c.currentStep,
+      c.fundRA,
+      c.fundMultiSig,
+      c.fundStorage,
+      c.fundController
     );
   }
 

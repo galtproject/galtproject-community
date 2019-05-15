@@ -20,8 +20,6 @@ contract AddFundRuleProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
     AddFundRuleProposalManager addFundRuleProposalManager = new AddFundRuleProposalManager(_fundStorage);
 
-    addFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
-    addFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
     return address(addFundRuleProposalManager);
   }
 }

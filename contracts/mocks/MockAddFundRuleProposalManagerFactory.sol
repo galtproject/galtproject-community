@@ -20,8 +20,6 @@ contract MockAddFundRuleProposalManagerFactory is AbstractProposalManagerFactory
   function build(FundStorage _fundStorage) external returns (address) {
     MockAddFundRuleProposalManager addFundRuleProposalManager = new MockAddFundRuleProposalManager(_fundStorage);
 
-    addFundRuleProposalManager.addRoleTo(msg.sender, "role_manager");
-    addFundRuleProposalManager.removeRoleFrom(address(this), "role_manager");
     return address(addFundRuleProposalManager);
   }
 }

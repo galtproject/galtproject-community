@@ -20,8 +20,6 @@ contract ModifyFeeProposalManagerFactory is AbstractProposalManagerFactory {
   function build(FundStorage _fundStorage) external returns (address) {
     ModifyFeeProposalManager modifyFeeProposalManager = new ModifyFeeProposalManager(_fundStorage);
 
-    modifyFeeProposalManager.addRoleTo(msg.sender, "role_manager");
-    modifyFeeProposalManager.removeRoleFrom(address(this), "role_manager");
     return address(modifyFeeProposalManager);
   }
 }

@@ -130,12 +130,13 @@ contract('ExpelFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
       await this.fundRAX.mint(lockerAddress, { from: alice });
 
-      res = await this.fundRAX.spaceTokenOwners();
+      // res = await this.fundRAX.spaceTokenOwners();
       // assert.sameMembers(res, [alice, bob, charlie, dan, eve, frank]);
 
       // DISTRIBUTE REPUTATION
       await this.fundRAX.delegate(bob, alice, 300, { from: alice });
       await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
+      const block0 = (await web3.eth.getBlock('latest')).number;
 
       await assertRevert(this.fundRAX.burnExpelled(token1, bob, alice, 200, { from: unauthorized }));
 
@@ -143,6 +144,8 @@ contract('ExpelFundMemberProposal', accounts => {
       res = await this.expelMemberProposalManagerX.propose(token1, 'blah', { from: unauthorized });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
+      res = await this.fundRAX.totalSupplyAt(block0);
+      assert.equal(res, 2300); // 300 * 5 + 800
 
       res = await this.expelMemberProposalManagerX.getProposal(proposalId);
       assert.equal(web3.utils.hexToNumberString(res.spaceTokenId), token1);
@@ -157,8 +160,13 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res, 2300); // 300 * 5 + 800
       res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 500);
-      res = await this.fundRAX.getShare([bob]);
-      assert.equal(res, 21);
+      res = await this.fundRAX.balanceOfAt(bob, block0);
+      assert.equal(res, 500);
+
+      res = await this.expelMemberProposalManagerX.getProposalVoting(proposalId);
+      assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
+      assert.equal(res.totalNays, 0);
+
       res = await this.expelMemberProposalManagerX.getAyeShare(proposalId);
       assert.equal(res, 65); // (500 + 400 + 300 + 300) / 2300
       res = await this.expelMemberProposalManagerX.getThreshold();

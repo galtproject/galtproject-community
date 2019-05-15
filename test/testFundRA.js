@@ -190,8 +190,11 @@ contract('FundRA', accounts => {
       let res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 
+      const block0 = (await web3.eth.getBlock('latest')).number;
+
       // TRANSFER #1
       await this.fundRAX.delegate(bob, alice, 350, { from: alice });
+      const block1 = (await web3.eth.getBlock('latest')).number;
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 450);
@@ -201,6 +204,7 @@ contract('FundRA', accounts => {
 
       // TRANSFER #2
       await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
+      const block2 = (await web3.eth.getBlock('latest')).number;
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 450);
@@ -213,6 +217,7 @@ contract('FundRA', accounts => {
 
       // TRANSFER #3
       await this.fundRAX.delegate(alice, alice, 50, { from: charlie });
+      const block3 = (await web3.eth.getBlock('latest')).number;
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 500);
@@ -225,6 +230,7 @@ contract('FundRA', accounts => {
 
       // REVOKE #1
       await this.fundRAX.revoke(bob, 200, { from: alice });
+      const block4 = (await web3.eth.getBlock('latest')).number;
 
       await assertRevert(this.fundRAX.revoke(bob, 200, { from: charlie }));
       await assertRevert(this.fundRAX.revoke(alice, 200, { from: charlie }));
@@ -248,6 +254,7 @@ contract('FundRA', accounts => {
       // REVOKE REPUTATION
       await this.fundRAX.revoke(bob, 50, { from: alice });
       await this.fundRAX.revoke(charlie, 50, { from: alice });
+      const block5 = (await web3.eth.getBlock('latest')).number;
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
@@ -261,6 +268,7 @@ contract('FundRA', accounts => {
       // WITHDRAW TOKEN
       await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: charlie }));
       await this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice });
+      const block6 = (await web3.eth.getBlock('latest')).number;
 
       await this.aliceLocker.burn(this.fundRAX.address, { from: alice });
       await this.aliceLocker.withdraw(this.token1, { from: alice });
@@ -282,6 +290,56 @@ contract('FundRA', accounts => {
 
       res = await this.spaceLockerRegistry.isValid(this.aliceLockerAddress);
       assert.equal(res, true);
+
+      // CHECK CACHED BALANCES
+      res = await this.fundRAX.balanceOfAt(alice, block0);
+      assert.equal(res, 800);
+      res = await this.fundRAX.balanceOfAt(bob, block0);
+      assert.equal(res, 0);
+      res = await this.fundRAX.balanceOfAt(charlie, block0);
+      assert.equal(res, 0);
+
+      res = await this.fundRAX.balanceOfAt(alice, block1);
+      assert.equal(res, 450);
+      res = await this.fundRAX.balanceOfAt(bob, block1);
+      assert.equal(res, 350);
+      res = await this.fundRAX.balanceOfAt(charlie, block1);
+      assert.equal(res, 0);
+
+      res = await this.fundRAX.balanceOfAt(alice, block2);
+      assert.equal(res, 450);
+      res = await this.fundRAX.balanceOfAt(bob, block2);
+      assert.equal(res, 250);
+      res = await this.fundRAX.balanceOfAt(charlie, block2);
+      assert.equal(res, 100);
+
+      res = await this.fundRAX.balanceOfAt(alice, block3);
+      assert.equal(res, 500);
+      res = await this.fundRAX.balanceOfAt(bob, block3);
+      assert.equal(res, 250);
+      res = await this.fundRAX.balanceOfAt(charlie, block3);
+      assert.equal(res, 50);
+
+      res = await this.fundRAX.balanceOfAt(alice, block4);
+      assert.equal(res, 700);
+      res = await this.fundRAX.balanceOfAt(bob, block4);
+      assert.equal(res, 50);
+      res = await this.fundRAX.balanceOfAt(charlie, block4);
+      assert.equal(res, 50);
+
+      res = await this.fundRAX.balanceOfAt(alice, block5);
+      assert.equal(res, 800);
+      res = await this.fundRAX.balanceOfAt(bob, block5);
+      assert.equal(res, 0);
+      res = await this.fundRAX.balanceOfAt(charlie, block5);
+      assert.equal(res, 0);
+
+      res = await this.fundRAX.balanceOfAt(alice, block6);
+      assert.equal(res, 0);
+      res = await this.fundRAX.balanceOfAt(bob, block6);
+      assert.equal(res, 0);
+      res = await this.fundRAX.balanceOfAt(charlie, block6);
+      assert.equal(res, 0);
     });
   });
 });
