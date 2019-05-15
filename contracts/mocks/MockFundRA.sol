@@ -24,14 +24,6 @@ contract MockFundRA is FundRA {
 
   Counters.Counter internal spaceCounter;
 
-  constructor(
-    FundStorage _fundStorage
-  )
-    public
-    FundRA(_fundStorage)
-  {
-  }
-
   function mintHack(address _beneficiary, uint256 _amount, uint256 _spaceTokenId) external {
     _mint(_beneficiary, _amount);
     _cacheSpaceTokenOwner(_beneficiary, _spaceTokenId);

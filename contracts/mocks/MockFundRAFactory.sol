@@ -28,9 +28,8 @@ contract MockFundRAFactory is Ownable {
     external
     returns (MockFundRA)
   {
-    MockFundRA fundRA = new MockFundRA(
-      fundStorage
-    );
+    MockFundRA fundRA = new MockFundRA();
+    fundRA.initialize(fundStorage);
 
     fundRA.addRoleTo(msg.sender, "role_manager");
     fundRA.removeRoleFrom(address(this), "role_manager");

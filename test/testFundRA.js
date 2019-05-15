@@ -40,6 +40,10 @@ contract('FundRA', accounts => {
     });
     this.feeRegistry = await FeeRegistry.new({ from: coreTeam });
 
+    await this.ggr.initialize();
+    await this.acl.initialize();
+    await this.feeRegistry.initialize();
+
     await this.ggr.setContract(await this.ggr.ACL(), this.acl.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.FEE_REGISTRY(), this.feeRegistry.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });

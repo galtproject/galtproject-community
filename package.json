@@ -6,9 +6,9 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#c6ddc8e",
+    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#8932d49",
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
-    "@galtproject/libs": "git+ssh://git@github.com/galtspace/galtproject-libs.git#46e875a",
+    "@galtproject/libs": "git+ssh://git@github.com/galtspace/galtproject-libs.git#d0cdbf3",
     "@galtproject/utils": "^0.9.1",
     "cli-table": "^0.3.1",
     "eslint": "^5.16.0",

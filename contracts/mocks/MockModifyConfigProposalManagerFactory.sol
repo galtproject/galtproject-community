@@ -14,10 +14,9 @@
 pragma solidity ^0.5.7;
 
 import "./MockModifyConfigProposalManager.sol";
-import "../factories/AbstractProposalManagerFactory.sol";
 
 
-contract MockModifyConfigProposalManagerFactory is AbstractProposalManagerFactory {
+contract MockModifyConfigProposalManagerFactory {
   function build(FundStorage _fundStorage)
     external
     returns (address)
