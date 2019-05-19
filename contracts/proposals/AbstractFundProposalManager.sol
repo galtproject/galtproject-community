@@ -17,7 +17,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/drafts/Counters.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
-import "@galtproject/core/contracts/multisig/proposals/AbstractProposalManager.sol";
 import "../FundStorage.sol";
 import "../interfaces/IFundRA.sol";
 
