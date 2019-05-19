@@ -6,10 +6,11 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#8932d49",
+    "@galtproject/core": "git+ssh://git@github.com/galtspace/galtproject-core.git#25a0e10",
     "@galtproject/eslint-config-galt": "git+https://github.com/galtspace/eslint-config-galt.git",
     "@galtproject/libs": "git+ssh://git@github.com/galtspace/galtproject-libs.git#d0cdbf3",
     "@galtproject/utils": "^0.9.1",
+    "@galtproject/truffle": "5.0.17",
     "cli-table": "^0.3.1",
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
@@ -20,7 +21,6 @@
     "ganache-core": "2.5.5",
     "openzeppelin-solidity": "2.2.0",
     "prettier": "1.17.0",
-    "truffle": "5.0.14",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "1.0.0-beta.37"
   },
