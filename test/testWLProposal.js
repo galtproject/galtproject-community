@@ -29,7 +29,7 @@ contract('WLProposal', accounts => {
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
-    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
+    this.spaceToken = await SpaceToken.new(this.ggr.address, 'Name', 'Symbol', { from: coreTeam });
 
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });

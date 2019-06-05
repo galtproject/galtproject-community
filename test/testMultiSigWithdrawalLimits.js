@@ -27,9 +27,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.daiToken = await GaltToken.new({ from: coreTeam });
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
-    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
 
-    await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 

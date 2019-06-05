@@ -31,9 +31,6 @@ contract FundRAFactory is Ownable {
     FundRA fundRA = new FundRA();
     fundRA.initialize(fundStorage);
 
-    fundRA.addRoleTo(msg.sender, "role_manager");
-    fundRA.removeRoleFrom(address(this), "role_manager");
-
     return fundRA;
   }
 }

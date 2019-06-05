@@ -31,9 +31,6 @@ contract ExtraMockFundRAFactory is Ownable {
     ExtraMockFundRA fundRA = new ExtraMockFundRA();
     fundRA.initialize(fundStorage);
 
-    fundRA.addRoleTo(msg.sender, "role_manager");
-    fundRA.removeRoleFrom(address(this), "role_manager");
-
     return fundRA;
   }
 }
