@@ -25,7 +25,7 @@ contract('Regular ERC20 Fees', accounts => {
 
   before(async function() {
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
-    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
+    this.spaceToken = await SpaceToken.new(this.ggr.address, 'Name', 'Symbol', { from: coreTeam });
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.daiToken = await GaltToken.new({ from: coreTeam });
 

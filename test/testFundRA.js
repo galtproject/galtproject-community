@@ -34,7 +34,7 @@ contract('FundRA', accounts => {
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.acl = await ACL.new({ from: coreTeam });
     this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
-    this.spaceToken = await SpaceToken.new('Name', 'Symbol', { from: coreTeam });
+    this.spaceToken = await SpaceToken.new(this.ggr.address, 'Name', 'Symbol', { from: coreTeam });
     this.spaceLockerRegistry = await LockerRegistry.new(this.ggr.address, bytes32('SPACE_LOCKER_REGISTRAR'), {
       from: coreTeam
     });
@@ -48,12 +48,11 @@ contract('FundRA', accounts => {
     await this.ggr.setContract(await this.ggr.FEE_REGISTRY(), this.feeRegistry.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
-    await this.ggr.setContract(await this.ggr.SPACE_GEO_DATA(), this.splitMerge.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.SPACE_GEO_DATA_REGISTRY(), this.splitMerge.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPACE_LOCKER_REGISTRY(), this.spaceLockerRegistry.address, {
       from: coreTeam
     });
 
-    this.spaceToken.addRoleTo(minter, 'minter', { from: coreTeam });
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
@@ -66,6 +65,7 @@ contract('FundRA', accounts => {
       from: coreTeam
     });
 
+    await this.acl.setRole(bytes32('SPACE_MINTER'), minter, true);
     await this.acl.setRole(bytes32('SPACE_LOCKER_REGISTRAR'), this.spaceLockerFactory.address, true, {
       from: coreTeam
     });
@@ -106,9 +106,9 @@ contract('FundRA', accounts => {
     assert.equal(res, charlie);
 
     // HACK
-    await this.splitMerge.setTokenArea(this.token1, 800, { from: geoDateManagement });
-    await this.splitMerge.setTokenArea(this.token2, 0, { from: geoDateManagement });
-    await this.splitMerge.setTokenArea(this.token3, 0, { from: geoDateManagement });
+    await this.splitMerge.setSpaceTokenArea(this.token1, 800, { from: geoDateManagement });
+    await this.splitMerge.setSpaceTokenArea(this.token2, 0, { from: geoDateManagement });
+    await this.splitMerge.setSpaceTokenArea(this.token3, 0, { from: geoDateManagement });
 
     await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: alice });
     res = await this.spaceLockerFactory.build({ from: alice });

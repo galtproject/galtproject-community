@@ -17,11 +17,11 @@ pragma solidity ^0.5.7;
 contract MockSplitMerge {
   mapping(uint256 => uint256) private _tokenAreas;
 
-  function setTokenArea(uint256 _tokenId, uint256 _amount) external {
+  function setSpaceTokenArea(uint256 _tokenId, uint256 _amount) external {
     _tokenAreas[_tokenId] = _amount;
   }
 
-  function getContourArea(uint256 _tokenId) external view returns(uint256) {
+  function getSpaceTokenArea(uint256 _tokenId) external view returns(uint256) {
     return _tokenAreas[_tokenId];
   }
 }
