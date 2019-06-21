@@ -138,6 +138,7 @@ async function deployFundFactory(ggrAddress, owner) {
  * @param {string} description
  * @param {Array<string>} initialSpaceTokens
  * @param {string} creator
+ * @param {number} value
  * @returns {Promise<{}>}
  */
 async function buildFund(
@@ -150,11 +151,13 @@ async function buildFund(
   periodLength = ONE_MONTH,
   name = 'foo',
   description = 'bar',
-  initialSpaceTokens = []
+  initialSpaceTokens = [],
+  value = 0
 ) {
   // >>> Step #1
   let res = await factory.buildFirstStep(creator, isPrivate, thresholds, periodLength, {
-    from: creator
+    from: creator,
+    value
   });
   // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
