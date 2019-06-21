@@ -55,6 +55,8 @@ contract FundFactory is Ownable {
   bytes32 public constant CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE = bytes32("change_ms_withdrawal_limits");
   bytes32 public constant MEMBER_IDENTIFICATION_TYPE = bytes32("member_identification");
 
+  bytes32 public constant ROLE_FEE_COLLECTOR = bytes32("FEE_COLLECTOR");
+
   event CreateFundFirstStep(
     bytes32 fundId,
     address fundStorage
@@ -107,6 +109,8 @@ contract FundFactory is Ownable {
     bytes32 fundId,
     address newMemberProposalManager
   );
+  event EthFeeWithdrawal(address indexed collector, uint256 amount);
+  event GaltFeeWithdrawal(address indexed collector, uint256 amount);
 
   enum Step {
     FIRST,
@@ -146,6 +150,14 @@ contract FundFactory is Ownable {
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) internal fundContracts;
+
+  modifier onlyFeeCollector() {
+    require(
+      ggr.getACL().hasRole(msg.sender, ROLE_FEE_COLLECTOR),
+      "Only FEE_COLLECTOR role allowed"
+    );
+    _;
+  }
 
   constructor (
     GaltGlobalRegistry _ggr,
@@ -491,5 +503,22 @@ contract FundFactory is Ownable {
 
   function getCurrentStep(bytes32 _fundId) external view returns (Step) {
     return fundContracts[_fundId].currentStep;
+  }
+
+  function withdrawEthFees() external onlyFeeCollector {
+    uint256 balance = address(this).balance;
+
+    msg.sender.transfer(balance);
+
+    emit EthFeeWithdrawal(msg.sender, balance);
+  }
+
+  function withdrawGaltFees() external onlyFeeCollector {
+    IERC20 galtToken = ggr.getGaltToken();
+    uint256 balance = galtToken.balanceOf(address(this));
+
+    galtToken.transfer(msg.sender, balance);
+
+    emit GaltFeeWithdrawal(msg.sender, balance);
   }
 }
