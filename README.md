@@ -1,7 +1,7 @@
 # Galt Project Basic Community Contracts (@galtproject/community)
 
 [![Build Status](https://travis-ci.org/galtspace/galtproject-community.svg?branch=master)](https://travis-ci.org/galtspace/galtproject-community)
-[![Contracts Version](https://img.shields.io/badge/version-0.3.0-orange.svg)](https://github.com/galtspace/galtproject-svg)
+[![Contracts Version](https://img.shields.io/badge/version-0.4.0-orange.svg)](https://github.com/galtspace/galtproject-svg)
 [![Telegram Chat](https://img.shields.io/badge/telegram-chat-blue.svg)](https://t.me/galtproject)
 
 
