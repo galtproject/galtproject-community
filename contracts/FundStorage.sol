@@ -29,6 +29,7 @@ contract FundStorage is Permissionable, Initializable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
+  using Counters for Counters.Counter;
 
   // 100% == 10**6
   uint256 public constant DECIMALS = 10**6;
@@ -128,6 +129,8 @@ contract FundStorage is Permissionable, Initializable {
   ArraySet.Uint256Set private _finesSpaceTokens;
   ArraySet.AddressSet private feeContracts;
 
+  Counters.Counter internal fundRuleCounter;
+
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
   ArraySet.AddressSet private _activeMultisigManagers;
@@ -142,8 +145,6 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => uint256) private _expelledTokenReputation;
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
-  // FRP => fundRuleDetails
-  mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
   // role => address
@@ -158,6 +159,9 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
   // member => identification hash
   mapping(address => bytes32) private _membersIdentification;
+
+  // FRP => fundRuleDetails
+  mapping(uint256 => FundRule) public fundRules;
   // marker => threshold
   mapping(bytes32 => uint256) public thresholds;
 
@@ -299,14 +303,17 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   function addFundRule(
-    uint256 _id,
     bytes32 _ipfsHash,
     string calldata _description
   )
     external
     onlyRole(CONTRACT_ADD_FUND_RULE_MANAGER)
+    returns (uint256)
   {
-    FundRule storage fundRule = _fundRules[_id];
+    uint256 _id = fundRuleCounter.current();
+    fundRuleCounter.increment();
+
+    FundRule storage fundRule = fundRules[_id];
 
     fundRule.active = true;
     fundRule.id = _id;
@@ -316,6 +323,8 @@ contract FundStorage is Permissionable, Initializable {
     fundRule.createdAt = block.timestamp;
 
     _activeFundRules.add(_id);
+
+    return _id;
   }
 
   function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
@@ -344,7 +353,7 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   function disableFundRule(uint256 _id) external onlyRole(CONTRACT_DEACTIVATE_FUND_RULE_MANAGER) {
-    _fundRules[_id].active = false;
+    fundRules[_id].active = false;
 
     _activeFundRules.remove(_id);
   }
@@ -515,25 +524,6 @@ contract FundStorage is Permissionable, Initializable {
     contractType = c.contractType;
     abiIpfsHash = c.abiIpfsHash;
     description = c.description;
-  }
-
-  function getFundRule(uint256 _frpId) external view returns (
-    bool active,
-    uint256 id,
-    address manager,
-    bytes32 ipfsHash,
-    string memory ruleDescription,
-    uint256 createdAt
-  )
-  {
-    FundRule storage r = _fundRules[_frpId];
-
-    active = r.active;
-    id = r.id;
-    manager = r.manager;
-    ipfsHash = r.ipfsHash;
-    ruleDescription = r.description;
-    createdAt = r.createdAt;
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
