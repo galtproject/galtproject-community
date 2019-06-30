@@ -20,14 +20,18 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "./FundMultiSig.sol";
-import "./interfaces/IFundRA.sol";
 import "./FundController.sol";
+import "./interfaces/IFundRA.sol";
+import "./FundProposalManager.sol";
 
 
 contract FundStorage is Permissionable, Initializable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
+
+  // 100% == 10**6
+  uint256 public constant DECIMALS = 10**6;
 
   string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
 
@@ -44,10 +48,13 @@ contract FundStorage is Permissionable, Initializable {
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
   string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
   string public constant CONTRACT_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
+  string public constant CONTRACT_PROPOSAL_THRESHOLD_MANAGER = "contract_threshold_manager";
+  string public constant CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = "contract_default_threshold_manager";
 
   bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
   bytes32 public constant CONTRACT_CORE_CONTROLLER = "contract_core_controller";
+  bytes32 public constant CONTRACT_CORE_PROPOSAL_MANAGER = "contract_core_proposal_manager";
 
   bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
   bytes32 public constant MODIFY_CONFIG_THRESHOLD = bytes32("modify_config_threshold");
@@ -63,6 +70,9 @@ contract FundStorage is Permissionable, Initializable {
   bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
   bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
+
+  event SetProposalThreshold(bytes32 indexed key, uint256 value);
+  event SetDefaultProposalThreshold(uint256 value);
 
   struct FundRule {
     bool active;
@@ -108,6 +118,7 @@ contract FundStorage is Permissionable, Initializable {
   string public description;
   uint256 public initialTimestamp;
   uint256 public periodLength;
+  uint256 public defaultProposalThreshold;
 
   GaltGlobalRegistry public ggr;
 
@@ -147,6 +158,8 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
   // member => identification hash
   mapping(address => bytes32) private _membersIdentification;
+  // marker => threshold
+  mapping(bytes32 => uint256) public thresholds;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -163,48 +176,25 @@ contract FundStorage is Permissionable, Initializable {
   constructor (
     GaltGlobalRegistry _ggr,
     bool _isPrivate,
-    uint256[] memory _thresholds,
+    uint256 _defaultProposalThreshold,
     uint256 _periodLength
   ) public {
     ggr = _ggr;
 
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
-    _configKeys.add(IS_PRIVATE);
-    _config[MANAGE_WL_THRESHOLD] = bytes32(_thresholds[0]);
-    _configKeys.add(MANAGE_WL_THRESHOLD);
-    _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_thresholds[1]);
-    _configKeys.add(MODIFY_CONFIG_THRESHOLD);
-    _config[NEW_MEMBER_THRESHOLD] = bytes32(_thresholds[2]);
-    _configKeys.add(NEW_MEMBER_THRESHOLD);
-    _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_thresholds[3]);
-    _configKeys.add(EXPEL_MEMBER_THRESHOLD);
-    _config[FINE_MEMBER_THRESHOLD] = bytes32(_thresholds[4]);
-    _configKeys.add(FINE_MEMBER_THRESHOLD);
-    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_thresholds[5]);
-    _configKeys.add(NAME_AND_DESCRIPTION_THRESHOLD);
-    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_thresholds[6]);
-    _configKeys.add(ADD_FUND_RULE_THRESHOLD);
-    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_thresholds[7]);
-    _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
-    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_thresholds[8]);
-    _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
-    _config[MODIFY_FEE_THRESHOLD] = bytes32(_thresholds[9]);
-    _configKeys.add(MODIFY_FEE_THRESHOLD);
-    _config[MODIFY_MANAGER_DETAILS_THRESHOLD] = bytes32(_thresholds[10]);
-    _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
-    _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
-    _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
-    _config[MEMBER_IDENTIFICATION_THRESHOLD] = bytes32(_thresholds[12]);
-    _configKeys.add(MEMBER_IDENTIFICATION_THRESHOLD);
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
+    defaultProposalThreshold = _defaultProposalThreshold;
+
+    _addRoleTo(msg.sender, CONTRACT_PROPOSAL_THRESHOLD_MANAGER);
   }
 
   function initialize(
     FundMultiSig _fundMultiSig,
     FundController _fundController,
-    IFundRA _fundRA
+    IFundRA _fundRA,
+    FundProposalManager _fundProposalManager
   )
     external
     isInitializer
@@ -212,6 +202,23 @@ contract FundStorage is Permissionable, Initializable {
     _coreContracts[CONTRACT_CORE_MULTISIG] = address(_fundMultiSig);
     _coreContracts[CONTRACT_CORE_CONTROLLER] = address(_fundController);
     _coreContracts[CONTRACT_CORE_RA] = address(_fundRA);
+    _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = address(_fundProposalManager);
+  }
+
+  function setDefaultProposalThreshold(uint256 _value) external onlyRole(CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
+    require(_value > 0 && _value <= DECIMALS, "Invalid threshold value");
+
+    defaultProposalThreshold = _value;
+
+    emit SetDefaultProposalThreshold(_value);
+  }
+
+  function setProposalThreshold(bytes32 _key, uint256 _value) external onlyRole(CONTRACT_PROPOSAL_THRESHOLD_MANAGER) {
+    require(_value <= DECIMALS, "Invalid threshold value");
+
+    thresholds[_key] = _value;
+
+    emit SetProposalThreshold(_key, _value);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -413,6 +420,16 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   // GETTERS
+  function getThresholdMarker(address _destination, bytes memory _data) public pure returns(bytes32 marker) {
+    bytes32 methodName;
+
+    assembly {
+      methodName := and(mload(add(_data, 0x20)), 0xffffffff00000000000000000000000000000000000000000000000000000000)
+    }
+
+    return keccak256(abi.encode(_destination, methodName));
+  }
+
   function getConfigValue(bytes32 _key) external view returns (bytes32) {
     return _config[_key];
   }
@@ -505,7 +522,7 @@ contract FundStorage is Permissionable, Initializable {
     uint256 id,
     address manager,
     bytes32 ipfsHash,
-    string memory description,
+    string memory ruleDescription,
     uint256 createdAt
   )
   {
@@ -515,7 +532,7 @@ contract FundStorage is Permissionable, Initializable {
     id = r.id;
     manager = r.manager;
     ipfsHash = r.ipfsHash;
-    description = r.description;
+    ruleDescription = r.description;
     createdAt = r.createdAt;
   }
 
@@ -573,7 +590,7 @@ contract FundStorage is Permissionable, Initializable {
 
   function getMultisigManager(address _manager) external view returns (
     bool active,
-    string memory name,
+    string memory managerName,
     bytes32[] memory documents
   ) 
   {

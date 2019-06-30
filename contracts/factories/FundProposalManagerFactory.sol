@@ -17,28 +17,17 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 // This contract will be included into the current one
-import "../FundStorage.sol";
+import "../FundProposalManager.sol";
 
 
-contract FundStorageFactory is Ownable {
+contract FundProposalManagerFactory is Ownable {
   function build(
-    GaltGlobalRegistry _ggr,
-    bool _isPrivate,
-    uint256 defaultThreshold,
-    uint256 _periodLength
+    FundStorage _fundStorage
   )
     external
-    returns (FundStorage)
+    returns (FundProposalManager)
   {
-    FundStorage fundStorage = new FundStorage(
-      _ggr,
-      _isPrivate,
-      defaultThreshold,
-      _periodLength
-    );
-
-    fundStorage.addRoleTo(msg.sender, "role_manager");
-    fundStorage.removeRoleFrom(address(this), "role_manager");
+    FundProposalManager fundStorage = new FundProposalManager(_fundStorage);
 
     return fundStorage;
   }

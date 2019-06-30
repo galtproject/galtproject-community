@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, fullHex } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, fullHex, numberToEvmWord, int } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -16,7 +16,8 @@ const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
   APPROVED: 2,
-  REJECTED: 3
+  EXECUTED: 3,
+  REJECTED: 4
 };
 
 const ActiveRuleAction = {
@@ -24,7 +25,7 @@ const ActiveRuleAction = {
   REMOVE: 1
 };
 
-contract('Proposals', accounts => {
+contract.only('FundProposalManager', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
@@ -47,7 +48,9 @@ contract('Proposals', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
+      600000,
+      {},
+      // [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
       2
     );
@@ -56,37 +59,28 @@ contract('Proposals', accounts => {
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
-    this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
-    this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
-    this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
-    this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
-    this.changeMultiSigOwnersProposalManager = fund.changeMultiSigOwnersProposalManager;
-    this.modifyMultiSigManagerDetailsProposalManager = fund.modifyMultiSigManagerDetailsProposalManager;
-    this.changeMultiSigWithdrawalLimitsProposalManager = fund.changeMultiSigWithdrawalLimitsProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });
 
-  describe('ModifyConfigProposal', () => {
+  describe('FundProposalManager', () => {
     describe('proposal creation', () => {
       it('should allow user who has reputation creating a new proposal', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        let res = await this.modifyConfigProposalManagerX.propose(
-          bytes32('modify_config_threshold'),
-          '0x000000000000000000000000000000000000000000000000000000000000002a',
-          'blah',
-          {
-            from: bob
-          }
-        );
+        const proposalData = this.fundStorageX.contract.methods
+          .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
+          .encodeABI();
+
+        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+          from: bob
+        });
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
-        res = await this.modifyConfigProposalManagerX.getProposal(proposalId);
-        assert.equal(web3.utils.hexToUtf8(res.key), 'modify_config_threshold');
-        assert.equal(web3.utils.hexToNumberString(res.value), '42');
+        res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.description, 'blah');
       });
     });
@@ -95,133 +89,141 @@ contract('Proposals', accounts => {
       it('should allow reverting a proposal if negative votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        let res = await this.modifyConfigProposalManagerX.propose(
-          bytes32('modify_config_threshold'),
-          '0x000000000000000000000000000000000000000000000000000000000000002a',
-          'blah',
-          {
-            from: bob
-          }
-        );
+        const proposalData = this.fundStorageX.contract.methods
+          .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
+          .encodeABI();
+
+        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+          from: bob
+        });
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
-        await this.modifyConfigProposalManagerX.aye(proposalId, { from: bob });
-        await this.modifyConfigProposalManagerX.nay(proposalId, { from: charlie });
+        await this.fundProposalManagerX.aye(proposalId, { from: bob });
+        await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
-        res = await this.modifyConfigProposalManagerX.getParticipantProposalChoice(proposalId, bob);
+        res = await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, bob);
         assert.equal(res, '1');
-        res = await this.modifyConfigProposalManagerX.getParticipantProposalChoice(proposalId, charlie);
+        res = await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie);
         assert.equal(res, '2');
 
-        res = await this.modifyConfigProposalManagerX.getProposalVoting(proposalId);
+        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
         assert.sameMembers(res.ayes, [bob]);
         assert.sameMembers(res.nays, [charlie]);
 
         assert.equal(res.status, ProposalStatus.ACTIVE);
 
-        res = await this.modifyConfigProposalManagerX.getActiveProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
-        res = await this.modifyConfigProposalManagerX.getApprovedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
-        res = await this.modifyConfigProposalManagerX.getRejectedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
+        res = await this.fundProposalManagerX.getActiveProposals();
+        assert.sameMembers(res.map(int), [1]);
+        res = await this.fundProposalManagerX.getApprovedProposals();
+        assert.sameMembers(res.map(int), []);
+        res = await this.fundProposalManagerX.getRejectedProposals();
+        assert.sameMembers(res.map(int), []);
 
-        res = await this.modifyConfigProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 20);
-        res = await this.modifyConfigProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 20);
+        res = await this.fundProposalManagerX.getAyeShare(proposalId);
+        assert.equal(res, 200000);
+        res = await this.fundProposalManagerX.getNayShare(proposalId);
+        assert.equal(res, 200000);
+        res = await this.fundProposalManagerX.getThreshold(proposalId);
+        assert.equal(res, 600000);
 
         // Deny double-vote
-        await assertRevert(this.modifyConfigProposalManagerX.aye(proposalId, { from: bob }));
+        await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
 
-        await assertRevert(this.modifyConfigProposalManagerX.triggerReject(proposalId, { from: dan }));
+        await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
 
-        await this.modifyConfigProposalManagerX.nay(proposalId, { from: dan });
-        await this.modifyConfigProposalManagerX.nay(proposalId, { from: eve });
+        await this.fundProposalManagerX.nay(proposalId, { from: dan });
+        await this.fundProposalManagerX.nay(proposalId, { from: eve });
 
-        res = await this.modifyConfigProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 20);
-        res = await this.modifyConfigProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 60);
+        res = await this.fundProposalManagerX.getAyeShare(proposalId);
+        assert.equal(res, 200000);
+        res = await this.fundProposalManagerX.getNayShare(proposalId);
+        assert.equal(res, 600000);
 
-        await this.modifyConfigProposalManagerX.triggerReject(proposalId, { from: dan });
+        await this.fundProposalManagerX.triggerReject(proposalId, { from: dan });
 
-        res = await this.modifyConfigProposalManagerX.getProposalVoting(proposalId);
+        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
         assert.equal(res.status, ProposalStatus.REJECTED);
 
-        res = await this.modifyConfigProposalManagerX.getActiveProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
-        res = await this.modifyConfigProposalManagerX.getApprovedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
-        res = await this.modifyConfigProposalManagerX.getRejectedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+        res = await this.fundProposalManagerX.getActiveProposals();
+        assert.sameMembers(res.map(int), []);
+        res = await this.fundProposalManagerX.getApprovedProposals();
+        assert.sameMembers(res.map(int), []);
+        res = await this.fundProposalManagerX.getRejectedProposals();
+        assert.sameMembers(res.map(int), [1]);
       });
 
       it('should allow approving proposal if positive votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        let res = await this.modifyConfigProposalManagerX.propose(
-          bytes32('modify_config_threshold'),
-          '0x000000000000000000000000000000000000000000000000000000000000002a',
-          'blah',
-          {
-            from: bob
-          }
-        );
+        const proposalData = this.fundStorageX.contract.methods
+          .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
+          .encodeABI();
+
+        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+          from: bob
+        });
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
-        res = await this.modifyConfigProposalManagerX.getActiveProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
-        res = await this.modifyConfigProposalManagerX.getApprovedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
-        res = await this.modifyConfigProposalManagerX.getRejectedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
+        res = await this.fundProposalManagerX.getActiveProposals();
+        assert.sameMembers(res.map(int), [1]);
+        res = await this.fundProposalManagerX.getApprovedProposals();
+        assert.sameMembers(res.map(int), []);
+        res = await this.fundProposalManagerX.getRejectedProposals();
+        assert.sameMembers(res.map(int), []);
 
-        await this.modifyConfigProposalManagerX.aye(proposalId, { from: bob });
-        await this.modifyConfigProposalManagerX.nay(proposalId, { from: charlie });
+        await this.fundProposalManagerX.aye(proposalId, { from: bob });
+        await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
-        res = await this.modifyConfigProposalManagerX.getProposalVoting(proposalId);
+        res = await this.fundProposalManagerX.proposals(proposalId);
+        assert.equal(res.status, ProposalStatus.ACTIVE);
+
+        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
         assert.sameMembers(res.ayes, [bob]);
         assert.sameMembers(res.nays, [charlie]);
 
-        assert.equal(res.status, ProposalStatus.ACTIVE);
-
-        res = await this.modifyConfigProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 20);
-        res = await this.modifyConfigProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 20);
+        res = await this.fundProposalManagerX.getAyeShare(proposalId);
+        assert.equal(res, 200000);
+        res = await this.fundProposalManagerX.getNayShare(proposalId);
+        assert.equal(res, 200000);
 
         // Deny double-vote
-        await assertRevert(this.modifyConfigProposalManagerX.aye(proposalId, { from: bob }));
+        await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
 
-        await assertRevert(this.modifyConfigProposalManagerX.triggerReject(proposalId, { from: dan }));
+        await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
 
-        await this.modifyConfigProposalManagerX.aye(proposalId, { from: dan });
-        await this.modifyConfigProposalManagerX.aye(proposalId, { from: eve });
+        res = await this.fundProposalManagerX.proposals(proposalId);
+        assert.equal(res.status, ProposalStatus.ACTIVE);
 
-        res = await this.modifyConfigProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 60);
-        res = await this.modifyConfigProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 20);
+        await this.fundProposalManagerX.aye(proposalId, { from: dan });
+        await this.fundProposalManagerX.aye(proposalId, { from: eve });
+
+        res = await this.fundProposalManagerX.getAyeShare(proposalId);
+        assert.equal(res, 600000);
+        res = await this.fundProposalManagerX.getNayShare(proposalId);
+        assert.equal(res, 200000);
 
         // Revert attempt should fail
-        await assertRevert(this.modifyConfigProposalManagerX.triggerReject(proposalId));
-        await this.modifyConfigProposalManagerX.triggerApprove(proposalId);
+        await assertRevert(this.fundProposalManagerX.triggerReject(proposalId));
 
-        res = await this.modifyConfigProposalManagerX.getProposalVoting(proposalId);
-        assert.equal(res.status, ProposalStatus.APPROVED);
+        await this.fundProposalManagerX.triggerApprove(proposalId);
 
-        res = await this.fundStorageX.getConfigValue(web3.utils.utf8ToHex('modify_config_threshold'));
-        assert.equal(web3.utils.hexToNumberString(res), '42');
+        res = await this.fundProposalManagerX.proposals(proposalId);
+        assert.equal(res.status, ProposalStatus.EXECUTED);
 
-        res = await this.modifyConfigProposalManagerX.getActiveProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
-        res = await this.modifyConfigProposalManagerX.getApprovedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
-        res = await this.modifyConfigProposalManagerX.getRejectedProposals();
-        assert.sameMembers(res.map(a => a.toNumber(10)), []);
+        res = await this.fundStorageX.thresholds(web3.utils.utf8ToHex('modify_config_threshold'));
+        assert.equal(res, '420000');
+
+        res = await this.fundProposalManagerX.getActiveProposals();
+        assert.sameMembers(res.map(int), []);
+        res = await this.fundProposalManagerX.getApprovedProposals();
+        assert.sameMembers(res.map(int), [1]);
+        res = await this.fundProposalManagerX.getRejectedProposals();
+        assert.sameMembers(res.map(int), []);
+
+        // TODO: increase threshold using voting and corresponding key
+        // TODO: ensure that the new threshold value is active
       });
     });
   });
@@ -251,11 +253,11 @@ contract('Proposals', accounts => {
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
       res = await this.addFundRuleProposalManagerX.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
       res = await this.addFundRuleProposalManagerX.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
       res = await this.addFundRuleProposalManagerX.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       res = await this.addFundRuleProposalManagerX.getAyeShare(proposalId);
       assert.equal(res, 20);
@@ -280,18 +282,18 @@ contract('Proposals', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       res = await this.addFundRuleProposalManagerX.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
       res = await this.addFundRuleProposalManagerX.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
       res = await this.addFundRuleProposalManagerX.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       // verify value changed
       res = await this.fundStorageX.getActiveFundRulesCount();
       assert.equal(res, 1);
 
       res = await this.fundStorageX.getActiveFundRules();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
 
       res = await this.fundStorageX.getFundRule(1);
       assert.equal(res.active, true);
@@ -317,11 +319,11 @@ contract('Proposals', accounts => {
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
       res = await this.deactivateFundRuleProposalManagerX.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
       res = await this.deactivateFundRuleProposalManagerX.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
       res = await this.deactivateFundRuleProposalManagerX.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       res = await this.deactivateFundRuleProposalManagerX.getAyeShare(removeProposalId);
       assert.equal(res, 20);
@@ -346,18 +348,18 @@ contract('Proposals', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       res = await this.deactivateFundRuleProposalManagerX.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
       res = await this.deactivateFundRuleProposalManagerX.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
       res = await this.deactivateFundRuleProposalManagerX.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       // verify value changed
       res = await this.fundStorageX.getActiveFundRulesCount();
       assert.equal(res, 0);
 
       res = await this.fundStorageX.getActiveFundRules();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       res = await this.fundStorageX.getFundRule(1);
       assert.equal(res.active, false);
@@ -444,11 +446,11 @@ contract('Proposals', accounts => {
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
       res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
       res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
       res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       res = await this.changeMultiSigOwnersProposalManager.getAyeShare(proposalId);
       assert.equal(res, 20);
@@ -504,11 +506,11 @@ contract('Proposals', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
       res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), [1]);
+      assert.sameMembers(res.map(int), [1]);
       res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
-      assert.sameMembers(res.map(a => a.toNumber(10)), []);
+      assert.sameMembers(res.map(int), []);
 
       // verify value changed
       res = await this.fundMultiSigX.getOwners();

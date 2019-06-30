@@ -25,9 +25,12 @@ contract MockFundFactory is FundFactory {
     FundRAFactory _fundRAFactory,
     FundMultiSigFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
-    FundControllerFactory _fundControllerFactory
-  ) public FundFactory(_ggr, _fundRAFactory, _fundMultiSigFactory, _fundStorageFactory, _fundControllerFactory) {
-    
+    FundControllerFactory _fundControllerFactory,
+    FundProposalManagerFactory _fundProposalManagerFactory
+  )
+    public
+    FundFactory(_ggr, _fundRAFactory, _fundMultiSigFactory, _fundStorageFactory, _fundControllerFactory, _fundProposalManagerFactory)
+  {
   }
   
   function hackAddRoleManagerRole(bytes32 _fundId, address _addRoleTo) external {
