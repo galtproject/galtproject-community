@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, fullHex, numberToEvmWord, int } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, fullHex, int } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -20,12 +20,7 @@ const ProposalStatus = {
   REJECTED: 4
 };
 
-const ActiveRuleAction = {
-  ADD: 0,
-  REMOVE: 1
-};
-
-contract('FundProposalManager', accounts => {
+contract.only('FundProposalManager', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
@@ -111,6 +106,7 @@ contract('FundProposalManager', accounts => {
         assert.sameMembers(res.ayes, [bob]);
         assert.sameMembers(res.nays, [charlie]);
 
+        res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.ACTIVE);
 
         res = await this.fundProposalManagerX.getActiveProposals();
@@ -142,7 +138,7 @@ contract('FundProposalManager', accounts => {
 
         await this.fundProposalManagerX.triggerReject(proposalId, { from: dan });
 
-        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+        res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.REJECTED);
 
         res = await this.fundProposalManagerX.getActiveProposals();
@@ -471,9 +467,7 @@ contract('FundProposalManager', accounts => {
       // now it's ok
       await this.fundProposalManagerX.execute(proposalId, { from: dan });
 
-      res = await this.fundProposalManagerX.getProposalResponseAsErrorString(proposalId);
       res = await this.fundProposalManagerX.proposals(proposalId);
-
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // verify value changed
@@ -497,24 +491,24 @@ contract('FundProposalManager', accounts => {
       assert.equal(limit.amount, ether(0));
 
       // set limit
-      const res = await this.changeMultiSigWithdrawalLimitsProposalManager.propose(
-        true,
-        this.galtToken.address,
-        ether(3000),
-        'Hey',
-        {
-          from: bob
-        }
-      );
+      const proposalData = this.fundStorageX.contract.methods
+        .setPeriodLimit(true, this.galtToken.address, ether(3000))
+        .encodeABI();
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
+      });
       const pId = res.logs[0].args.proposalId.toString(10);
-      await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: bob });
-      await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: charlie });
-      await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: dan });
-      await this.changeMultiSigWithdrawalLimitsProposalManager.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, { from: bob });
+      await this.fundProposalManagerX.aye(pId, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
       assert.equal(limit.active, true);
       assert.equal(limit.amount, ether(3000));
+
+      res = await this.fundProposalManagerX.proposals(pId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       assert.deepEqual(await this.fundStorageX.getActivePeriodLimits(), [this.galtToken.address]);
       assert.deepEqual((await this.fundStorageX.getActivePeriodLimitsCount()).toString(10), '1');
