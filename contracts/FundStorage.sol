@@ -37,7 +37,6 @@ contract FundStorage is Permissionable, Initializable {
 
   string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
 
-  string public constant CONTRACT_WHITELIST_MANAGER = "wl_manager";
   string public constant CONTRACT_CONFIG_MANAGER = "config_manager";
   string public constant CONTRACT_NEW_MEMBER_MANAGER = "new_member_manager";
   string public constant CONTRACT_EXPEL_MEMBER_MANAGER = "expel_member_manager";
@@ -122,7 +121,6 @@ contract FundStorage is Permissionable, Initializable {
 
   GaltGlobalRegistry public ggr;
 
-  ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -282,28 +280,6 @@ contract FundStorage is Permissionable, Initializable {
     }
   }
 
-  function addWhiteListedContract(
-    address _contract,
-    bytes32 _type,
-    bytes32 _abiIpfsHash,
-    string calldata _description
-  )
-    external
-    onlyRole(CONTRACT_WHITELIST_MANAGER)
-  {
-    _whiteListedContracts.addSilent(_contract);
-
-    ProposalContract storage c = _proposalContracts[_contract];
-
-    c.contractType = _type;
-    c.abiIpfsHash = _abiIpfsHash;
-    c.description = _description;
-  }
-
-  function removeWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
-    _whiteListedContracts.remove(_contract);
-  }
-
   function addFundRule(
     bytes32 _ipfsHash,
     string calldata _description
@@ -455,10 +431,6 @@ contract FundStorage is Permissionable, Initializable {
 
   function getExpelledToken(uint256 _spaceTokenId) external view returns (bool isExpelled, uint256 amount) {
     return (_expelledTokens[_spaceTokenId], _expelledTokenReputation[_spaceTokenId]);
-  }
-
-  function getWhiteListedContracts() external view returns (address[] memory) {
-    return _whiteListedContracts.elements();
   }
 
   function getConfigKeys() external view returns (bytes32[] memory) {

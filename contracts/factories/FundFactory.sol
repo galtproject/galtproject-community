@@ -233,7 +233,6 @@ contract FundFactory is Ownable {
 
     address _fundProposalManager = address(c.fundProposalManager);
 
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_WHITELIST_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_CONFIG_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_EXPEL_MEMBER_MANAGER());
