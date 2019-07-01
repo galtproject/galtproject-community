@@ -21,7 +21,8 @@ const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
   APPROVED: 2,
-  REJECTED: 3
+  EXECUTED: 3,
+  REJECTED: 4
 };
 
 contract('NewFundMemberProposal', accounts => {
@@ -68,19 +69,12 @@ contract('NewFundMemberProposal', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(
-      this.fundFactory,
-      alice,
-      true,
-      [60, 50, 30, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
-      [bob, charlie, dan],
-      2
-    );
+    const fund = await buildFund(this.fundFactory, alice, true, 300000, {}, [bob, charlie, dan], 2);
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundRAX = fund.fundRA;
-    this.newMemberProposalManagerX = fund.newMemberProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -128,49 +122,41 @@ contract('NewFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
 
-      res = await this.newMemberProposalManagerX.propose(token1, 'blah', { from: unauthorized });
+      const calldata = this.fundStorageX.contract.methods.approveMint(token1).encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+        from: unauthorized
+      });
 
-      const proposalId = res.logs[0].args.proposalId.toString(10);
+      const { proposalId } = res.logs[0].args;
 
-      res = await this.newMemberProposalManagerX.getActiveProposals();
-      assert.deepEqual(res.map(i => i.toString(10)), [proposalId]);
-      res = await this.newMemberProposalManagerX.getActiveProposalsCount();
-      assert.equal(res.toString(10), '1');
-
-      res = await this.newMemberProposalManagerX.getActiveProposalsBySender(unauthorized);
-      assert.deepEqual(res.map(i => i.toString(10)), [proposalId]);
-      res = await this.newMemberProposalManagerX.getActiveProposalsBySenderCount(unauthorized);
-      assert.equal(res.toString(10), '1');
-
-      res = await this.newMemberProposalManagerX.getProposal(proposalId);
-      assert.equal(web3.utils.hexToNumberString(res.spaceTokenId), token1);
+      res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.description, 'blah');
 
       res = await this.fundStorageX.isMintApproved(token1);
       assert.equal(res, false);
 
-      await this.newMemberProposalManagerX.aye(proposalId, { from: bob });
-      await this.newMemberProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
-      res = await this.newMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 40);
-      res = await this.newMemberProposalManagerX.getThreshold();
-      assert.equal(res, 30);
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 400000);
+      res = await this.fundProposalManagerX.getThreshold(proposalId);
+      assert.equal(res, 300000);
 
-      await this.newMemberProposalManagerX.triggerApprove(proposalId);
+      await this.fundProposalManagerX.triggerApprove(proposalId);
 
-      res = await this.newMemberProposalManagerX.getActiveProposals();
+      res = await this.fundProposalManagerX.getActiveProposals();
       assert.deepEqual(res, []);
-      res = await this.newMemberProposalManagerX.getActiveProposalsCount();
+      res = await this.fundProposalManagerX.getActiveProposalsCount();
       assert.equal(res.toString(10), '0');
 
-      res = await this.newMemberProposalManagerX.getActiveProposalsBySender(unauthorized);
+      res = await this.fundProposalManagerX.getActiveProposalsBySender(unauthorized);
       assert.deepEqual(res, []);
-      res = await this.newMemberProposalManagerX.getActiveProposalsBySenderCount(unauthorized);
+      res = await this.fundProposalManagerX.getActiveProposalsBySenderCount(unauthorized);
       assert.equal(res.toString(10), '0');
 
-      res = await this.newMemberProposalManagerX.getProposalVoting(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       res = await this.fundStorageX.isMintApproved(token1);
       assert.equal(res, true);
