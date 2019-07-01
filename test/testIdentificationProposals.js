@@ -29,24 +29,13 @@ contract('Identification Proposals', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(
-      this.fundFactory,
-      alice,
-      false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
-      [bob, charlie, dan],
-      2
-    );
+    const fund = await buildFund(this.fundFactory, alice, false, 400000, {}, [bob, charlie, dan], 2);
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSigX;
     this.fundRAX = fund.fundRA;
-    this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
-    this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
-    this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
-    this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
-    this.memberIdentificationProposalManager = fund.memberIdentificationProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -57,16 +46,16 @@ contract('Identification Proposals', accounts => {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const calldata = this.fundStorageX.contract.methods.setMemberIdentification(alice, hex('alice_id')).encodeABI();
-      const res = await this.memberIdentificationProposalManager.propose(calldata, 'New id', {
+      const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
         from: bob
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.memberIdentificationProposalManager.aye(proposalId, { from: bob });
-      await this.memberIdentificationProposalManager.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
-      await this.memberIdentificationProposalManager.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       const aliceId = await this.fundStorageX.getMemberIdentification(alice);
       assert.equal(fullHex(aliceId), hex('alice_id'));

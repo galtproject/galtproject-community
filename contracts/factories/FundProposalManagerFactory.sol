@@ -11,22 +11,24 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity ^0.5.3;
+pragma solidity 0.5.7;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 // This contract will be included into the current one
-import "./MockModifyConfigProposalManager.sol";
+import "../FundProposalManager.sol";
 
 
-contract MockModifyConfigProposalManagerFactory is Ownable {
-  function build(FundStorage _fundStorage)
+contract FundProposalManagerFactory is Ownable {
+  function build(
+    FundStorage _fundStorage
+  )
     external
-    returns (MockModifyConfigProposalManager)
+    returns (FundProposalManager)
   {
-    MockModifyConfigProposalManager modifyConfigProposalManager = new MockModifyConfigProposalManager(_fundStorage);
+    FundProposalManager fundStorage = new FundProposalManager(_fundStorage);
 
-
-    return modifyConfigProposalManager;
+    return fundStorage;
   }
 }

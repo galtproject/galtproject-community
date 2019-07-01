@@ -15,8 +15,17 @@ const Helpers = {
   hex(input) {
     return web3.utils.fromAscii(input).padEnd(66, '0');
   },
+  int(input) {
+    return parseInt(input, 10);
+  },
   fullHex(cutHex) {
     return web3.utils.padRight(cutHex, 64);
+  },
+  numberToEvmWord(number) {
+    return web3.utils.padLeft(web3.utils.numberToHex(number), 64);
+  },
+  addressToEvmWord(address) {
+    return web3.utils.padLeft(address, 64);
   },
   gwei(number) {
     return web3.utils.toWei(number.toString(), 'gwei');

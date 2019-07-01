@@ -19,19 +19,24 @@ import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "./FundMultiSig.sol";
-import "./interfaces/IFundRA.sol";
 import "./FundController.sol";
+import "./interfaces/IFundRA.sol";
+import "./FundProposalManager.sol";
 
 
 contract FundStorage is Permissionable, Initializable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
+  using Counters for Counters.Counter;
+
+  // 100% == 10**6
+  uint256 public constant DECIMALS = 10**6;
 
   string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
 
-  string public constant CONTRACT_WHITELIST_MANAGER = "wl_manager";
   string public constant CONTRACT_CONFIG_MANAGER = "config_manager";
   string public constant CONTRACT_NEW_MEMBER_MANAGER = "new_member_manager";
   string public constant CONTRACT_EXPEL_MEMBER_MANAGER = "expel_member_manager";
@@ -44,10 +49,13 @@ contract FundStorage is Permissionable, Initializable {
   string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
   string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
   string public constant CONTRACT_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
+  string public constant CONTRACT_PROPOSAL_THRESHOLD_MANAGER = "contract_threshold_manager";
+  string public constant CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = "contract_default_threshold_manager";
 
   bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
   bytes32 public constant CONTRACT_CORE_CONTROLLER = "contract_core_controller";
+  bytes32 public constant CONTRACT_CORE_PROPOSAL_MANAGER = "contract_core_proposal_manager";
 
   bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
   bytes32 public constant MODIFY_CONFIG_THRESHOLD = bytes32("modify_config_threshold");
@@ -63,6 +71,9 @@ contract FundStorage is Permissionable, Initializable {
   bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
   bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
+
+  event SetProposalThreshold(bytes32 indexed key, uint256 value);
+  event SetDefaultProposalThreshold(uint256 value);
 
   struct FundRule {
     bool active;
@@ -95,8 +106,6 @@ contract FundStorage is Permissionable, Initializable {
 
   struct MemberFineItem {
     uint256 amount;
-    uint256[] proposals;
-    address[] proposalsManagers;
   }
 
   struct PeriodLimit {
@@ -108,14 +117,16 @@ contract FundStorage is Permissionable, Initializable {
   string public description;
   uint256 public initialTimestamp;
   uint256 public periodLength;
+  uint256 public defaultProposalThreshold;
 
   GaltGlobalRegistry public ggr;
 
-  ArraySet.AddressSet private _whiteListedContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
   ArraySet.AddressSet private feeContracts;
+
+  Counters.Counter internal fundRuleCounter;
 
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
 
@@ -131,8 +142,6 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => uint256) private _expelledTokenReputation;
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
-  // FRP => fundRuleDetails
-  mapping(uint256 => FundRule) private _fundRules;
   // contractAddress => details
   mapping(address => ProposalContract) private _proposalContracts;
   // role => address
@@ -147,6 +156,11 @@ contract FundStorage is Permissionable, Initializable {
   mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
   // member => identification hash
   mapping(address => bytes32) private _membersIdentification;
+
+  // FRP => fundRuleDetails
+  mapping(uint256 => FundRule) public fundRules;
+  // marker => threshold
+  mapping(bytes32 => uint256) public thresholds;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -163,48 +177,25 @@ contract FundStorage is Permissionable, Initializable {
   constructor (
     GaltGlobalRegistry _ggr,
     bool _isPrivate,
-    uint256[] memory _thresholds,
+    uint256 _defaultProposalThreshold,
     uint256 _periodLength
   ) public {
     ggr = _ggr;
 
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
-    _configKeys.add(IS_PRIVATE);
-    _config[MANAGE_WL_THRESHOLD] = bytes32(_thresholds[0]);
-    _configKeys.add(MANAGE_WL_THRESHOLD);
-    _config[MODIFY_CONFIG_THRESHOLD] = bytes32(_thresholds[1]);
-    _configKeys.add(MODIFY_CONFIG_THRESHOLD);
-    _config[NEW_MEMBER_THRESHOLD] = bytes32(_thresholds[2]);
-    _configKeys.add(NEW_MEMBER_THRESHOLD);
-    _config[EXPEL_MEMBER_THRESHOLD] = bytes32(_thresholds[3]);
-    _configKeys.add(EXPEL_MEMBER_THRESHOLD);
-    _config[FINE_MEMBER_THRESHOLD] = bytes32(_thresholds[4]);
-    _configKeys.add(FINE_MEMBER_THRESHOLD);
-    _config[NAME_AND_DESCRIPTION_THRESHOLD] = bytes32(_thresholds[5]);
-    _configKeys.add(NAME_AND_DESCRIPTION_THRESHOLD);
-    _config[ADD_FUND_RULE_THRESHOLD] = bytes32(_thresholds[6]);
-    _configKeys.add(ADD_FUND_RULE_THRESHOLD);
-    _config[DEACTIVATE_FUND_RULE_THRESHOLD] = bytes32(_thresholds[7]);
-    _configKeys.add(DEACTIVATE_FUND_RULE_THRESHOLD);
-    _config[CHANGE_MS_OWNERS_THRESHOLD] = bytes32(_thresholds[8]);
-    _configKeys.add(CHANGE_MS_OWNERS_THRESHOLD);
-    _config[MODIFY_FEE_THRESHOLD] = bytes32(_thresholds[9]);
-    _configKeys.add(MODIFY_FEE_THRESHOLD);
-    _config[MODIFY_MANAGER_DETAILS_THRESHOLD] = bytes32(_thresholds[10]);
-    _configKeys.add(MODIFY_MANAGER_DETAILS_THRESHOLD);
-    _config[CHANGE_WITHDRAWAL_LIMITS_THRESHOLD] = bytes32(_thresholds[11]);
-    _configKeys.add(CHANGE_WITHDRAWAL_LIMITS_THRESHOLD);
-    _config[MEMBER_IDENTIFICATION_THRESHOLD] = bytes32(_thresholds[12]);
-    _configKeys.add(MEMBER_IDENTIFICATION_THRESHOLD);
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
+    defaultProposalThreshold = _defaultProposalThreshold;
+
+    _addRoleTo(msg.sender, CONTRACT_PROPOSAL_THRESHOLD_MANAGER);
   }
 
   function initialize(
     FundMultiSig _fundMultiSig,
     FundController _fundController,
-    IFundRA _fundRA
+    IFundRA _fundRA,
+    FundProposalManager _fundProposalManager
   )
     external
     isInitializer
@@ -212,6 +203,23 @@ contract FundStorage is Permissionable, Initializable {
     _coreContracts[CONTRACT_CORE_MULTISIG] = address(_fundMultiSig);
     _coreContracts[CONTRACT_CORE_CONTROLLER] = address(_fundController);
     _coreContracts[CONTRACT_CORE_RA] = address(_fundRA);
+    _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = address(_fundProposalManager);
+  }
+
+  function setDefaultProposalThreshold(uint256 _value) external onlyRole(CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
+    require(_value > 0 && _value <= DECIMALS, "Invalid threshold value");
+
+    defaultProposalThreshold = _value;
+
+    emit SetDefaultProposalThreshold(_value);
+  }
+
+  function setProposalThreshold(bytes32 _key, uint256 _value) external onlyRole(CONTRACT_PROPOSAL_THRESHOLD_MANAGER) {
+    require(_value <= DECIMALS, "Invalid threshold value");
+
+    thresholds[_key] = _value;
+
+    emit SetProposalThreshold(_key, _value);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
@@ -223,11 +231,16 @@ contract FundStorage is Permissionable, Initializable {
     _mintApprovals[_spaceTokenId] = true;
   }
 
-  function expel(uint256 _spaceTokenId, uint256 _amount) external onlyRole(CONTRACT_EXPEL_MEMBER_MANAGER) {
+  function expel(uint256 _spaceTokenId) external onlyRole(CONTRACT_EXPEL_MEMBER_MANAGER) {
     require(_expelledTokens[_spaceTokenId] == false, "Already Expelled");
 
+    address owner = ggr.getSpaceToken().ownerOf(_spaceTokenId);
+    uint256 amount = ISpaceLocker(owner).reputation();
+
+    assert(amount > 0);
+
     _expelledTokens[_spaceTokenId] = true;
-    _expelledTokenReputation[_spaceTokenId] = _amount;
+    _expelledTokenReputation[_spaceTokenId] = amount;
   }
 
   function decrementExpelledTokenReputation(
@@ -245,10 +258,8 @@ contract FundStorage is Permissionable, Initializable {
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
-  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount, uint256 _proposalId) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
-    _fines[_spaceTokenId].tokenFines[_contract].proposals.push(_proposalId);
-    _fines[_spaceTokenId].tokenFines[_contract].proposalsManagers.push(msg.sender);
-
+  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+    // TODO: track relation to proposal id
     _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
     _fines[_spaceTokenId].total += _amount;
 
@@ -269,37 +280,18 @@ contract FundStorage is Permissionable, Initializable {
     }
   }
 
-  function addWhiteListedContract(
-    address _contract,
-    bytes32 _type,
-    bytes32 _abiIpfsHash,
-    string calldata _description
-  )
-    external
-    onlyRole(CONTRACT_WHITELIST_MANAGER)
-  {
-    _whiteListedContracts.addSilent(_contract);
-
-    ProposalContract storage c = _proposalContracts[_contract];
-
-    c.contractType = _type;
-    c.abiIpfsHash = _abiIpfsHash;
-    c.description = _description;
-  }
-
-  function removeWhiteListedContract(address _contract) external onlyRole(CONTRACT_WHITELIST_MANAGER) {
-    _whiteListedContracts.remove(_contract);
-  }
-
   function addFundRule(
-    uint256 _id,
     bytes32 _ipfsHash,
     string calldata _description
   )
     external
     onlyRole(CONTRACT_ADD_FUND_RULE_MANAGER)
+    returns (uint256)
   {
-    FundRule storage fundRule = _fundRules[_id];
+    uint256 _id = fundRuleCounter.current();
+    fundRuleCounter.increment();
+
+    FundRule storage fundRule = fundRules[_id];
 
     fundRule.active = true;
     fundRule.id = _id;
@@ -309,6 +301,8 @@ contract FundStorage is Permissionable, Initializable {
     fundRule.createdAt = block.timestamp;
 
     _activeFundRules.add(_id);
+
+    return _id;
   }
 
   function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
@@ -337,7 +331,7 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   function disableFundRule(uint256 _id) external onlyRole(CONTRACT_DEACTIVATE_FUND_RULE_MANAGER) {
-    _fundRules[_id].active = false;
+    fundRules[_id].active = false;
 
     _activeFundRules.remove(_id);
   }
@@ -413,6 +407,16 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   // GETTERS
+  function getThresholdMarker(address _destination, bytes memory _data) public pure returns(bytes32 marker) {
+    bytes32 methodName;
+
+    assembly {
+      methodName := and(mload(add(_data, 0x20)), 0xffffffff00000000000000000000000000000000000000000000000000000000)
+    }
+
+    return keccak256(abi.encode(_destination, methodName));
+  }
+
   function getConfigValue(bytes32 _key) external view returns (bytes32) {
     return _config[_key];
   }
@@ -421,24 +425,12 @@ contract FundStorage is Permissionable, Initializable {
     return _fines[_spaceTokenId].tokenFines[_erc20Contract].amount;
   }
 
-  function getFineProposals(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256[] memory) {
-    return _fines[_spaceTokenId].tokenFines[_erc20Contract].proposals;
-  }
-
-  function getFineProposalsManagers(uint256 _spaceTokenId, address _erc20Contract) external view returns (address[] memory) {
-    return _fines[_spaceTokenId].tokenFines[_erc20Contract].proposalsManagers;
-  }
-
   function getTotalFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
     return _fines[_spaceTokenId].total;
   }
 
   function getExpelledToken(uint256 _spaceTokenId) external view returns (bool isExpelled, uint256 amount) {
     return (_expelledTokens[_spaceTokenId], _expelledTokenReputation[_spaceTokenId]);
-  }
-
-  function getWhiteListedContracts() external view returns (address[] memory) {
-    return _whiteListedContracts.elements();
   }
 
   function getConfigKeys() external view returns (bytes32[] memory) {
@@ -500,25 +492,6 @@ contract FundStorage is Permissionable, Initializable {
     description = c.description;
   }
 
-  function getFundRule(uint256 _frpId) external view returns (
-    bool active,
-    uint256 id,
-    address manager,
-    bytes32 ipfsHash,
-    string memory description,
-    uint256 createdAt
-  )
-  {
-    FundRule storage r = _fundRules[_frpId];
-
-    active = r.active;
-    id = r.id;
-    manager = r.manager;
-    ipfsHash = r.ipfsHash;
-    description = r.description;
-    createdAt = r.createdAt;
-  }
-
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
     if (_expelledTokens[_spaceTokenId] == true) {
       return false;
@@ -573,7 +546,7 @@ contract FundStorage is Permissionable, Initializable {
 
   function getMultisigManager(address _manager) external view returns (
     bool active,
-    string memory name,
+    string memory managerName,
     bytes32[] memory documents
   ) 
   {

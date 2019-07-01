@@ -77,19 +77,12 @@ contract('FundRA', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(
-      this.fundFactory,
-      alice,
-      false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
-      [bob, charlie],
-      2
-    );
+    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie], 2);
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundRAX = fund.fundRA;
-    this.modifyFeeProposalManager = fund.modifyFeeProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     let res = await this.spaceToken.mint(alice, { from: minter });
     this.token1 = res.logs[0].args.tokenId.toNumber();
@@ -163,13 +156,15 @@ contract('FundRA', accounts => {
       this.regularEthFee = await RegularEthFee.at(this.feeAddress);
 
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      res = await this.modifyFeeProposalManager.propose(calldata, 'add it', { from: alice });
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+        from: bob
+      });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.modifyFeeProposalManager.aye(proposalId, { from: bob });
-      await this.modifyFeeProposalManager.aye(proposalId, { from: charlie });
-      await this.modifyFeeProposalManager.aye(proposalId, { from: alice });
-      await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: unauthorized });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: alice });
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: unauthorized });
 
       res = await this.fundStorageX.getFeeContracts();
       assert.sameMembers(res, [this.feeAddress]);

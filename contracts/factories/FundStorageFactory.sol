@@ -24,7 +24,7 @@ contract FundStorageFactory is Ownable {
   function build(
     GaltGlobalRegistry _ggr,
     bool _isPrivate,
-    uint256[] calldata _thresholds,
+    uint256 defaultThreshold,
     uint256 _periodLength
   )
     external
@@ -33,7 +33,7 @@ contract FundStorageFactory is Ownable {
     FundStorage fundStorage = new FundStorage(
       _ggr,
       _isPrivate,
-      _thresholds,
+      defaultThreshold,
       _periodLength
     );
 
