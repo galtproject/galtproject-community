@@ -43,7 +43,8 @@ contract('Regular ETH Fees', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
+      600000,
+      {},
       [bob, charlie, dan],
       2
     );
@@ -52,11 +53,7 @@ contract('Regular ETH Fees', accounts => {
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
-    this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
-    this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
-    this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
-    this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
-    this.modifyFeeProposalManager = fund.modifyFeeProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     // this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.beneficiaries = [alice, bob, charlie];
@@ -144,13 +141,15 @@ contract('Regular ETH Fees', accounts => {
   describe('registered contract', () => {
     it('should od this', async function() {
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      let res = await this.modifyFeeProposalManager.propose(calldata, 'add it', { from: alice });
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+        from: alice
+      });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.modifyFeeProposalManager.aye(proposalId, { from: bob });
-      await this.modifyFeeProposalManager.aye(proposalId, { from: charlie });
-      await this.modifyFeeProposalManager.aye(proposalId, { from: alice });
-      await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: alice });
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       res = await this.fundStorageX.getFeeContracts();
       assert.include(res, this.feeAddress);
@@ -190,13 +189,15 @@ contract('Regular ETH Fees', accounts => {
 
   it('should allow any address locking spaceTokens', async function() {
     const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-    let res = await this.modifyFeeProposalManager.propose(calldata, 'add it', { from: alice });
+    let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      from: alice
+    });
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
-    await this.modifyFeeProposalManager.aye(proposalId, { from: bob });
-    await this.modifyFeeProposalManager.aye(proposalId, { from: charlie });
-    await this.modifyFeeProposalManager.aye(proposalId, { from: alice });
-    await this.modifyFeeProposalManager.triggerApprove(proposalId, { from: dan });
+    await this.fundProposalManagerX.aye(proposalId, { from: bob });
+    await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+    await this.fundProposalManagerX.aye(proposalId, { from: alice });
+    await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
     res = await this.fundStorageX.getFeeContracts();
     assert.sameMembers(res, [this.feeAddress]);
