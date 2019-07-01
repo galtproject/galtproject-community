@@ -21,7 +21,8 @@ const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
   APPROVED: 2,
-  REJECTED: 3
+  EXECUTED: 3,
+  REJECTED: 4
 };
 
 const Currency = {
@@ -79,7 +80,8 @@ contract('FineFundMemberProposal', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
+      600000,
+      {},
       [bob, charlie, dan],
       2
     );
@@ -88,7 +90,7 @@ contract('FineFundMemberProposal', accounts => {
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
-    this.fineMemberProposalManagerX = fund.fineMemberProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     // NOTICE: hardcoded token IDs, increment when new tests added
@@ -143,38 +145,33 @@ contract('FineFundMemberProposal', accounts => {
       let res = await this.fundStorageX.getFineAmount(this.token1, this.galtToken.address);
       assert.equal(res, 0);
 
-      res = await this.fineMemberProposalManagerX.propose(
-        this.token1,
-        Currency.ERC20,
-        350,
-        this.galtToken.address,
-        'blah',
-        {
-          from: unauthorized
-        }
-      );
+      const proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token1, this.galtToken.address, 350)
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
+      });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      res = await this.fineMemberProposalManagerX.getProposal(proposalId);
-      assert.equal(web3.utils.hexToNumberString(res.spaceTokenId), this.token1);
+      res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.description, 'blah');
 
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: bob });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: dan });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: eve });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: frank });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, { from: frank });
 
-      res = await this.fineMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 65);
-      res = await this.fineMemberProposalManagerX.getThreshold();
-      assert.equal(res, 60);
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 652173);
+      res = await this.fundProposalManagerX.getThreshold(proposalId);
+      assert.equal(res, 600000);
 
-      await this.fineMemberProposalManagerX.triggerApprove(proposalId);
+      await this.fundProposalManagerX.triggerApprove(proposalId);
 
-      res = await this.fineMemberProposalManagerX.getProposalVoting(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // BURN SHOULD BE REJECTED IF THERE ARE SOME FINES REGARDING THIS TOKEN
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
@@ -183,12 +180,6 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, 350);
       res = await this.fundStorageX.getTotalFineAmount(this.token1);
       assert.equal(res, 350);
-
-      res = await this.fundStorageX.getFineProposals(this.token1, this.galtToken.address);
-      assert.deepEqual(res.map(id => id.toString(10)), [proposalId.toString(10)]);
-
-      res = await this.fundStorageX.getFineProposalsManagers(this.token1, this.galtToken.address);
-      assert.deepEqual(res, [this.fineMemberProposalManagerX.address]);
 
       res = await this.fundStorageX.getFineSpaceTokens();
       assert.deepEqual(res.map(tokenId => tokenId.toString(10)), [this.token1.toString(10)]);
@@ -228,31 +219,33 @@ contract('FineFundMemberProposal', accounts => {
       let res = await this.fundStorageX.getFineAmount(this.token1, ETH_CONTRACT);
       assert.equal(res, 0);
 
-      res = await this.fineMemberProposalManagerX.propose(this.token1, Currency.ETH, ether(350), zeroAddress, 'blah', {
-        from: unauthorized
+      const proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token1, ETH_CONTRACT, ether(350))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      res = await this.fineMemberProposalManagerX.getProposal(proposalId);
-      assert.equal(web3.utils.hexToNumberString(res.spaceTokenId), this.token1);
+      res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.description, 'blah');
 
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: bob });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: dan });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: eve });
-      await this.fineMemberProposalManagerX.aye(proposalId, { from: frank });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, { from: frank });
 
-      res = await this.fineMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 65);
-      res = await this.fineMemberProposalManagerX.getThreshold();
-      assert.equal(res, 60);
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 652173);
+      res = await this.fundProposalManagerX.getThreshold(proposalId);
+      assert.equal(res, 600000);
 
-      await this.fineMemberProposalManagerX.triggerApprove(proposalId);
+      await this.fundProposalManagerX.triggerApprove(proposalId);
 
-      res = await this.fineMemberProposalManagerX.getProposalVoting(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // BURN SHOULD BE REJECTED IF THERE ARE SOME FINES REGARDING THIS TOKEN
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
@@ -323,16 +316,20 @@ contract('FineFundMemberProposal', accounts => {
       // TOKEN2 COMPLETE PAY in GALT
 
       // FINE in ETH
-      res = await this.fineMemberProposalManagerX.propose(this.token1, Currency.ETH, ether(350), zeroAddress, 'blah', {
-        from: unauthorized
+      let proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token1, ETH_CONTRACT, ether(350))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
       });
+
       const ethProposalId = res.logs[0].args.proposalId.toString(10);
-      await this.fineMemberProposalManagerX.aye(ethProposalId, { from: bob });
-      await this.fineMemberProposalManagerX.aye(ethProposalId, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(ethProposalId, { from: dan });
-      await this.fineMemberProposalManagerX.aye(ethProposalId, { from: eve });
-      await this.fineMemberProposalManagerX.aye(ethProposalId, { from: frank });
-      await this.fineMemberProposalManagerX.triggerApprove(ethProposalId);
+      await this.fundProposalManagerX.aye(ethProposalId, { from: bob });
+      await this.fundProposalManagerX.aye(ethProposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(ethProposalId, { from: dan });
+      await this.fundProposalManagerX.aye(ethProposalId, { from: eve });
+      await this.fundProposalManagerX.aye(ethProposalId, { from: frank });
+      await this.fundProposalManagerX.triggerApprove(ethProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
@@ -342,23 +339,19 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, ether(350));
 
       // FINE in GALT
-      res = await this.fineMemberProposalManagerX.propose(
-        this.token1,
-        Currency.ERC20,
-        ether(450),
-        this.galtToken.address,
-        'blah',
-        {
-          from: unauthorized
-        }
-      );
+      proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token1, this.galtToken.address, ether(450))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: unauthorized
+      });
       const galtProposalId = res.logs[0].args.proposalId.toString(10);
-      await this.fineMemberProposalManagerX.aye(galtProposalId, { from: bob });
-      await this.fineMemberProposalManagerX.aye(galtProposalId, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(galtProposalId, { from: dan });
-      await this.fineMemberProposalManagerX.aye(galtProposalId, { from: eve });
-      await this.fineMemberProposalManagerX.aye(galtProposalId, { from: frank });
-      await this.fineMemberProposalManagerX.triggerApprove(galtProposalId);
+      await this.fundProposalManagerX.aye(galtProposalId, { from: bob });
+      await this.fundProposalManagerX.aye(galtProposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(galtProposalId, { from: dan });
+      await this.fundProposalManagerX.aye(galtProposalId, { from: eve });
+      await this.fundProposalManagerX.aye(galtProposalId, { from: frank });
+      await this.fundProposalManagerX.triggerApprove(galtProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
@@ -368,23 +361,19 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, ether(800));
 
       // FINE in DAI
-      res = await this.fineMemberProposalManagerX.propose(
-        this.token1,
-        Currency.ERC20,
-        ether(550),
-        this.dai.address,
-        'blah',
-        {
-          from: unauthorized
-        }
-      );
+      proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token1, this.dai.address, ether(550))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: unauthorized
+      });
       const daiProposalId = res.logs[0].args.proposalId.toString(10);
-      await this.fineMemberProposalManagerX.aye(daiProposalId, { from: bob });
-      await this.fineMemberProposalManagerX.aye(daiProposalId, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(daiProposalId, { from: dan });
-      await this.fineMemberProposalManagerX.aye(daiProposalId, { from: eve });
-      await this.fineMemberProposalManagerX.aye(daiProposalId, { from: frank });
-      await this.fineMemberProposalManagerX.triggerApprove(daiProposalId);
+      await this.fundProposalManagerX.aye(daiProposalId, { from: bob });
+      await this.fundProposalManagerX.aye(daiProposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(daiProposalId, { from: dan });
+      await this.fundProposalManagerX.aye(daiProposalId, { from: eve });
+      await this.fundProposalManagerX.aye(daiProposalId, { from: frank });
+      await this.fundProposalManagerX.triggerApprove(daiProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
 
@@ -394,23 +383,19 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, ether(1350));
 
       // TOKEN2 FINE in DAI
-      res = await this.fineMemberProposalManagerX.propose(
-        this.token2,
-        Currency.ERC20,
-        ether(650),
-        this.galtToken.address,
-        'blah',
-        {
-          from: unauthorized
-        }
-      );
+      proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token2, this.galtToken.address, ether(650))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: unauthorized
+      });
       const anotherGaltProposalId = res.logs[0].args.proposalId.toString(10);
-      await this.fineMemberProposalManagerX.aye(anotherGaltProposalId, { from: bob });
-      await this.fineMemberProposalManagerX.aye(anotherGaltProposalId, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(anotherGaltProposalId, { from: dan });
-      await this.fineMemberProposalManagerX.aye(anotherGaltProposalId, { from: eve });
-      await this.fineMemberProposalManagerX.aye(anotherGaltProposalId, { from: frank });
-      await this.fineMemberProposalManagerX.triggerApprove(anotherGaltProposalId);
+      await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: bob });
+      await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: dan });
+      await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: eve });
+      await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: frank });
+      await this.fundProposalManagerX.triggerApprove(anotherGaltProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: alice }));
 
@@ -494,16 +479,19 @@ contract('FineFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: bob }));
 
       // ANOTHER FINE in ETH
-      res = await this.fineMemberProposalManagerX.propose(this.token1, Currency.ETH, ether(150), zeroAddress, 'blah', {
+      proposalData = this.fundStorageX.contract.methods
+        .incrementFine(this.token1, ETH_CONTRACT, ether(150))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: unauthorized
       });
       const ethProposal2Id = res.logs[0].args.proposalId.toString(10);
-      await this.fineMemberProposalManagerX.aye(ethProposal2Id, { from: bob });
-      await this.fineMemberProposalManagerX.aye(ethProposal2Id, { from: charlie });
-      await this.fineMemberProposalManagerX.aye(ethProposal2Id, { from: dan });
-      await this.fineMemberProposalManagerX.aye(ethProposal2Id, { from: eve });
-      await this.fineMemberProposalManagerX.aye(ethProposal2Id, { from: frank });
-      await this.fineMemberProposalManagerX.triggerApprove(ethProposal2Id);
+      await this.fundProposalManagerX.aye(ethProposal2Id, { from: bob });
+      await this.fundProposalManagerX.aye(ethProposal2Id, { from: charlie });
+      await this.fundProposalManagerX.aye(ethProposal2Id, { from: dan });
+      await this.fundProposalManagerX.aye(ethProposal2Id, { from: eve });
+      await this.fundProposalManagerX.aye(ethProposal2Id, { from: frank });
+      await this.fundProposalManagerX.triggerApprove(ethProposal2Id);
 
       res = await this.fundStorageX.getFineAmount(this.token1, this.galtToken.address);
       assert.equal(res, 0);

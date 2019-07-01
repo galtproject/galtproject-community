@@ -107,8 +107,6 @@ contract FundStorage is Permissionable, Initializable {
 
   struct MemberFineItem {
     uint256 amount;
-    uint256[] proposals;
-    address[] proposalsManagers;
   }
 
   struct PeriodLimit {
@@ -262,10 +260,8 @@ contract FundStorage is Permissionable, Initializable {
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
-  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount, uint256 _proposalId) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
-    _fines[_spaceTokenId].tokenFines[_contract].proposals.push(_proposalId);
-    _fines[_spaceTokenId].tokenFines[_contract].proposalsManagers.push(msg.sender);
-
+  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+    // TODO: track relation to proposal id
     _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
     _fines[_spaceTokenId].total += _amount;
 
@@ -451,14 +447,6 @@ contract FundStorage is Permissionable, Initializable {
 
   function getFineAmount(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256) {
     return _fines[_spaceTokenId].tokenFines[_erc20Contract].amount;
-  }
-
-  function getFineProposals(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256[] memory) {
-    return _fines[_spaceTokenId].tokenFines[_erc20Contract].proposals;
-  }
-
-  function getFineProposalsManagers(uint256 _spaceTokenId, address _erc20Contract) external view returns (address[] memory) {
-    return _fines[_spaceTokenId].tokenFines[_erc20Contract].proposalsManagers;
   }
 
   function getTotalFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
