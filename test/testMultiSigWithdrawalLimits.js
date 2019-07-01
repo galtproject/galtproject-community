@@ -136,9 +136,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
     assert.equal(res.executed, true);
 
     // Limit ETH payments
-    const calldata = this.fundStorageX.contract.methods
-      .setPeriodLimit(true, ETH_CONTRACT, ether(4000))
-      .encodeABI();
+    const calldata = this.fundStorageX.contract.methods.setPeriodLimit(true, ETH_CONTRACT, ether(4000)).encodeABI();
     res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
       from: bob
     });

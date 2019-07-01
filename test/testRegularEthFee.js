@@ -39,15 +39,7 @@ contract('Regular ETH Fees', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(
-      this.fundFactory,
-      alice,
-      false,
-      600000,
-      {},
-      [bob, charlie, dan],
-      2
-    );
+    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
