@@ -233,7 +233,10 @@ contract FundProposalManager {
 
     p.status = ProposalStatus.EXECUTED;
 
-    (bool ok, bytes memory response) = address(fundStorage).call.gas(gasleft() - 50000)(p.data);
+    (bool ok, bytes memory response) = address(p.destination)
+      .call
+      .value(p.value)
+      .gas(gasleft() - 50000)(p.data);
 
     if (ok == false) {
       p.status = ProposalStatus.APPROVED;

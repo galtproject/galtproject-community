@@ -6,6 +6,7 @@ const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
+const bytes32 = web3.utils.utf8ToHex;
 
 initHelperWeb3(web3);
 
@@ -21,7 +22,7 @@ const ONE_MONTH = 2592000;
 const ETH_CONTRACT = '0x0000000000000000000000000000000000000001';
 
 contract('MultiSig Withdrawal Limits', accounts => {
-  const [coreTeam, alice, bob, charlie, dan] = accounts;
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
@@ -44,7 +45,9 @@ contract('MultiSig Withdrawal Limits', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
+      600000,
+      {},
+      // [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
       2,
       ONE_MONTH
@@ -170,5 +173,22 @@ contract('MultiSig Withdrawal Limits', accounts => {
     await assertRevert(this.fundMultiSigX.confirmTransaction(txId2nd, { from: charlie }));
     res = await this.fundMultiSigX.transactions(txId2nd);
     assert.equal(res.executed, false);
+  });
+
+  describe('not limits tests, but multisig', async function() {
+    it("should revert if required doesn't match requirements", async function() {
+      await this.fundStorageX.addRoleTo(eve, await this.fundStorageX.CONTRACT_MEMBER_DETAILS_MANAGER(), {
+        from: alice
+      });
+      await this.fundMultiSigX.addRoleTo(eve, await this.fundMultiSigX.OWNER_MANAGER(), { from: alice });
+
+      await this.fundStorageX.setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')], { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')], { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, george, 'George', [bytes32('asdf')], { from: eve });
+
+      await assertRevert(this.fundMultiSigX.setOwners([alice, frank, george], 4), { from: eve });
+      await assertRevert(this.fundMultiSigX.setOwners([alice, frank, george], 0), { from: eve });
+      await this.fundMultiSigX.setOwners([alice, frank, george], 2, { from: eve });
+    });
   });
 });

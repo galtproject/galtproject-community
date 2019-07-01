@@ -51,6 +51,7 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
   function setOwners(address[] calldata _newOwners, uint256 _required) external onlyRole(OWNER_MANAGER) {
     require(_required <= _newOwners.length, "Required too big");
     require(_required > 0, "Required too low");
+    require(fundStorage.areMembersValid(_newOwners), "Not all members are valid");
 
     owners = _newOwners;
     required = _required;

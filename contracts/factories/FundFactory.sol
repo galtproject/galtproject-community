@@ -248,6 +248,8 @@ contract FundFactory is Ownable {
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_MEMBER_IDENTIFICATION_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_PROPOSAL_THRESHOLD_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER());
+    c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.OWNER_MANAGER());
+
 
     c.currentStep = Step.FOURTH;
 
@@ -300,6 +302,7 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.FIFTH, "Requires fifth step");
 
     FundStorage _fundStorage = c.fundStorage;
+    FundMultiSig _fundMultiSig = c.fundMultiSig;
     uint256 len = _initialSpaceTokensToApprove.length;
 
     _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
@@ -316,6 +319,12 @@ contract FundFactory is Ownable {
       c.fundRA,
       c.fundProposalManager
     );
+
+    _fundStorage.addRoleTo(msg.sender, _fundStorage.ROLE_ROLE_MANAGER());
+    _fundMultiSig.addRoleTo(msg.sender, _fundMultiSig.ROLE_ROLE_MANAGER());
+
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_ROLE_MANAGER());
+    _fundMultiSig.removeRoleFrom(address(this), _fundMultiSig.ROLE_ROLE_MANAGER());
 
     c.currentStep = Step.DONE;
 

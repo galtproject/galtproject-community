@@ -14,6 +14,7 @@ const FundProposalManager = artifacts.require('./FundProposalManager.sol');
 MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
+FundMultiSig.numberFormat = 'String';
 
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;

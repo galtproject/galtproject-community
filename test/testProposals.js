@@ -25,7 +25,7 @@ const ActiveRuleAction = {
   REMOVE: 1
 };
 
-contract.only('FundProposalManager', accounts => {
+contract('FundProposalManager', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
@@ -361,143 +361,120 @@ contract.only('FundProposalManager', accounts => {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       // approve Alice
-      let res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
-        alice,
-        true,
-        'Alice',
-        [bytes32('asdf')],
-        'Hey',
-        {
-          from: bob
-        }
-      );
+      let proposalData = this.fundStorageX.contract.methods
+        .setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')])
+        .encodeABI();
+
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
+      });
+
       let pId = res.logs[0].args.proposalId.toString(10);
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
-      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, { from: bob });
+      await this.fundProposalManagerX.aye(pId, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve George
-      res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
-        george,
-        true,
-        'George',
-        [bytes32('asdf')],
-        'Hey',
-        {
-          from: bob
-        }
-      );
+      proposalData = this.fundStorageX.contract.methods
+        .setMultiSigManager(true, george, 'George', [bytes32('asdf')])
+        .encodeABI();
+
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
+      });
       pId = res.logs[0].args.proposalId.toString(10);
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
-      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, { from: bob });
+      await this.fundProposalManagerX.aye(pId, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       res = await this.fundStorageX.getMultisigManager(george);
       assert.deepEqual(res.documents.map(doc => doc.toString(10)), [fullHex(bytes32('asdf'))]);
       res = await this.fundStorageX.getActiveMultisigManagers();
       assert.deepEqual(res, [alice, george]);
 
-      //
       let required = await this.fundMultiSigX.required();
       let owners = await this.fundMultiSigX.getOwners();
 
       assert.equal(required, 2);
       assert.equal(owners.length, 3);
 
-      await assertRevert(
-        this.changeMultiSigOwnersProposalManager.propose([alice, frank, george], 4, 'Have a new list', {
-          from: bob
-        })
-      );
-      await assertRevert(
-        this.changeMultiSigOwnersProposalManager.propose([alice, frank, george], 0, 'Have a new list', {
-          from: bob
-        })
-      );
+      proposalData = this.fundMultiSigX.contract.methods.setOwners([alice, dan, frank, george], 3).encodeABI();
 
-      res = await this.changeMultiSigOwnersProposalManager.propose([alice, dan, frank, george], 3, 'Have a new list', {
+      res = await this.fundProposalManagerX.propose(this.fundMultiSigX.address, 0, proposalData, 'blah', {
         from: bob
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: bob });
-      await this.changeMultiSigOwnersProposalManager.nay(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
-      res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob]);
       assert.sameMembers(res.nays, [charlie]);
 
+      res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
-      res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
-      assert.sameMembers(res.map(int), [1]);
-      res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
-      assert.sameMembers(res.map(int), []);
-      res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
-      assert.sameMembers(res.map(int), []);
-
-      res = await this.changeMultiSigOwnersProposalManager.getAyeShare(proposalId);
-      assert.equal(res, 20);
-      res = await this.changeMultiSigOwnersProposalManager.getNayShare(proposalId);
-      assert.equal(res, 20);
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getNayShare(proposalId);
+      assert.equal(res, 200000);
 
       // Deny double-vote
-      await assertRevert(this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: bob }));
-      await assertRevert(this.changeMultiSigOwnersProposalManager.triggerReject(proposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
+      await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
 
-      await this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: dan });
-      await this.changeMultiSigOwnersProposalManager.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, { from: eve });
 
-      res = await this.changeMultiSigOwnersProposalManager.getAyeShare(proposalId);
-      assert.equal(res, 60);
-      res = await this.changeMultiSigOwnersProposalManager.getNayShare(proposalId);
-      assert.equal(res, 20);
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 600000);
+      res = await this.fundProposalManagerX.getNayShare(proposalId);
+      assert.equal(res, 200000);
 
-      await assertRevert(this.changeMultiSigOwnersProposalManager.triggerApprove(proposalId, { from: dan }));
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.APPROVED);
 
       // approve Dan
-      res = await this.modifyMultiSigManagerDetailsProposalManager.propose(dan, true, 'Dan', [bytes32('asdf')], 'Hey', {
+      proposalData = this.fundStorageX.contract.methods
+        .setMultiSigManager(true, dan, 'Dan', [bytes32('asdf')])
+        .encodeABI();
+
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
-      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, { from: bob });
+      await this.fundProposalManagerX.aye(pId, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve Frank
-      res = await this.modifyMultiSigManagerDetailsProposalManager.propose(
-        frank,
-        true,
-        'Frank',
-        [bytes32('asdf')],
-        'Hey',
-        {
-          from: bob
-        }
-      );
+      proposalData = this.fundStorageX.contract.methods
+        .setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')])
+        .encodeABI();
 
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: bob
+      });
       pId = res.logs[0].args.proposalId.toString(10);
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: bob });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: charlie });
-      await this.modifyMultiSigManagerDetailsProposalManager.aye(pId, { from: dan });
-      await this.modifyMultiSigManagerDetailsProposalManager.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, { from: bob });
+      await this.fundProposalManagerX.aye(pId, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // now it's ok
-      await this.changeMultiSigOwnersProposalManager.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.execute(proposalId, { from: dan });
 
-      res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
+      res = await this.fundProposalManagerX.getProposalResponseAsErrorString(proposalId);
+      res = await this.fundProposalManagerX.proposals(proposalId);
 
-      res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
-      assert.sameMembers(res.map(int), []);
-      res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
-      assert.sameMembers(res.map(int), [1]);
-      res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
-      assert.sameMembers(res.map(int), []);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // verify value changed
       res = await this.fundMultiSigX.getOwners();
