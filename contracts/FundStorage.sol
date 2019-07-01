@@ -19,6 +19,7 @@ import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
+import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "./FundMultiSig.sol";
 import "./FundController.sol";
 import "./interfaces/IFundRA.sol";
@@ -234,11 +235,16 @@ contract FundStorage is Permissionable, Initializable {
     _mintApprovals[_spaceTokenId] = true;
   }
 
-  function expel(uint256 _spaceTokenId, uint256 _amount) external onlyRole(CONTRACT_EXPEL_MEMBER_MANAGER) {
+  function expel(uint256 _spaceTokenId) external onlyRole(CONTRACT_EXPEL_MEMBER_MANAGER) {
     require(_expelledTokens[_spaceTokenId] == false, "Already Expelled");
 
+    address owner = ggr.getSpaceToken().ownerOf(_spaceTokenId);
+    uint256 amount = ISpaceLocker(owner).reputation();
+
+    assert(amount > 0);
+
     _expelledTokens[_spaceTokenId] = true;
-    _expelledTokenReputation[_spaceTokenId] = _amount;
+    _expelledTokenReputation[_spaceTokenId] = amount;
   }
 
   function decrementExpelledTokenReputation(

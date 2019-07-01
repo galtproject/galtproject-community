@@ -21,7 +21,8 @@ const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
   APPROVED: 2,
-  REJECTED: 3
+  EXECUTED: 3,
+  REJECTED: 4
 };
 
 contract('ExpelFundMemberProposal', accounts => {
@@ -73,7 +74,8 @@ contract('ExpelFundMemberProposal', accounts => {
       this.fundFactory,
       alice,
       false,
-      [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
+      600000,
+      {},
       [bob, charlie, dan],
       2
     );
@@ -81,7 +83,7 @@ contract('ExpelFundMemberProposal', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundRAX = fund.fundRA;
-    this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -140,20 +142,22 @@ contract('ExpelFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.burnExpelled(token1, bob, alice, 200, { from: unauthorized }));
 
       // EXPEL
-      res = await this.expelMemberProposalManagerX.propose(token1, 'blah', { from: unauthorized });
+      const proposalData = this.fundStorageX.contract.methods.expel(token1).encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+        from: unauthorized
+      });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
       res = await this.fundRAX.totalSupplyAt(block0);
       assert.equal(res, 2300); // 300 * 5 + 800
 
-      res = await this.expelMemberProposalManagerX.getProposal(proposalId);
-      assert.equal(web3.utils.hexToNumberString(res.spaceTokenId), token1);
+      res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.description, 'blah');
 
-      await this.expelMemberProposalManagerX.aye(proposalId, { from: bob });
-      await this.expelMemberProposalManagerX.aye(proposalId, { from: charlie });
-      await this.expelMemberProposalManagerX.aye(proposalId, { from: dan });
-      await this.expelMemberProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, { from: eve });
 
       res = await this.fundRAX.totalSupply();
       assert.equal(res, 2300); // 300 * 5 + 800
@@ -162,28 +166,28 @@ contract('ExpelFundMemberProposal', accounts => {
       res = await this.fundRAX.balanceOfAt(bob, block0);
       assert.equal(res, 500);
 
-      res = await this.expelMemberProposalManagerX.getProposalVoting(proposalId);
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
       assert.equal(res.totalNays, 0);
 
-      res = await this.expelMemberProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 65); // (500 + 400 + 300 + 300) / 2300
-      res = await this.expelMemberProposalManagerX.getThreshold();
-      assert.equal(res, 60);
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, 652173); // (500 + 400 + 300 + 300) / 2300
+      res = await this.fundProposalManagerX.getThreshold(proposalId);
+      assert.equal(res, 600000);
 
       res = await this.fundStorageX.getExpelledToken(token1);
       assert.equal(res.isExpelled, false);
       assert.equal(res.amount, 0);
 
       // ACCEPT PROPOSAL
-      await this.expelMemberProposalManagerX.triggerApprove(proposalId);
+      await this.fundProposalManagerX.triggerApprove(proposalId);
 
       res = await this.fundStorageX.getExpelledToken(token1);
       assert.equal(res.isExpelled, true);
       assert.equal(res.amount, 800);
 
-      res = await this.expelMemberProposalManagerX.getProposalVoting(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // BURNING LOCKED REPUTATION FOR EXPELLED TOKEN
       await assertRevert(this.fundRAX.burnExpelled(token1, charlie, alice, 101, { from: unauthorized }));

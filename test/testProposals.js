@@ -20,7 +20,7 @@ const ProposalStatus = {
   REJECTED: 4
 };
 
-contract.only('FundProposalManager', accounts => {
+contract('FundProposalManager', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
