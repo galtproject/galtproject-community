@@ -57,12 +57,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
-    this.expelMemberProposalManagerX = fund.expelMemberProposalManager;
-    this.modifyConfigProposalManagerX = fund.modifyConfigProposalManager;
-    this.addFundRuleProposalManagerX = fund.addFundRuleProposalManager;
-    this.deactivateFundRuleProposalManagerX = fund.deactivateFundRuleProposalManager;
-    this.modifyFeeProposalManager = fund.modifyFeeProposalManager;
-    this.changeMultiSigWithdrawalLimitsProposalManager = fund.changeMultiSigWithdrawalLimitsProposalManager;
+    this.fundProposalManagerX = fund.fundProposalManager;
 
     // this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.beneficiaries = [alice, bob, charlie];
@@ -84,20 +79,17 @@ contract('MultiSig Withdrawal Limits', accounts => {
     assert.equal(res.executed, true);
 
     // Limit GaltToken payments
-    res = await this.changeMultiSigWithdrawalLimitsProposalManager.propose(
-      true,
-      this.galtToken.address,
-      ether(4000),
-      'Hey',
-      {
-        from: bob
-      }
-    );
+    const calldata = this.fundStorageX.contract.methods
+      .setPeriodLimit(true, this.galtToken.address, ether(4000))
+      .encodeABI();
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      from: bob
+    });
     const pId = res.logs[0].args.proposalId.toString(10);
-    await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: bob });
-    await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: charlie });
-    await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: dan });
-    await this.changeMultiSigWithdrawalLimitsProposalManager.triggerApprove(pId, { from: dan });
+    await this.fundProposalManagerX.aye(pId, { from: bob });
+    await this.fundProposalManagerX.aye(pId, { from: charlie });
+    await this.fundProposalManagerX.aye(pId, { from: dan });
+    await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
     const limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
     assert.equal(limit.active, true);
@@ -144,14 +136,17 @@ contract('MultiSig Withdrawal Limits', accounts => {
     assert.equal(res.executed, true);
 
     // Limit ETH payments
-    res = await this.changeMultiSigWithdrawalLimitsProposalManager.propose(true, ETH_CONTRACT, ether(4000), 'Hey', {
+    const calldata = this.fundStorageX.contract.methods
+      .setPeriodLimit(true, ETH_CONTRACT, ether(4000))
+      .encodeABI();
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);
-    await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: bob });
-    await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: charlie });
-    await this.changeMultiSigWithdrawalLimitsProposalManager.aye(pId, { from: dan });
-    await this.changeMultiSigWithdrawalLimitsProposalManager.triggerApprove(pId, { from: dan });
+    await this.fundProposalManagerX.aye(pId, { from: bob });
+    await this.fundProposalManagerX.aye(pId, { from: charlie });
+    await this.fundProposalManagerX.aye(pId, { from: dan });
+    await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
     const limit = await this.fundStorageX.getPeriodLimit(ETH_CONTRACT);
     assert.equal(limit.active, true);
