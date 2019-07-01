@@ -16,7 +16,7 @@ GaltToken.numberFormat = 'String';
 
 initHelperWeb3(web3);
 
-contract('FundRA', accounts => {
+contract('FundFactory', accounts => {
   const [coreTeam, alice, bob, charlie, feeCollector] = accounts;
 
   before(async function() {
@@ -57,7 +57,8 @@ contract('FundRA', accounts => {
         factory,
         alice,
         false,
-        [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
+        600000,
+        {},
         [bob, charlie],
         2,
         2592000,
