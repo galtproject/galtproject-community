@@ -13,8 +13,8 @@
 
 pragma solidity 0.5.10;
 
-import "@galtproject/core/contracts/vendor/MultiSigWallet/MultiSigWallet.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
+import "@galtproject/multisig/contracts/MultiSigWallet.sol";
 import "./FundStorage.sol";
 
 
