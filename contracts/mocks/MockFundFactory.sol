@@ -11,7 +11,7 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity ^0.5.7;
+pragma solidity ^0.5.10;
 
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
@@ -32,7 +32,7 @@ contract MockFundFactory is FundFactory {
     FundFactory(_ggr, _fundRAFactory, _fundMultiSigFactory, _fundStorageFactory, _fundControllerFactory, _fundProposalManagerFactory)
   {
   }
-  
+
   function hackAddRoleManagerRole(bytes32 _fundId, address _addRoleTo) external {
     FundContracts storage c = fundContracts[_fundId];
 

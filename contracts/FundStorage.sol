@@ -11,7 +11,7 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
@@ -97,7 +97,7 @@ contract FundStorage is Permissionable, Initializable {
     bytes32[] documents;
   }
 
-  // TODO: separate caching data with config to another contract 
+  // TODO: separate caching data with config to another contract
   struct MemberFines {
     uint256 total;
     // Assume ETH is address(0x1)
@@ -312,7 +312,7 @@ contract FundStorage is Permissionable, Initializable {
   function removeFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
     feeContracts.remove(_feeContract);
   }
-  
+
   function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(CONTRACT_MEMBER_IDENTIFICATION_MANAGER) {
     _membersIdentification[_member] = _identificationHash;
   }
@@ -361,7 +361,7 @@ contract FundStorage is Permissionable, Initializable {
     m.active = _active;
     m.name = _name;
     m.documents = _documents;
-    
+
     if (_active) {
       _activeMultisigManagers.addSilent(_manager);
     } else {
@@ -379,7 +379,7 @@ contract FundStorage is Permissionable, Initializable {
   {
     _periodLimits[_erc20Contract].active = _active;
     _periodLimits[_erc20Contract].amount = _amount;
-    
+
     if (_active) {
       _activePeriodLimitsContracts.addSilent(_erc20Contract);
     } else {
@@ -548,7 +548,7 @@ contract FundStorage is Permissionable, Initializable {
     bool active,
     string memory managerName,
     bytes32[] memory documents
-  ) 
+  )
   {
     return (
       _multiSigManagers[_manager].active,
