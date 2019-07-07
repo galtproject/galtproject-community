@@ -247,6 +247,7 @@ contract FundFactory is Ownable {
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_MEMBER_IDENTIFICATION_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_PROPOSAL_THRESHOLD_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_PROPOSAL_WHITELIST_MANAGER());
     _fundStorage.addRoleTo(address(c.fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
     _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
     c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.OWNER_MANAGER());

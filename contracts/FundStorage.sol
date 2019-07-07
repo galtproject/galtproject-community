@@ -38,6 +38,7 @@ contract FundStorage is Permissionable, Initializable {
   string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
 
   string public constant CONTRACT_CONFIG_MANAGER = "config_manager";
+  string public constant CONTRACT_PROPOSAL_WHITELIST_MANAGER = "wl_manager";
   string public constant CONTRACT_NEW_MEMBER_MANAGER = "new_member_manager";
   string public constant CONTRACT_EXPEL_MEMBER_MANAGER = "expel_member_manager";
   string public constant CONTRACT_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
@@ -97,7 +98,7 @@ contract FundStorage is Permissionable, Initializable {
     bytes32[] documents;
   }
 
-  // TODO: separate caching data with config to another contract 
+  // TODO: separate caching data with config to another contract
   struct MemberFines {
     uint256 total;
     // Assume ETH is address(0x1)
@@ -121,6 +122,7 @@ contract FundStorage is Permissionable, Initializable {
 
   GaltGlobalRegistry public ggr;
 
+  ArraySet.AddressSet private _whiteListedProposalContracts;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -280,6 +282,28 @@ contract FundStorage is Permissionable, Initializable {
     }
   }
 
+  function addWhiteListedProposalContract(
+    address _contract,
+    bytes32 _type,
+    bytes32 _abiIpfsHash,
+    string calldata _description
+  )
+    external
+    onlyRole(CONTRACT_PROPOSAL_WHITELIST_MANAGER)
+  {
+    _whiteListedProposalContracts.addSilent(_contract);
+
+     ProposalContract storage c = _proposalContracts[_contract];
+
+     c.contractType = _type;
+     c.abiIpfsHash = _abiIpfsHash;
+     c.description = _description;
+  }
+
+  function removeWhiteListedProposalContract(address _contract) external onlyRole(CONTRACT_PROPOSAL_WHITELIST_MANAGER) {
+    _whiteListedProposalContracts.remove(_contract);
+  }
+
   function addFundRule(
     bytes32 _ipfsHash,
     string calldata _description
@@ -312,7 +336,7 @@ contract FundStorage is Permissionable, Initializable {
   function removeFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
     feeContracts.remove(_feeContract);
   }
-  
+
   function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(CONTRACT_MEMBER_IDENTIFICATION_MANAGER) {
     _membersIdentification[_member] = _identificationHash;
   }
@@ -361,7 +385,7 @@ contract FundStorage is Permissionable, Initializable {
     m.active = _active;
     m.name = _name;
     m.documents = _documents;
-    
+
     if (_active) {
       _activeMultisigManagers.addSilent(_manager);
     } else {
@@ -379,7 +403,7 @@ contract FundStorage is Permissionable, Initializable {
   {
     _periodLimits[_erc20Contract].active = _active;
     _periodLimits[_erc20Contract].amount = _amount;
-    
+
     if (_active) {
       _activePeriodLimitsContracts.addSilent(_erc20Contract);
     } else {
@@ -548,7 +572,7 @@ contract FundStorage is Permissionable, Initializable {
     bool active,
     string memory managerName,
     bytes32[] memory documents
-  ) 
+  )
   {
     return (
       _multiSigManagers[_manager].active,
