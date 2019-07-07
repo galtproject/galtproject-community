@@ -292,11 +292,11 @@ contract FundStorage is Permissionable, Initializable {
   {
     _whiteListedProposalContracts.addSilent(_contract);
 
-     ProposalContract storage c = _proposalContracts[_contract];
+    ProposalContract storage c = _proposalContracts[_contract];
 
-     c.contractType = _type;
-     c.abiIpfsHash = _abiIpfsHash;
-     c.description = _description;
+    c.contractType = _type;
+    c.abiIpfsHash = _abiIpfsHash;
+    c.description = _description;
   }
 
   function removeWhiteListedProposalContract(address _contract) external onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER) {
