@@ -81,9 +81,10 @@ contract('FundProposalManager', accounts => {
     });
 
     describe('(Proposal contracts queries FundRA for addresses locked reputation share)', () => {
-      it('should allow reverting a proposal if negative votes threshold is reached', async function() {
+      it.only('should allow reverting a proposal if negative votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
+        console.log('this.fundStorageX.abi', this.fundStorageX.abi);
         const proposalData = this.fundStorageX.contract.methods
           .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
           .encodeABI();

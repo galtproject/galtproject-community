@@ -49,6 +49,7 @@ contract FundProposalManager {
     address destination;
     uint256 value;
     bytes32 marker;
+    bytes32 method;
     bytes data;
     string description;
     bytes response;
@@ -58,13 +59,13 @@ contract FundProposalManager {
   Counters.Counter internal idCounter;
 
   mapping(uint256 => Proposal) public proposals;
-  ArraySet.Uint256Set private _activeProposals;
-  mapping(address => ArraySet.Uint256Set) private _activeProposalsBySender;
-
   mapping(uint256 => address) private _proposalToSender;
 
-  uint256[] private _approvedProposals;
-  uint256[] private _rejectedProposals;
+  mapping(bytes32 => ArraySet.Uint256Set) private _activeProposals;
+  mapping(address => mapping(bytes32 => ArraySet.Uint256Set)) private _activeProposalsBySender;
+
+  mapping(bytes32 => uint256[]) private _approvedProposals;
+  mapping(bytes32 => uint256[]) private _rejectedProposals;
 
   mapping(uint256 => ProposalVoting) internal _proposalVotings;
 
@@ -114,6 +115,13 @@ contract FundProposalManager {
     p.marker = fundStorage.getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;
+    
+    bytes32 method;
+    assembly {
+      let data := calldataload(_data)
+      method := and(mload(add(data, 0x20)), 0xffffffff00000000000000000000000000000000000000000000000000000000)
+    }
+    p.method = method;
 
     _onNewProposal(id);
 
@@ -150,9 +158,9 @@ contract FundProposalManager {
       require(ayeShare >= fundStorage.defaultProposalThreshold(), "Threshold doesn't reached yet");
     }
 
-    _activeProposals.remove(_proposalId);
-    _activeProposalsBySender[_proposalToSender[_proposalId]].remove(_proposalId);
-    _approvedProposals.push(_proposalId);
+    _activeProposals[p.method].remove(_proposalId);
+    _activeProposalsBySender[_proposalToSender[_proposalId]][p.method].remove(_proposalId);
+    _approvedProposals[p.method].push(_proposalId);
 
     p.status = ProposalStatus.APPROVED;
     emit Approved(ayeShare, threshold);
@@ -176,9 +184,9 @@ contract FundProposalManager {
       require(nayShare >= fundStorage.defaultProposalThreshold(), "Threshold doesn't reached yet");
     }
 
-    _activeProposals.remove(_proposalId);
-    _activeProposalsBySender[_proposalToSender[_proposalId]].remove(_proposalId);
-    _rejectedProposals.push(_proposalId);
+    _activeProposals[p.method].remove(_proposalId);
+    _activeProposalsBySender[_proposalToSender[_proposalId]][p.method].remove(_proposalId);
+    _rejectedProposals[p.method].push(_proposalId);
 
     p.status = ProposalStatus.REJECTED;
     emit Rejected(nayShare, threshold);
@@ -214,8 +222,9 @@ contract FundProposalManager {
   }
 
   function _onNewProposal(uint256 _proposalId) internal {
-    _activeProposals.add(_proposalId);
-    _activeProposalsBySender[msg.sender].add(_proposalId);
+    
+    _activeProposals[proposals[_proposalId].method].add(_proposalId);
+    _activeProposalsBySender[msg.sender][proposals[_proposalId].method].add(_proposalId);
     _proposalToSender[_proposalId] = msg.sender;
 
     uint256 blockNumber = block.number.sub(1);
@@ -261,36 +270,36 @@ contract FundProposalManager {
     return string(proposals[_proposalId].response);
   }
 
-  function getActiveProposals() public view returns (uint256[] memory) {
-    return _activeProposals.elements();
+  function getActiveProposals(bytes32 _method) public view returns (uint256[] memory) {
+    return _activeProposals[_method].elements();
   }
 
-  function getActiveProposalsCount() public view returns (uint256) {
-    return _activeProposals.size();
+  function getActiveProposalsCount(bytes32 _method) public view returns (uint256) {
+    return _activeProposals[_method].size();
   }
 
-  function getActiveProposalsBySender(address _sender) external view returns (uint256[] memory) {
-    return _activeProposalsBySender[_sender].elements();
+  function getActiveProposalsBySender(address _sender, bytes32 _method) external view returns (uint256[] memory) {
+    return _activeProposalsBySender[_sender][_method].elements();
   }
 
-  function getActiveProposalsBySenderCount(address _sender) external view returns (uint256) {
-    return _activeProposalsBySender[_sender].size();
+  function getActiveProposalsBySenderCount(address _sender, bytes32 _method) external view returns (uint256) {
+    return _activeProposalsBySender[_sender][_method].size();
   }
 
-  function getApprovedProposals() public view returns (uint256[] memory) {
-    return _approvedProposals;
+  function getApprovedProposalsByMethod(bytes32 _method) public view returns (uint256[] memory) {
+    return _approvedProposals[_method];
   }
 
-  function getApprovedProposalsCount() public view returns (uint256) {
-    return _approvedProposals.length;
+  function getApprovedProposalsCount(bytes32 _method) public view returns (uint256) {
+    return _approvedProposals[_method].length;
   }
 
-  function getRejectedProposals() public view returns (uint256[] memory) {
-    return _rejectedProposals;
+  function getRejectedProposals(bytes32 _method) public view returns (uint256[] memory) {
+    return _rejectedProposals[_method];
   }
 
-  function getRejectedProposalsCount() public view returns (uint256) {
-    return _rejectedProposals.length;
+  function getRejectedProposalsCount(bytes32 _method) public view returns (uint256) {
+    return _rejectedProposals[_method].length;
   }
 
   function getProposalVoting(
