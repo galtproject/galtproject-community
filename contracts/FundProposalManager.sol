@@ -29,9 +29,9 @@ contract FundProposalManager {
   // 100% == 10**6
   uint256 public constant DECIMALS = 10**6;
 
-  event NewProposal(uint256 proposalId, address proposee, bytes32 marker);
-  event Approved(uint256 ayeShare, uint256 threshold);
-  event Rejected(uint256 nayShare, uint256 threshold);
+  event NewProposal(uint256 proposalId, address indexed proposer, bytes32 indexed marker);
+  event Approved(uint256 ayeShare, uint256 threshold, bytes32 indexed marker);
+  event Rejected(uint256 nayShare, uint256 threshold, bytes32 indexed marker);
 
   struct ProposalVoting {
     uint256 creationBlock;
@@ -154,7 +154,7 @@ contract FundProposalManager {
     _approvedProposals[p.marker].push(_proposalId);
 
     p.status = ProposalStatus.APPROVED;
-    emit Approved(ayeShare, threshold);
+    emit Approved(ayeShare, threshold, p.marker);
 
     execute(_proposalId);
   }
@@ -180,7 +180,7 @@ contract FundProposalManager {
     _rejectedProposals[p.marker].push(_proposalId);
 
     p.status = ProposalStatus.REJECTED;
-    emit Rejected(nayShare, threshold);
+    emit Rejected(nayShare, threshold, p.marker);
   }
 
   // INTERNAL
