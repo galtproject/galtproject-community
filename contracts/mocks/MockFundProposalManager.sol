@@ -16,6 +16,9 @@ pragma solidity ^0.5.7;
 import "../FundProposalManager.sol";
 
 contract MockFundProposalManager is FundProposalManager {
+  
+  constructor(FundStorage _fundStorage) public FundProposalManager(_fundStorage) { }
+
   function ayeHack(uint256 _votingId, address _voter) external {
     _aye(_votingId, _voter);
   }
