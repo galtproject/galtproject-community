@@ -83,8 +83,7 @@ contract FundProposalManager {
   }
 
   modifier onlyMember() {
-    // TODO: define
-    //    require(rsra.balanceOf(msg.sender) > 0, "Not valid member");
+    require(fundStorage.getRA().balanceOf(msg.sender) > 0, "Not valid member");
 
     _;
   }
@@ -120,13 +119,13 @@ contract FundProposalManager {
     emit NewProposal(id, msg.sender);
   }
 
-  function aye(uint256 _proposalId) external onlyMember {
+  function aye(uint256 _proposalId) external {
     require(proposals[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     _aye(_proposalId, msg.sender);
   }
 
-  function nay(uint256 _proposalId) external onlyMember {
+  function nay(uint256 _proposalId) external {
     require(proposals[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     _nay(_proposalId, msg.sender);
