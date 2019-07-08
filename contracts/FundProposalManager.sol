@@ -29,7 +29,7 @@ contract FundProposalManager {
   // 100% == 10**6
   uint256 public constant DECIMALS = 10**6;
 
-  event NewProposal(uint256 proposalId, address proposee);
+  event NewProposal(uint256 proposalId, address proposee, bytes32 marker);
   event Approved(uint256 ayeShare, uint256 threshold);
   event Rejected(uint256 nayShare, uint256 threshold);
 
@@ -116,7 +116,7 @@ contract FundProposalManager {
     p.status = ProposalStatus.ACTIVE;
     _onNewProposal(id);
 
-    emit NewProposal(id, msg.sender);
+    emit NewProposal(id, msg.sender, p.marker);
   }
 
   function aye(uint256 _proposalId) external onlyMember {

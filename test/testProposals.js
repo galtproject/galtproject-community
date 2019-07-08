@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, fullHex, int } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, fullHex, int, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -81,10 +81,11 @@ contract('FundProposalManager', accounts => {
     });
 
     describe('(Proposal contracts queries FundRA for addresses locked reputation share)', () => {
-      it.only('should allow reverting a proposal if negative votes threshold is reached', async function() {
+      it('should allow reverting a proposal if negative votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        console.log('this.fundStorageX.abi', this.fundStorageX.abi);
+        const marker = getDestinationMarker(this.fundStorageX, 'setProposalThreshold');
+
         const proposalData = this.fundStorageX.contract.methods
           .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
           .encodeABI();
@@ -110,11 +111,11 @@ contract('FundProposalManager', accounts => {
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.ACTIVE);
 
-        res = await this.fundProposalManagerX.getActiveProposals();
+        res = await this.fundProposalManagerX.getActiveProposals(marker);
         assert.sameMembers(res.map(int), [1]);
-        res = await this.fundProposalManagerX.getApprovedProposals();
+        res = await this.fundProposalManagerX.getApprovedProposals(marker);
         assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getRejectedProposals();
+        res = await this.fundProposalManagerX.getRejectedProposals(marker);
         assert.sameMembers(res.map(int), []);
 
         res = await this.fundProposalManagerX.getAyeShare(proposalId);
@@ -142,22 +143,20 @@ contract('FundProposalManager', accounts => {
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.REJECTED);
 
-        res = await this.fundProposalManagerX.getActiveProposals();
+        res = await this.fundProposalManagerX.getActiveProposals(marker);
         assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getApprovedProposals();
+        res = await this.fundProposalManagerX.getApprovedProposals(marker);
         assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getRejectedProposals();
+        res = await this.fundProposalManagerX.getRejectedProposals(marker);
         assert.sameMembers(res.map(int), [1]);
       });
 
       it('should allow approving proposal if positive votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        const dummyData = this.fundStorageX.contract.methods.setProposalThreshold(bytes32('foo'), 420000).encodeABI();
+        const marker = getDestinationMarker(this.fundStorageX, 'setProposalThreshold');
 
-        const key = await this.fundStorageX.getThresholdMarker(this.fundStorageX.address, dummyData);
-
-        const proposalData = this.fundStorageX.contract.methods.setProposalThreshold(key, 420000).encodeABI();
+        const proposalData = this.fundStorageX.contract.methods.setProposalThreshold(marker, 420000).encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
           from: bob
@@ -165,11 +164,11 @@ contract('FundProposalManager', accounts => {
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
-        res = await this.fundProposalManagerX.getActiveProposals();
+        res = await this.fundProposalManagerX.getActiveProposals(marker);
         assert.sameMembers(res.map(int), [1]);
-        res = await this.fundProposalManagerX.getApprovedProposals();
+        res = await this.fundProposalManagerX.getApprovedProposals(marker);
         assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getRejectedProposals();
+        res = await this.fundProposalManagerX.getRejectedProposals(marker);
         assert.sameMembers(res.map(int), []);
 
         await this.fundProposalManagerX.aye(proposalId, { from: bob });
@@ -213,14 +212,14 @@ contract('FundProposalManager', accounts => {
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.EXECUTED);
 
-        res = await this.fundStorageX.thresholds(key);
+        res = await this.fundStorageX.thresholds(marker);
         assert.equal(res, '420000');
 
-        res = await this.fundProposalManagerX.getActiveProposals();
+        res = await this.fundProposalManagerX.getActiveProposals(marker);
         assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getApprovedProposals();
+        res = await this.fundProposalManagerX.getApprovedProposals(marker);
         assert.sameMembers(res.map(int), [1]);
-        res = await this.fundProposalManagerX.getRejectedProposals();
+        res = await this.fundProposalManagerX.getRejectedProposals(marker);
         assert.sameMembers(res.map(int), []);
 
         res = await this.fundProposalManagerX.getThreshold(proposalId);
@@ -232,6 +231,8 @@ contract('FundProposalManager', accounts => {
   describe('SetAddFundRuleProposalManager', () => {
     it('should add/deactivate a rule', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+
+      const marker = getDestinationMarker(this.fundStorageX, 'addFundRule');
 
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
       let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
@@ -331,11 +332,11 @@ contract('FundProposalManager', accounts => {
       res = await this.fundProposalManagerX.proposals(removeProposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
-      res = await this.fundProposalManagerX.getActiveProposals();
+      res = await this.fundProposalManagerX.getActiveProposals(marker);
       assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getApprovedProposals();
+      res = await this.fundProposalManagerX.getApprovedProposals(marker);
       assert.sameMembers(res.map(int), [1, 2]);
-      res = await this.fundProposalManagerX.getRejectedProposals();
+      res = await this.fundProposalManagerX.getRejectedProposals(marker);
       assert.sameMembers(res.map(int), []);
 
       // verify value changed
