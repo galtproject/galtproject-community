@@ -232,7 +232,7 @@ contract('FundProposalManager', accounts => {
     it('should add/deactivate a rule', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      const marker = getDestinationMarker(this.fundStorageX, 'addFundRule');
+      const addFundRuleMarker = getDestinationMarker(this.fundStorageX, 'addFundRule');
 
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
       let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
@@ -292,6 +292,8 @@ contract('FundProposalManager', accounts => {
 
       // >>> deactivate aforementioned proposal
 
+      const disableFundRuleMarker = getDestinationMarker(this.fundStorageX, 'disableFundRule');
+
       proposalData = this.fundStorageX.contract.methods.disableFundRule(ruleId).encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'obsolete', {
@@ -332,11 +334,17 @@ contract('FundProposalManager', accounts => {
       res = await this.fundProposalManagerX.proposals(removeProposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
-      res = await this.fundProposalManagerX.getActiveProposals(marker);
+      res = await this.fundProposalManagerX.getActiveProposals(addFundRuleMarker);
       assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getApprovedProposals(marker);
-      assert.sameMembers(res.map(int), [1, 2]);
-      res = await this.fundProposalManagerX.getRejectedProposals(marker);
+      res = await this.fundProposalManagerX.getActiveProposals(disableFundRuleMarker);
+      assert.sameMembers(res.map(int), []);
+      res = await this.fundProposalManagerX.getApprovedProposals(addFundRuleMarker);
+      assert.sameMembers(res.map(int), [1]);
+      res = await this.fundProposalManagerX.getApprovedProposals(disableFundRuleMarker);
+      assert.sameMembers(res.map(int), [2]);
+      res = await this.fundProposalManagerX.getRejectedProposals(addFundRuleMarker);
+      assert.sameMembers(res.map(int), []);
+      res = await this.fundProposalManagerX.getRejectedProposals(disableFundRuleMarker);
       assert.sameMembers(res.map(int), []);
 
       // verify value changed
