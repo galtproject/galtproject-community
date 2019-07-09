@@ -17,17 +17,17 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 // This contract will be included into the current one
-import "../FundProposalManager.sol";
+import "./MockFundProposalManager.sol";
 
 
-contract FundProposalManagerFactory is Ownable {
+contract MockFundProposalManagerFactory is Ownable {
   function build(
     FundStorage _fundStorage
   )
     external
     returns (FundProposalManager)
   {
-    FundProposalManager fundProposalManager = new FundProposalManager(_fundStorage);
+    MockFundProposalManager fundProposalManager = new MockFundProposalManager(_fundStorage);
 
     return fundProposalManager;
   }
