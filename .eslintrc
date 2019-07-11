@@ -18,6 +18,7 @@
         "import/named": "off",
         "no-console": "off",
         "func-names": "off",
+        "no-underscore-dangle": "off",
         "prettier/prettier": [
             "error",
             {
