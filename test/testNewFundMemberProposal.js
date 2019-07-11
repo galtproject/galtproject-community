@@ -9,7 +9,7 @@ const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, paymentMethods } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, paymentMethods, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
@@ -122,9 +122,11 @@ contract('NewFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
 
+      const marker = getDestinationMarker(this.fundStorageX, 'approveMint');
+
       const calldata = this.fundStorageX.contract.methods.approveMint(token1).encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
-        from: unauthorized
+        from: bob
       });
 
       const { proposalId } = res.logs[0].args;
@@ -145,14 +147,14 @@ contract('NewFundMemberProposal', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(proposalId);
 
-      res = await this.fundProposalManagerX.getActiveProposals();
+      res = await this.fundProposalManagerX.getActiveProposals(marker);
       assert.deepEqual(res, []);
-      res = await this.fundProposalManagerX.getActiveProposalsCount();
+      res = await this.fundProposalManagerX.getActiveProposalsCount(marker);
       assert.equal(res.toString(10), '0');
 
-      res = await this.fundProposalManagerX.getActiveProposalsBySender(unauthorized);
+      res = await this.fundProposalManagerX.getActiveProposalsBySender(unauthorized, marker);
       assert.deepEqual(res, []);
-      res = await this.fundProposalManagerX.getActiveProposalsBySenderCount(unauthorized);
+      res = await this.fundProposalManagerX.getActiveProposalsBySenderCount(unauthorized, marker);
       assert.equal(res.toString(10), '0');
 
       res = await this.fundProposalManagerX.proposals(proposalId);

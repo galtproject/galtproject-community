@@ -33,7 +33,7 @@ const Currency = {
 const ETH_CONTRACT = '0x0000000000000000000000000000000000000001';
 
 contract('FineFundMemberProposal', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement, unauthorized] = accounts;
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement] = accounts;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
@@ -335,7 +335,7 @@ contract('FineFundMemberProposal', accounts => {
         .incrementFine(this.token1, this.galtToken.address, ether(450))
         .encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: unauthorized
+        from: bob
       });
       const galtProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(galtProposalId, { from: bob });
@@ -357,7 +357,7 @@ contract('FineFundMemberProposal', accounts => {
         .incrementFine(this.token1, this.dai.address, ether(550))
         .encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: unauthorized
+        from: bob
       });
       const daiProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(daiProposalId, { from: bob });
@@ -379,7 +379,7 @@ contract('FineFundMemberProposal', accounts => {
         .incrementFine(this.token2, this.galtToken.address, ether(650))
         .encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: unauthorized
+        from: bob
       });
       const anotherGaltProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: bob });
@@ -475,7 +475,7 @@ contract('FineFundMemberProposal', accounts => {
         .incrementFine(this.token1, ETH_CONTRACT, ether(150))
         .encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: unauthorized
+        from: bob
       });
       const ethProposal2Id = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(ethProposal2Id, { from: bob });

@@ -3,7 +3,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, int } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, int, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -53,6 +53,8 @@ contract('Fee Proposals', accounts => {
     it('should encode', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
+      const marker = getDestinationMarker(this.fundStorageX, 'addFeeContract');
+
       const feeContract = alice;
       const calldata = this.fundStorageX.contract.methods.addFeeContract(feeContract).encodeABI();
       let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
@@ -71,11 +73,11 @@ contract('Fee Proposals', accounts => {
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
-      res = await this.fundProposalManagerX.getActiveProposals();
+      res = await this.fundProposalManagerX.getActiveProposals(marker);
       assert.sameMembers(res.map(int), [1]);
-      res = await this.fundProposalManagerX.getApprovedProposals();
+      res = await this.fundProposalManagerX.getApprovedProposals(marker);
       assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getRejectedProposals();
+      res = await this.fundProposalManagerX.getRejectedProposals(marker);
       assert.sameMembers(res.map(int), []);
 
       res = await this.fundProposalManagerX.getAyeShare(proposalId);

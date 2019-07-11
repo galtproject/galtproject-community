@@ -45,6 +45,29 @@ const Helpers = {
   weiToEtherRound(wei, precision = 4) {
     return Helpers.roundToPrecision(parseFloat(web3.utils.fromWei(wei.toFixed(), 'ether')), precision);
   },
+  getMethodSignature(abi, methodName) {
+    let signature = null;
+    abi.some(method => {
+      if (method.name === methodName) {
+        // eslint-disable-next-line
+        signature = method.signature;
+        if (!signature) {
+          signature = web3.eth.abi.encodeFunctionSignature(method);
+        }
+        return true;
+      }
+      return false;
+    });
+    return signature;
+  },
+  getDestinationMarker(contract, methodName) {
+    const methodSignature = Helpers.getMethodSignature(contract.abi, methodName);
+    const encodedParameters = web3.eth.abi.encodeParameters(
+      ['address', 'bytes32'],
+      [contract.address, methodSignature]
+    );
+    return web3.utils.keccak256(encodedParameters);
+  },
   log(...args) {
     console.log('>>>', new Date().toLocaleTimeString(), '>>>', ...args);
   },
