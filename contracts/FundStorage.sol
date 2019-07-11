@@ -36,7 +36,7 @@ contract FundStorage is Permissionable, Initializable {
   uint256 public constant DECIMALS = 10**6;
 
   string public constant ROLE_CONFIG_MANAGER = "config_manager";
-  string public constant ROLE_PROPOSAL_WHITELIST_MANAGER = "wl_manager";
+  string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
   string public constant ROLE_NEW_MEMBER_MANAGER = "new_member_manager";
   string public constant ROLE_EXPEL_MEMBER_MANAGER = "expel_member_manager";
   string public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
@@ -288,7 +288,7 @@ contract FundStorage is Permissionable, Initializable {
     string calldata _description
   )
     external
-    onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER)
+    onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
   {
     _whiteListedContractsList.addSilent(_contract);
 
@@ -299,7 +299,7 @@ contract FundStorage is Permissionable, Initializable {
     c.description = _description;
   }
 
-  function removeWhiteListedContract(address _contract) external onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER) {
+  function removeWhiteListedContract(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
     _whiteListedContractsList.remove(_contract);
   }
 
