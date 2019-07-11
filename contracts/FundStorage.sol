@@ -335,6 +335,13 @@ contract FundStorage is Permissionable, Initializable {
     _proposalMarkersList.remove(_marker);
   }
 
+  function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMarker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+    _proposalMarkersList.remove(_oldMarker);
+    _proposalMarkersList.addSilent(_newMarker);
+    _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
+  }
+
+
   function addFundRule(
     bytes32 _ipfsHash,
     string calldata _description

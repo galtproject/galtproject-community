@@ -41,23 +41,23 @@ contract('Proposal Markers Proposals', accounts => {
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });
 
-  describe('Create Member Identifier Proposal', () => {
+  describe('Add And Replace Proposal Marker', () => {
     it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let proposalMarkers = await this.fundStorageX.getProposalMarkers();
-      const prevLength = proposalMarkers.length;
+      let prevLength = proposalMarkers.length;
 
       const marker = getDestinationMarker(this.galtToken, 'transfer');
 
-      const calldata = this.fundStorageX.contract.methods
+      let calldata = this.fundStorageX.contract.methods
         .addProposalMarker(marker, proposalManager, 'name', 'description')
         .encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
         from: bob
       });
 
-      const proposalId = res.logs[0].args.proposalId.toString(10);
+      let proposalId = res.logs[0].args.proposalId.toString(10);
 
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
@@ -68,7 +68,32 @@ contract('Proposal Markers Proposals', accounts => {
       assert.equal(proposalMarkers.length, prevLength + 1);
       assert.equal(proposalMarkers[proposalMarkers.length - 1], marker);
 
-      const markerDetails = await this.fundStorageX.getProposalMarker(marker);
+      prevLength = proposalMarkers.length;
+
+      let markerDetails = await this.fundStorageX.getProposalMarker(marker);
+      assert.equal(markerDetails._proposalManager, proposalManager);
+      assert.equal(markerDetails._name, 'name');
+      assert.equal(markerDetails._description, 'description');
+
+      const newMarker = getDestinationMarker(this.spaceToken, 'transferFrom');
+
+      calldata = this.fundStorageX.contract.methods.replaceProposalMarker(marker, newMarker).encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+        from: bob
+      });
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+
+      proposalMarkers = await this.fundStorageX.getProposalMarkers();
+      assert.equal(proposalMarkers.length, prevLength);
+      assert.equal(proposalMarkers[proposalMarkers.length - 1], newMarker);
+
+      markerDetails = await this.fundStorageX.getProposalMarker(marker);
       assert.equal(markerDetails._proposalManager, proposalManager);
       assert.equal(markerDetails._name, 'name');
       assert.equal(markerDetails._description, 'description');
