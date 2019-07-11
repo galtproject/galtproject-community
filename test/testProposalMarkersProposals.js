@@ -3,7 +3,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, hex, getDestinationMarker } = require('./helpers');
+const { ether, initHelperWeb3, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
