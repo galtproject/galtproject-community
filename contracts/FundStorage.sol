@@ -37,7 +37,7 @@ contract FundStorage is Permissionable, Initializable {
 
   string public constant ROLE_CONFIG_MANAGER = "config_manager";
   string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
-  string public constant ROLE_PROPOSAL_MARKER_MANAGER = "marker_manager";
+  string public constant ROLE_PROPOSAL_MARKERS_MANAGER = "marker_manager";
   string public constant ROLE_NEW_MEMBER_MANAGER = "new_member_manager";
   string public constant ROLE_EXPEL_MEMBER_MANAGER = "expel_member_manager";
   string public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
@@ -320,7 +320,7 @@ contract FundStorage is Permissionable, Initializable {
     string calldata _description
   )
     external
-    onlyRole(ROLE_PROPOSAL_MARKER_MANAGER)
+    onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
   {
     _proposalMarkersList.addSilent(_marker);
 
@@ -331,7 +331,7 @@ contract FundStorage is Permissionable, Initializable {
     m.description = _description;
   }
 
-  function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKER_MANAGER) {
+  function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
     _proposalMarkersList.remove(_marker);
   }
 
@@ -551,6 +551,24 @@ contract FundStorage is Permissionable, Initializable {
     _description = c.description;
   }
 
+  function getProposalMarker(
+    bytes32 _marker
+  )
+    external
+    view
+    returns (
+      address _proposalManager,
+      string memory _name,
+      string memory _description
+    )
+  {
+    ProposalMarker storage m = _proposalMarkers[_marker];
+
+    _proposalManager = m.proposalManager;
+    _name = m.name;
+    _description = m.description;
+  }
+
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
     if (_expelledTokens[_spaceTokenId] == true) {
       return false;
@@ -577,6 +595,10 @@ contract FundStorage is Permissionable, Initializable {
   
   function getWhitelistedContracts() external view returns (address[] memory) {
     return _whiteListedContractsList.elements();
+  }
+
+  function getProposalMarkers() external view returns (bytes32[] memory) {
+    return _proposalMarkersList.elements();
   }
 
   function getActiveMultisigManagers() external view returns (address[] memory) {

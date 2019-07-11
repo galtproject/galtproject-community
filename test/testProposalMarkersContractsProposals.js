@@ -3,14 +3,14 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, hex } = require('./helpers');
+const { ether, initHelperWeb3, hex, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
-contract('Whitelisted Contracts Proposals', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, customContract] = accounts;
+contract('Proposal Markers Proposals', accounts => {
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, proposalManager] = accounts;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
@@ -45,11 +45,13 @@ contract('Whitelisted Contracts Proposals', accounts => {
     it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      let whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
-      const prevLength = whitelistedContracts.length;
+      let proposalMarkers = await this.fundStorageX.getProposalMarkers();
+      const prevLength = proposalMarkers.length;
+
+      const marker = getDestinationMarker(this.galtToken, 'transfer');
 
       const calldata = this.fundStorageX.contract.methods
-        .addWhiteListedContract(customContract, hex('custom'), hex('Qm1'), 'description')
+        .addProposalMarker(marker, proposalManager, 'name', 'description')
         .encodeABI();
       const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
         from: bob
@@ -62,14 +64,14 @@ contract('Whitelisted Contracts Proposals', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
-      whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
-      assert.equal(whitelistedContracts.length, prevLength + 1);
-      assert.equal(whitelistedContracts[whitelistedContracts.length - 1], customContract);
+      proposalMarkers = await this.fundStorageX.getProposalMarkers();
+      assert.equal(proposalMarkers.length, prevLength + 1);
+      assert.equal(proposalMarkers[proposalMarkers.length - 1], marker);
 
-      const customContractDetails = await this.fundStorageX.getWhiteListedContract(customContract);
-      assert.equal(customContractDetails._contractType, hex('custom'));
-      assert.equal(customContractDetails._description, 'description');
-      assert.equal(customContractDetails._abiIpfsHash, hex('Qm1'));
+      const markerDetails = await this.fundStorageX.getProposalMarker(marker);
+      assert.equal(markerDetails._proposalManager, proposalManager);
+      assert.equal(markerDetails._name, 'name');
+      assert.equal(markerDetails._description, 'description');
     });
   });
 });
