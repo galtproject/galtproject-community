@@ -126,7 +126,7 @@ contract('NewFundMemberProposal', accounts => {
 
       const calldata = this.fundStorageX.contract.methods.approveMint(token1).encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
-        from: unauthorized
+        from: bob
       });
 
       const { proposalId } = res.logs[0].args;

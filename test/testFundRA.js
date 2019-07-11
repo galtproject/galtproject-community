@@ -157,7 +157,7 @@ contract('FundRA', accounts => {
 
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
-        from: bob
+        from: alice
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
