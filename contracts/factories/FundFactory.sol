@@ -253,7 +253,7 @@ contract FundFactory is Ownable {
     c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.ROLE_OWNER_MANAGER());
 
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_WHITELIST_MANAGER());
-    _fundStorage.addWhiteListedProposalContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
+    _fundStorage.addWhiteListedContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_WHITELIST_MANAGER());
 
     c.currentStep = Step.FOURTH;

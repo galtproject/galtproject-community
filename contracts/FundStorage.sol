@@ -84,7 +84,7 @@ contract FundStorage is Permissionable, Initializable {
     uint256 createdAt;
   }
 
-  struct ProposalContract {
+  struct WhitelistedContract {
     bytes32 abiIpfsHash;
     bytes32 contractType;
     string description;
@@ -121,7 +121,7 @@ contract FundStorage is Permissionable, Initializable {
 
   GaltGlobalRegistry public ggr;
 
-  ArraySet.AddressSet private _whiteListedProposalContracts;
+  ArraySet.AddressSet private _whiteListedContractsList;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -144,7 +144,7 @@ contract FundStorage is Permissionable, Initializable {
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
   // contractAddress => details
-  mapping(address => ProposalContract) private _proposalContracts;
+  mapping(address => WhitelistedContract) private _whitelistedContracts;
   // role => address
   mapping(bytes32 => address) private _coreContracts;
   // spaceTokenId => details
@@ -281,7 +281,7 @@ contract FundStorage is Permissionable, Initializable {
     }
   }
 
-  function addWhiteListedProposalContract(
+  function addWhiteListedContract(
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
@@ -290,17 +290,17 @@ contract FundStorage is Permissionable, Initializable {
     external
     onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER)
   {
-    _whiteListedProposalContracts.addSilent(_contract);
+    _whiteListedContractsList.addSilent(_contract);
 
-    ProposalContract storage c = _proposalContracts[_contract];
+    WhitelistedContract storage c = _whitelistedContracts[_contract];
 
     c.contractType = _type;
     c.abiIpfsHash = _abiIpfsHash;
     c.description = _description;
   }
 
-  function removeWhiteListedProposalContract(address _contract) external onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER) {
-    _whiteListedProposalContracts.remove(_contract);
+  function removeWhiteListedContract(address _contract) external onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER) {
+    _whiteListedContractsList.remove(_contract);
   }
 
   function addFundRule(
@@ -501,7 +501,7 @@ contract FundStorage is Permissionable, Initializable {
     return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
   }
 
-  function getProposalContract(
+  function getWhiteListedContract(
     address _contract
   )
     external
@@ -512,7 +512,7 @@ contract FundStorage is Permissionable, Initializable {
       string memory description
     )
   {
-    ProposalContract storage c = _proposalContracts[_contract];
+    WhitelistedContract storage c = _whitelistedContracts[_contract];
 
     contractType = c.contractType;
     abiIpfsHash = c.abiIpfsHash;
