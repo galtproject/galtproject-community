@@ -92,8 +92,9 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   struct ProposalMarker {
-    string name;
+    bytes32 name;
     string description;
+    address destination;
     address proposalManager;
   }
 
@@ -314,19 +315,22 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   function addProposalMarker(
-    bytes32 _marker,
+    bytes4 _methodSignature,
+    address _destination,
     address _proposalManager,
-    string calldata _name,
+    bytes32 _name,
     string calldata _description
   )
     external
     onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
   {
+    bytes32 _marker = keccak256(abi.encode(_destination, _methodSignature));
     _proposalMarkersList.addSilent(_marker);
 
     ProposalMarker storage m = _proposalMarkers[_marker];
 
     m.proposalManager = _proposalManager;
+    m.destination = _destination;
     m.name = _name;
     m.description = _description;
   }
@@ -335,12 +339,13 @@ contract FundStorage is Permissionable, Initializable {
     _proposalMarkersList.remove(_marker);
   }
 
-  function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMarker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+  function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+    bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
     _proposalMarkersList.remove(_oldMarker);
     _proposalMarkersList.addSilent(_newMarker);
     _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
+    _proposalMarkers[_newMarker].destination = _newDestination;
   }
-
 
   function addFundRule(
     bytes32 _ipfsHash,
@@ -565,13 +570,15 @@ contract FundStorage is Permissionable, Initializable {
     view
     returns (
       address _proposalManager,
-      string memory _name,
+      address _destination,
+      bytes32 _name,
       string memory _description
     )
   {
     ProposalMarker storage m = _proposalMarkers[_marker];
 
     _proposalManager = m.proposalManager;
+    _destination = m.destination;
     _name = m.name;
     _description = m.description;
   }

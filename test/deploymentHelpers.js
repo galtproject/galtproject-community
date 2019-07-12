@@ -11,6 +11,10 @@ const FundMultiSig = artifacts.require('./FundMultiSig.sol');
 const MockFundRA = artifacts.require('./MockFundRA.sol');
 const FundProposalManager = artifacts.require('./FundProposalManager.sol');
 
+const { initHelperWeb3, getMethodSignature, hex } = require('./helpers');
+
+initHelperWeb3(FundProposalManager.web3);
+
 MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
@@ -36,7 +40,33 @@ async function deployFundFactory(ggrAddress, owner) {
     { from: owner }
   );
 
+  const markersSignatures = [];
+  const markersNames = [];
+  getBaseFundStorageMarkersNames().forEach(methodName => {
+    markersNames.push(hex(`storage.${methodName}`));
+    markersSignatures.push(getMethodSignature(FundStorage._json.abi, methodName));
+  });
+
+  await fundFactory.initialize(markersSignatures, markersNames, { from: owner });
+
   return fundFactory;
+}
+
+function getBaseFundStorageMarkersNames() {
+  return [
+    'addProposalMarker',
+    'removeProposalMarker',
+    'replaceProposalMarker',
+    'addFundRule',
+    'disableFundRule',
+    'addFeeContract',
+    'removeFeeContract',
+    'setMemberIdentification',
+    'setNameAndDescription',
+    'setPeriodLimit',
+    'setProposalThreshold',
+    'setConfigValue'
+  ];
 }
 
 /**
@@ -75,19 +105,19 @@ async function buildFund(
     from: creator,
     value
   });
-  // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
 
   // >>> Step #2
   res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
-  // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
-  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
   const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
@@ -132,11 +162,14 @@ async function buildFund(
 
   // >>> Step #4
   res = await factory.buildFourthStep(fundId, markers, values, { from: creator });
+  console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
-  await factory.buildFourthStepDone(fundId, name, description, { from: creator });
+  res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
+  console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
 
   // >>> Step #5
-  await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
+  res = await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
+  console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
 
   return {
     fundStorage,
@@ -149,5 +182,6 @@ async function buildFund(
 
 module.exports = {
   deployFundFactory,
-  buildFund
+  buildFund,
+  getBaseFundStorageMarkersNames
 };

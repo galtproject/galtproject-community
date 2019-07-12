@@ -21,3 +21,6 @@ check-size:
 
 ctest: compile test
 
+show-proposal-signatures: 
+	./node_modules/.bin/truffle exec scripts/showProposalSignatures.js --network test -c 
+
