@@ -33,7 +33,7 @@ contract('Proposal Markers Proposals', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
-    this.fundMultiSigX = fund.fundMultiSigX;
+    this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
 
@@ -110,9 +110,17 @@ contract('Proposal Markers Proposals', accounts => {
     it('proposal markers should be correct', async function() {
       const proposalMarkers = await this.fundStorageX.getProposalMarkers();
 
-      getBaseFundStorageMarkersNames().forEach((methodName, index) => {
-        console.log(`check ${methodName} marker`);
-        assert.equal(proposalMarkers[index], getDestinationMarker(this.fundStorageX, methodName));
+      getBaseFundStorageMarkersNames().forEach((fullMethodName, index) => {
+        console.log(`check ${fullMethodName} marker`);
+        const contractName = fullMethodName.split('.')[0];
+        const methodName = fullMethodName.split('.')[1];
+        let contract;
+        if (contractName === 'storage') {
+          contract = this.fundStorageX;
+        } else if (contractName === 'multiSig') {
+          contract = this.fundMultiSigX;
+        }
+        assert.equal(proposalMarkers[index], getDestinationMarker(contract, methodName));
       });
     });
   });

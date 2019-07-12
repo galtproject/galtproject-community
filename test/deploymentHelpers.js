@@ -42,9 +42,17 @@ async function deployFundFactory(ggrAddress, owner) {
 
   const markersSignatures = [];
   const markersNames = [];
-  getBaseFundStorageMarkersNames().forEach(methodName => {
-    markersNames.push(hex(`storage.${methodName}`));
-    markersSignatures.push(getMethodSignature(FundStorage._json.abi, methodName));
+  getBaseFundStorageMarkersNames().forEach(fullMethodName => {
+    const contractName = fullMethodName.split('.')[0];
+    const methodName = fullMethodName.split('.')[1];
+    let contract;
+    if (contractName === 'storage') {
+      contract = FundStorage;
+    } else if (contractName === 'multiSig') {
+      contract = FundMultiSig;
+    }
+    markersNames.push(hex(`${fullMethodName}`));
+    markersSignatures.push(getMethodSignature(contract._json.abi, methodName));
   });
 
   await fundFactory.initialize(markersSignatures, markersNames, { from: owner });
@@ -54,18 +62,19 @@ async function deployFundFactory(ggrAddress, owner) {
 
 function getBaseFundStorageMarkersNames() {
   return [
-    'addProposalMarker',
-    'removeProposalMarker',
-    'replaceProposalMarker',
-    'addFundRule',
-    'disableFundRule',
-    'addFeeContract',
-    'removeFeeContract',
-    'setMemberIdentification',
-    'setNameAndDescription',
-    'setPeriodLimit',
-    'setProposalThreshold',
-    'setConfigValue'
+    'storage.addProposalMarker',
+    'storage.removeProposalMarker',
+    'storage.replaceProposalMarker',
+    'storage.addFundRule',
+    'storage.disableFundRule',
+    'storage.addFeeContract',
+    'storage.removeFeeContract',
+    'storage.setMemberIdentification',
+    'storage.setNameAndDescription',
+    'storage.setPeriodLimit',
+    'storage.setProposalThreshold',
+    'storage.setConfigValue',
+    'multiSig.setOwners'
   ];
 }
 
