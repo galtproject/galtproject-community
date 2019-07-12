@@ -19,6 +19,31 @@ contract MockFundProposalManager is FundProposalManager {
   
   constructor(FundStorage _fundStorage) public FundProposalManager(_fundStorage) { }
 
+  function proposeHack(
+    address _destination,
+    uint256 _value,
+    bytes calldata _data,
+    string calldata _description
+  )
+    external
+  {
+    idCounter.increment();
+    uint256 id = idCounter.current();
+
+    Proposal storage p = proposals[id];
+    p.creator = msg.sender;
+    p.destination = _destination;
+    p.value = _value;
+    p.data = _data;
+    p.description = _description;
+    p.marker = fundStorage.getThresholdMarker(_destination, _data);
+
+    p.status = ProposalStatus.ACTIVE;
+    _onNewProposal(id);
+
+    emit NewProposal(id, msg.sender, p.marker);
+  }
+
   function ayeHack(uint256 _votingId, address _voter) external {
     _aye(_votingId, _voter);
   }
