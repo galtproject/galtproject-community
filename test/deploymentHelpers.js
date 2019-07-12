@@ -105,19 +105,19 @@ async function buildFund(
     from: creator,
     value
   });
-  console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
 
   // >>> Step #2
   res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
-  console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
-  console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
   const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
@@ -162,14 +162,14 @@ async function buildFund(
 
   // >>> Step #4
   res = await factory.buildFourthStep(fundId, markers, values, { from: creator });
-  console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
   res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
-  console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
+  // console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
 
   // >>> Step #5
   res = await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
-  console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
 
   return {
     fundStorage,

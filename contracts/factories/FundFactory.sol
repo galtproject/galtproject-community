@@ -307,7 +307,7 @@ contract FundFactory is Ownable {
 
     emit CreateFundFourthStepDone(_fundId);
   }
-  
+
   function buildFifthStep(bytes32 _fundId, uint256[] calldata _initialSpaceTokensToApprove) external {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
