@@ -337,7 +337,12 @@ contract FundFactory is Ownable {
 
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
     for (uint i = 0; i < proposalMarkersSignatures.length; i++) {
-      _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(_fundStorage), address(c.fundProposalManager), proposalMarkersNames[i], "");
+      if (bytes8(proposalMarkersNames[i]) == bytes8("storage.")) {
+        _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(_fundStorage), address(c.fundProposalManager), proposalMarkersNames[i], "");
+      }
+      if (bytes8(proposalMarkersNames[i]) == bytes8("multiSig")) {
+        _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(c.fundMultiSig), address(c.fundProposalManager), proposalMarkersNames[i], "");
+      }
     }
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
 
