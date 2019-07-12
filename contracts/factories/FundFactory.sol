@@ -115,6 +115,9 @@ contract FundFactory is Ownable {
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
 
+  bytes4[] internal proposalMarkersSignatures;
+  bytes32[] internal proposalMarkersNames;
+
   modifier onlyFeeCollector() {
     require(
       ggr.getACL().hasRole(msg.sender, ROLE_FEE_COLLECTOR),
@@ -144,13 +147,16 @@ contract FundFactory is Ownable {
 
   // All the arguments don't fit into a stack limit of constructor,
   // so there is one more method for initialization
-  function initialize()
+  function initialize(bytes4[] calldata _proposalMarkersSignatures, bytes32[] calldata _proposalMarkersNames)
     external
     onlyOwner
   {
     require(initialized == false);
 
     initialized = true;
+
+    proposalMarkersSignatures = _proposalMarkersSignatures;
+    proposalMarkersNames = _proposalMarkersNames;
   }
 
   function _acceptPayment() internal {
@@ -247,14 +253,15 @@ contract FundFactory is Ownable {
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
     _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_WHITELIST_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
     _fundStorage.addRoleTo(address(c.fundController), _fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER());
     _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION());
     c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.ROLE_OWNER_MANAGER());
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_WHITELIST_MANAGER());
-    _fundStorage.addWhiteListedProposalContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_WHITELIST_MANAGER());
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
+    _fundStorage.addWhiteListedContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
 
     c.currentStep = Step.FOURTH;
 
@@ -327,6 +334,12 @@ contract FundFactory is Ownable {
 
     _fundStorage.addRoleTo(msg.sender, _fundStorage.ROLE_ROLE_MANAGER());
     _fundMultiSig.addRoleTo(msg.sender, _fundMultiSig.ROLE_ROLE_MANAGER());
+
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
+    for (uint i = 0; i < proposalMarkersSignatures.length; i++) {
+      _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(_fundStorage), address(c.fundProposalManager), proposalMarkersNames[i], "");
+    }
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
 
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_ROLE_MANAGER());
     _fundMultiSig.removeRoleFrom(address(this), _fundMultiSig.ROLE_ROLE_MANAGER());

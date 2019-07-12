@@ -36,7 +36,8 @@ contract FundStorage is Permissionable, Initializable {
   uint256 public constant DECIMALS = 10**6;
 
   string public constant ROLE_CONFIG_MANAGER = "config_manager";
-  string public constant ROLE_PROPOSAL_WHITELIST_MANAGER = "wl_manager";
+  string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
+  string public constant ROLE_PROPOSAL_MARKERS_MANAGER = "marker_manager";
   string public constant ROLE_NEW_MEMBER_MANAGER = "new_member_manager";
   string public constant ROLE_EXPEL_MEMBER_MANAGER = "expel_member_manager";
   string public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
@@ -84,10 +85,17 @@ contract FundStorage is Permissionable, Initializable {
     uint256 createdAt;
   }
 
-  struct ProposalContract {
+  struct WhitelistedContract {
     bytes32 abiIpfsHash;
     bytes32 contractType;
     string description;
+  }
+
+  struct ProposalMarker {
+    bytes32 name;
+    string description;
+    address destination;
+    address proposalManager;
   }
 
   struct MultiSigManager {
@@ -121,7 +129,8 @@ contract FundStorage is Permissionable, Initializable {
 
   GaltGlobalRegistry public ggr;
 
-  ArraySet.AddressSet private _whiteListedProposalContracts;
+  ArraySet.AddressSet private _whiteListedContractsList;
+  ArraySet.Bytes32Set private _proposalMarkersList;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -144,7 +153,9 @@ contract FundStorage is Permissionable, Initializable {
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
   // contractAddress => details
-  mapping(address => ProposalContract) private _proposalContracts;
+  mapping(address => WhitelistedContract) private _whitelistedContracts;
+  // marker => details
+  mapping(bytes32 => ProposalMarker) private _proposalMarkers;
   // role => address
   mapping(bytes32 => address) private _coreContracts;
   // spaceTokenId => details
@@ -281,26 +292,59 @@ contract FundStorage is Permissionable, Initializable {
     }
   }
 
-  function addWhiteListedProposalContract(
+  function addWhiteListedContract(
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
     string calldata _description
   )
     external
-    onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER)
+    onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
   {
-    _whiteListedProposalContracts.addSilent(_contract);
+    _whiteListedContractsList.addSilent(_contract);
 
-    ProposalContract storage c = _proposalContracts[_contract];
+    WhitelistedContract storage c = _whitelistedContracts[_contract];
 
     c.contractType = _type;
     c.abiIpfsHash = _abiIpfsHash;
     c.description = _description;
   }
 
-  function removeWhiteListedProposalContract(address _contract) external onlyRole(ROLE_PROPOSAL_WHITELIST_MANAGER) {
-    _whiteListedProposalContracts.remove(_contract);
+  function removeWhiteListedContract(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
+    _whiteListedContractsList.remove(_contract);
+  }
+
+  function addProposalMarker(
+    bytes4 _methodSignature,
+    address _destination,
+    address _proposalManager,
+    bytes32 _name,
+    string calldata _description
+  )
+    external
+    onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
+  {
+    bytes32 _marker = keccak256(abi.encode(_destination, _methodSignature));
+    _proposalMarkersList.addSilent(_marker);
+
+    ProposalMarker storage m = _proposalMarkers[_marker];
+
+    m.proposalManager = _proposalManager;
+    m.destination = _destination;
+    m.name = _name;
+    m.description = _description;
+  }
+
+  function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+    _proposalMarkersList.remove(_marker);
+  }
+
+  function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+    bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
+    _proposalMarkersList.remove(_oldMarker);
+    _proposalMarkersList.addSilent(_newMarker);
+    _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
+    _proposalMarkers[_newMarker].destination = _newDestination;
   }
 
   function addFundRule(
@@ -501,22 +545,42 @@ contract FundStorage is Permissionable, Initializable {
     return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
   }
 
-  function getProposalContract(
+  function getWhiteListedContract(
     address _contract
   )
     external
     view
     returns (
-      bytes32 contractType,
-      bytes32 abiIpfsHash,
-      string memory description
+      bytes32 _contractType,
+      bytes32 _abiIpfsHash,
+      string memory _description
     )
   {
-    ProposalContract storage c = _proposalContracts[_contract];
+    WhitelistedContract storage c = _whitelistedContracts[_contract];
 
-    contractType = c.contractType;
-    abiIpfsHash = c.abiIpfsHash;
-    description = c.description;
+    _contractType = c.contractType;
+    _abiIpfsHash = c.abiIpfsHash;
+    _description = c.description;
+  }
+
+  function getProposalMarker(
+    bytes32 _marker
+  )
+    external
+    view
+    returns (
+      address _proposalManager,
+      address _destination,
+      bytes32 _name,
+      string memory _description
+    )
+  {
+    ProposalMarker storage m = _proposalMarkers[_marker];
+
+    _proposalManager = m.proposalManager;
+    _destination = m.destination;
+    _name = m.name;
+    _description = m.description;
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
@@ -541,6 +605,14 @@ contract FundStorage is Permissionable, Initializable {
     }
 
     return true;
+  }
+  
+  function getWhitelistedContracts() external view returns (address[] memory) {
+    return _whiteListedContractsList.elements();
+  }
+
+  function getProposalMarkers() external view returns (bytes32[] memory) {
+    return _proposalMarkersList.elements();
   }
 
   function getActiveMultisigManagers() external view returns (address[] memory) {
