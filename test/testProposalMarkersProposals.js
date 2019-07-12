@@ -107,7 +107,7 @@ contract('Proposal Markers Proposals', accounts => {
   });
 
   describe('Check deployed proposal markers', () => {
-    it.only('proposal markers should be correct', async function() {
+    it('proposal markers should be correct', async function() {
       const proposalMarkers = await this.fundStorageX.getProposalMarkers();
 
       getBaseFundStorageMarkersNames().forEach((fullMethodName, index) => {
