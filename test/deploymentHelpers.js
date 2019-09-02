@@ -11,6 +11,10 @@ const FundMultiSig = artifacts.require('./FundMultiSig.sol');
 const MockFundRA = artifacts.require('./MockFundRA.sol');
 const FundProposalManager = artifacts.require('./FundProposalManager.sol');
 
+const { initHelperWeb3, getMethodSignature, hex } = require('./helpers');
+
+initHelperWeb3(FundProposalManager.web3);
+
 MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
@@ -36,7 +40,42 @@ async function deployFundFactory(ggrAddress, owner) {
     { from: owner }
   );
 
+  const markersSignatures = [];
+  const markersNames = [];
+  getBaseFundStorageMarkersNames().forEach(fullMethodName => {
+    const contractName = fullMethodName.split('.')[0];
+    const methodName = fullMethodName.split('.')[1];
+    let contract;
+    if (contractName === 'storage') {
+      contract = FundStorage;
+    } else if (contractName === 'multiSig') {
+      contract = FundMultiSig;
+    }
+    markersNames.push(hex(`${fullMethodName}`));
+    markersSignatures.push(getMethodSignature(contract._json.abi, methodName));
+  });
+
+  await fundFactory.initialize(markersSignatures, markersNames, { from: owner });
+
   return fundFactory;
+}
+
+function getBaseFundStorageMarkersNames() {
+  return [
+    'storage.addProposalMarker',
+    'storage.removeProposalMarker',
+    'storage.replaceProposalMarker',
+    'storage.addFundRule',
+    'storage.disableFundRule',
+    'storage.addFeeContract',
+    'storage.removeFeeContract',
+    'storage.setMemberIdentification',
+    'storage.setNameAndDescription',
+    'storage.setPeriodLimit',
+    'storage.setProposalThreshold',
+    'storage.setConfigValue',
+    'multiSig.setOwners'
+  ];
 }
 
 /**
@@ -132,11 +171,14 @@ async function buildFund(
 
   // >>> Step #4
   res = await factory.buildFourthStep(fundId, markers, values, { from: creator });
+  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
-  await factory.buildFourthStepDone(fundId, name, description, { from: creator });
+  res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
+  // console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
 
   // >>> Step #5
-  await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
+  res = await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
+  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
 
   return {
     fundStorage,
@@ -149,5 +191,6 @@ async function buildFund(
 
 module.exports = {
   deployFundFactory,
-  buildFund
+  buildFund,
+  getBaseFundStorageMarkersNames
 };

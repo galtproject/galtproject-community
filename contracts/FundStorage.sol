@@ -35,22 +35,23 @@ contract FundStorage is Permissionable, Initializable {
   // 100% == 10**6
   uint256 public constant DECIMALS = 10**6;
 
-  string public constant DECREMENT_TOKEN_REPUTATION_ROLE = "decrement_token_reputation_role";
-
-  string public constant CONTRACT_CONFIG_MANAGER = "config_manager";
-  string public constant CONTRACT_NEW_MEMBER_MANAGER = "new_member_manager";
-  string public constant CONTRACT_EXPEL_MEMBER_MANAGER = "expel_member_manager";
-  string public constant CONTRACT_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
-  string public constant CONTRACT_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
-  string public constant CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
-  string public constant CONTRACT_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
-  string public constant CONTRACT_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
-  string public constant CONTRACT_FEE_MANAGER = "contract_fee_manager";
-  string public constant CONTRACT_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
-  string public constant CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
-  string public constant CONTRACT_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
-  string public constant CONTRACT_PROPOSAL_THRESHOLD_MANAGER = "contract_threshold_manager";
-  string public constant CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = "contract_default_threshold_manager";
+  string public constant ROLE_CONFIG_MANAGER = "config_manager";
+  string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
+  string public constant ROLE_PROPOSAL_MARKERS_MANAGER = "marker_manager";
+  string public constant ROLE_NEW_MEMBER_MANAGER = "new_member_manager";
+  string public constant ROLE_EXPEL_MEMBER_MANAGER = "expel_member_manager";
+  string public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
+  string public constant ROLE_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
+  string public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
+  string public constant ROLE_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
+  string public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
+  string public constant ROLE_FEE_MANAGER = "contract_fee_manager";
+  string public constant ROLE_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
+  string public constant ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
+  string public constant ROLE_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
+  string public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = "contract_threshold_manager";
+  string public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = "contract_default_threshold_manager";
+  string public constant ROLE_DECREMENT_TOKEN_REPUTATION = "decrement_token_reputation_role";
 
   bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
   bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
@@ -84,10 +85,17 @@ contract FundStorage is Permissionable, Initializable {
     uint256 createdAt;
   }
 
-  struct ProposalContract {
+  struct WhitelistedContract {
     bytes32 abiIpfsHash;
     bytes32 contractType;
     string description;
+  }
+
+  struct ProposalMarker {
+    bytes32 name;
+    string description;
+    address destination;
+    address proposalManager;
   }
 
   struct MultiSigManager {
@@ -121,6 +129,8 @@ contract FundStorage is Permissionable, Initializable {
 
   GaltGlobalRegistry public ggr;
 
+  ArraySet.AddressSet private _whiteListedContractsList;
+  ArraySet.Bytes32Set private _proposalMarkersList;
   ArraySet.Uint256Set private _activeFundRules;
   ArraySet.Bytes32Set private _configKeys;
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -143,7 +153,9 @@ contract FundStorage is Permissionable, Initializable {
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
   // contractAddress => details
-  mapping(address => ProposalContract) private _proposalContracts;
+  mapping(address => WhitelistedContract) private _whitelistedContracts;
+  // marker => details
+  mapping(bytes32 => ProposalMarker) private _proposalMarkers;
   // role => address
   mapping(bytes32 => address) private _coreContracts;
   // spaceTokenId => details
@@ -188,7 +200,7 @@ contract FundStorage is Permissionable, Initializable {
     initialTimestamp = block.timestamp;
     defaultProposalThreshold = _defaultProposalThreshold;
 
-    _addRoleTo(msg.sender, CONTRACT_PROPOSAL_THRESHOLD_MANAGER);
+    _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
   }
 
   function initialize(
@@ -206,7 +218,7 @@ contract FundStorage is Permissionable, Initializable {
     _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = address(_fundProposalManager);
   }
 
-  function setDefaultProposalThreshold(uint256 _value) external onlyRole(CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
+  function setDefaultProposalThreshold(uint256 _value) external onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
     require(_value > 0 && _value <= DECIMALS, "Invalid threshold value");
 
     defaultProposalThreshold = _value;
@@ -214,7 +226,7 @@ contract FundStorage is Permissionable, Initializable {
     emit SetDefaultProposalThreshold(_value);
   }
 
-  function setProposalThreshold(bytes32 _key, uint256 _value) external onlyRole(CONTRACT_PROPOSAL_THRESHOLD_MANAGER) {
+  function setProposalThreshold(bytes32 _key, uint256 _value) external onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER) {
     require(_value <= DECIMALS, "Invalid threshold value");
 
     thresholds[_key] = _value;
@@ -222,16 +234,16 @@ contract FundStorage is Permissionable, Initializable {
     emit SetProposalThreshold(_key, _value);
   }
 
-  function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(CONTRACT_CONFIG_MANAGER) {
+  function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
     _config[_key] = _value;
     _configKeys.addSilent(_key);
   }
 
-  function approveMint(uint256 _spaceTokenId) external onlyRole(CONTRACT_NEW_MEMBER_MANAGER) {
+  function approveMint(uint256 _spaceTokenId) external onlyRole(ROLE_NEW_MEMBER_MANAGER) {
     _mintApprovals[_spaceTokenId] = true;
   }
 
-  function expel(uint256 _spaceTokenId) external onlyRole(CONTRACT_EXPEL_MEMBER_MANAGER) {
+  function expel(uint256 _spaceTokenId) external onlyRole(ROLE_EXPEL_MEMBER_MANAGER) {
     require(_expelledTokens[_spaceTokenId] == false, "Already Expelled");
 
     address owner = ggr.getSpaceToken().ownerOf(_spaceTokenId);
@@ -248,7 +260,7 @@ contract FundStorage is Permissionable, Initializable {
     uint256 _amount
   )
     external
-    onlyRole(DECREMENT_TOKEN_REPUTATION_ROLE)
+    onlyRole(ROLE_DECREMENT_TOKEN_REPUTATION)
     returns (bool completelyBurned)
   {
     require(_amount > 0 && _amount <= _expelledTokenReputation[_spaceTokenId], "Invalid reputation amount");
@@ -258,7 +270,7 @@ contract FundStorage is Permissionable, Initializable {
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
-  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_INCREMENT_MANAGER) {
+  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_INCREMENT_MANAGER) {
     // TODO: track relation to proposal id
     _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
     _fines[_spaceTokenId].total += _amount;
@@ -267,7 +279,7 @@ contract FundStorage is Permissionable, Initializable {
     _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
   }
 
-  function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(CONTRACT_FINE_MEMBER_DECREMENT_MANAGER) {
+  function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_DECREMENT_MANAGER) {
     _fines[_spaceTokenId].tokenFines[_contract].amount -= _amount;
     _fines[_spaceTokenId].total -= _amount;
 
@@ -280,12 +292,67 @@ contract FundStorage is Permissionable, Initializable {
     }
   }
 
+  function addWhiteListedContract(
+    address _contract,
+    bytes32 _type,
+    bytes32 _abiIpfsHash,
+    string calldata _description
+  )
+    external
+    onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
+  {
+    _whiteListedContractsList.addSilent(_contract);
+
+    WhitelistedContract storage c = _whitelistedContracts[_contract];
+
+    c.contractType = _type;
+    c.abiIpfsHash = _abiIpfsHash;
+    c.description = _description;
+  }
+
+  function removeWhiteListedContract(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
+    _whiteListedContractsList.remove(_contract);
+  }
+
+  function addProposalMarker(
+    bytes4 _methodSignature,
+    address _destination,
+    address _proposalManager,
+    bytes32 _name,
+    string calldata _description
+  )
+    external
+    onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
+  {
+    bytes32 _marker = keccak256(abi.encode(_destination, _methodSignature));
+    _proposalMarkersList.addSilent(_marker);
+
+    ProposalMarker storage m = _proposalMarkers[_marker];
+
+    m.proposalManager = _proposalManager;
+    m.destination = _destination;
+    m.name = _name;
+    m.description = _description;
+  }
+
+  function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+    _proposalMarkersList.remove(_marker);
+  }
+
+  function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+    bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
+    _proposalMarkersList.remove(_oldMarker);
+    _proposalMarkersList.addSilent(_newMarker);
+    _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
+    _proposalMarkers[_newMarker].destination = _newDestination;
+  }
+
   function addFundRule(
     bytes32 _ipfsHash,
     string calldata _description
   )
     external
-    onlyRole(CONTRACT_ADD_FUND_RULE_MANAGER)
+    onlyRole(ROLE_ADD_FUND_RULE_MANAGER)
     returns (uint256)
   {
     uint256 _id = fundRuleCounter.current();
@@ -305,15 +372,15 @@ contract FundStorage is Permissionable, Initializable {
     return _id;
   }
 
-  function addFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
+  function addFeeContract(address _feeContract) external onlyRole(ROLE_FEE_MANAGER) {
     feeContracts.add(_feeContract);
   }
 
-  function removeFeeContract(address _feeContract) external onlyRole(CONTRACT_FEE_MANAGER) {
+  function removeFeeContract(address _feeContract) external onlyRole(ROLE_FEE_MANAGER) {
     feeContracts.remove(_feeContract);
   }
 
-  function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(CONTRACT_MEMBER_IDENTIFICATION_MANAGER) {
+  function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(ROLE_MEMBER_IDENTIFICATION_MANAGER) {
     _membersIdentification[_member] = _identificationHash;
   }
 
@@ -330,7 +397,7 @@ contract FundStorage is Permissionable, Initializable {
     _lockedSpaceTokens[_spaceTokenId] = false;
   }
 
-  function disableFundRule(uint256 _id) external onlyRole(CONTRACT_DEACTIVATE_FUND_RULE_MANAGER) {
+  function disableFundRule(uint256 _id) external onlyRole(ROLE_DEACTIVATE_FUND_RULE_MANAGER) {
     fundRules[_id].active = false;
 
     _activeFundRules.remove(_id);
@@ -341,7 +408,7 @@ contract FundStorage is Permissionable, Initializable {
     string calldata _description
   )
     external
-    onlyRole(CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER)
+    onlyRole(ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER)
   {
     name = _name;
     description = _description;
@@ -354,7 +421,7 @@ contract FundStorage is Permissionable, Initializable {
     bytes32[] calldata _documents
   )
     external
-    onlyRole(CONTRACT_MEMBER_DETAILS_MANAGER)
+    onlyRole(ROLE_MEMBER_DETAILS_MANAGER)
   {
     MultiSigManager storage m = _multiSigManagers[_manager];
 
@@ -375,7 +442,7 @@ contract FundStorage is Permissionable, Initializable {
     uint256 _amount
   )
     external
-    onlyRole(CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
+    onlyRole(ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
   {
     _periodLimits[_erc20Contract].active = _active;
     _periodLimits[_erc20Contract].amount = _amount;
@@ -474,22 +541,46 @@ contract FundStorage is Permissionable, Initializable {
     return FundController(_coreContracts[CONTRACT_CORE_CONTROLLER]);
   }
 
-  function getProposalContract(
+  function getProposalManager() public view returns (FundProposalManager) {
+    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
+  }
+
+  function getWhiteListedContract(
     address _contract
   )
     external
     view
     returns (
-      bytes32 contractType,
-      bytes32 abiIpfsHash,
-      string memory description
+      bytes32 _contractType,
+      bytes32 _abiIpfsHash,
+      string memory _description
     )
   {
-    ProposalContract storage c = _proposalContracts[_contract];
+    WhitelistedContract storage c = _whitelistedContracts[_contract];
 
-    contractType = c.contractType;
-    abiIpfsHash = c.abiIpfsHash;
-    description = c.description;
+    _contractType = c.contractType;
+    _abiIpfsHash = c.abiIpfsHash;
+    _description = c.description;
+  }
+
+  function getProposalMarker(
+    bytes32 _marker
+  )
+    external
+    view
+    returns (
+      address _proposalManager,
+      address _destination,
+      bytes32 _name,
+      string memory _description
+    )
+  {
+    ProposalMarker storage m = _proposalMarkers[_marker];
+
+    _proposalManager = m.proposalManager;
+    _destination = m.destination;
+    _name = m.name;
+    _description = m.description;
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
@@ -514,6 +605,14 @@ contract FundStorage is Permissionable, Initializable {
     }
 
     return true;
+  }
+  
+  function getWhitelistedContracts() external view returns (address[] memory) {
+    return _whiteListedContractsList.elements();
+  }
+
+  function getProposalMarkers() external view returns (bytes32[] memory) {
+    return _proposalMarkersList.elements();
   }
 
   function getActiveMultisigManagers() external view returns (address[] memory) {

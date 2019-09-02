@@ -115,6 +115,9 @@ contract FundFactory is Ownable {
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
 
+  bytes4[] internal proposalMarkersSignatures;
+  bytes32[] internal proposalMarkersNames;
+
   modifier onlyFeeCollector() {
     require(
       ggr.getACL().hasRole(msg.sender, ROLE_FEE_COLLECTOR),
@@ -144,13 +147,16 @@ contract FundFactory is Ownable {
 
   // All the arguments don't fit into a stack limit of constructor,
   // so there is one more method for initialization
-  function initialize()
+  function initialize(bytes4[] calldata _proposalMarkersSignatures, bytes32[] calldata _proposalMarkersNames)
     external
     onlyOwner
   {
     require(initialized == false);
 
     initialized = true;
+
+    proposalMarkersSignatures = _proposalMarkersSignatures;
+    proposalMarkersNames = _proposalMarkersNames;
   }
 
   function _acceptPayment() internal {
@@ -233,24 +239,29 @@ contract FundFactory is Ownable {
 
     address _fundProposalManager = address(c.fundProposalManager);
 
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_CONFIG_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_EXPEL_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_FINE_MEMBER_INCREMENT_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_ADD_FUND_RULE_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_DEACTIVATE_FUND_RULE_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_FEE_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_MEMBER_DETAILS_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_MEMBER_IDENTIFICATION_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_PROPOSAL_THRESHOLD_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.CONTRACT_DEFAULT_PROPOSAL_THRESHOLD_MANAGER());
-    _fundStorage.addRoleTo(address(c.fundController), _fundStorage.CONTRACT_FINE_MEMBER_DECREMENT_MANAGER());
-    _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.DECREMENT_TOKEN_REPUTATION_ROLE());
-    c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.OWNER_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_CONFIG_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_NEW_MEMBER_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_EXPEL_MEMBER_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_ADD_FUND_RULE_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_FEE_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MEMBER_DETAILS_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
+    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
+    _fundStorage.addRoleTo(address(c.fundController), _fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER());
+    _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION());
+    c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.ROLE_OWNER_MANAGER());
 
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
+    _fundStorage.addWhiteListedContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
 
     c.currentStep = Step.FOURTH;
 
@@ -270,13 +281,13 @@ contract FundFactory is Ownable {
     require(len == _thresholdKeys.length, "Thresholds key and value array lengths mismatch");
     FundStorage _fundStorage = c.fundStorage;
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_PROPOSAL_THRESHOLD_MANAGER());
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
 
     for (uint256 i = 0; i < len; i++) {
       _fundStorage.setProposalThreshold(_thresholdKeys[i], _thresholdValues[i]);
     }
 
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_PROPOSAL_THRESHOLD_MANAGER());
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
 
     emit CreateFundFourthStep(_fundId, len);
   }
@@ -288,9 +299,9 @@ contract FundFactory is Ownable {
 
     FundStorage _fundStorage = c.fundStorage;
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
     _fundStorage.setNameAndDescription(_name, _description);
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
 
     c.currentStep = Step.FIFTH;
 
@@ -306,13 +317,13 @@ contract FundFactory is Ownable {
     FundMultiSig _fundMultiSig = c.fundMultiSig;
     uint256 len = _initialSpaceTokensToApprove.length;
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_NEW_MEMBER_MANAGER());
 
     for (uint i = 0; i < len; i++) {
       _fundStorage.approveMint(_initialSpaceTokensToApprove[i]);
     }
 
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.CONTRACT_NEW_MEMBER_MANAGER());
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_NEW_MEMBER_MANAGER());
 
     _fundStorage.initialize(
       c.fundMultiSig,
@@ -323,6 +334,17 @@ contract FundFactory is Ownable {
 
     _fundStorage.addRoleTo(msg.sender, _fundStorage.ROLE_ROLE_MANAGER());
     _fundMultiSig.addRoleTo(msg.sender, _fundMultiSig.ROLE_ROLE_MANAGER());
+
+    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
+    for (uint i = 0; i < proposalMarkersSignatures.length; i++) {
+      if (bytes8(proposalMarkersNames[i]) == bytes8("storage.")) {
+        _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(_fundStorage), address(c.fundProposalManager), proposalMarkersNames[i], "");
+      }
+      if (bytes8(proposalMarkersNames[i]) == bytes8("multiSig")) {
+        _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(c.fundMultiSig), address(c.fundProposalManager), proposalMarkersNames[i], "");
+      }
+    }
+    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
 
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_ROLE_MANAGER());
     _fundMultiSig.removeRoleFrom(address(this), _fundMultiSig.ROLE_ROLE_MANAGER());

@@ -136,7 +136,7 @@ contract('ExpelFundMemberProposal', accounts => {
       // EXPEL
       const proposalData = this.fundStorageX.contract.methods.expel(token1).encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: unauthorized
+        from: charlie
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);

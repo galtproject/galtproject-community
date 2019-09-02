@@ -170,10 +170,10 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
   describe('not limits tests, but multisig', async function() {
     it("should revert if required doesn't match requirements", async function() {
-      await this.fundStorageX.addRoleTo(eve, await this.fundStorageX.CONTRACT_MEMBER_DETAILS_MANAGER(), {
+      await this.fundStorageX.addRoleTo(eve, await this.fundStorageX.ROLE_MEMBER_DETAILS_MANAGER(), {
         from: alice
       });
-      await this.fundMultiSigX.addRoleTo(eve, await this.fundMultiSigX.OWNER_MANAGER(), { from: alice });
+      await this.fundMultiSigX.addRoleTo(eve, await this.fundMultiSigX.ROLE_OWNER_MANAGER(), { from: alice });
 
       await this.fundStorageX.setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')], { from: eve });
       await this.fundStorageX.setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')], { from: eve });

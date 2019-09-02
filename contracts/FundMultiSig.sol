@@ -21,7 +21,7 @@ import "./FundStorage.sol";
 contract FundMultiSig is MultiSigWallet, Permissionable {
   event NewOwnerSet(uint256 required, uint256 total);
 
-  string public constant OWNER_MANAGER = "owner_manager";
+  string public constant ROLE_OWNER_MANAGER = "owner_manager";
   address public constant ETH_CONTRACT_ADDRESS = address(1);
 
   FundStorage fundStorage;
@@ -48,7 +48,7 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
   function replaceOwner(address owner, address newOwner) public forbidden {}
   function changeRequirement(uint _required) public forbidden {}
 
-  function setOwners(address[] calldata _newOwners, uint256 _required) external onlyRole(OWNER_MANAGER) {
+  function setOwners(address[] calldata _newOwners, uint256 _required) external onlyRole(ROLE_OWNER_MANAGER) {
     require(_required <= _newOwners.length, "Required too big");
     require(_required > 0, "Required too low");
     require(fundStorage.areMembersValid(_newOwners), "Not all members are valid");
