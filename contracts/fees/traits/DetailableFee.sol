@@ -11,7 +11,7 @@
  * [Basic Agreement](http://cyb.ai/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS:ipfs)).
  */
 
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 contract DetailableFee {
 
@@ -24,7 +24,7 @@ contract DetailableFee {
   bool public detailsSet;
 
   constructor() public {
-    
+
   }
 
   function setDetails(
@@ -32,8 +32,8 @@ contract DetailableFee {
     string memory _title,
     string memory _description,
     string memory _docLink
-  ) 
-    public 
+  )
+    public
   {
     require(!detailsSet, "Details already set");
     //TODO: maybe use ownable for restrict setDetails only for owners?
@@ -51,7 +51,7 @@ contract DetailableFee {
     string memory _title,
     string memory _description,
     string memory _docLink
-  ) 
+  )
   {
 
     return (
