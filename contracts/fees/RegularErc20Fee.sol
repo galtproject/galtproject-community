@@ -37,7 +37,10 @@ contract RegularErc20Fee is AbstractRegularFee, DetailableFee {
 
     _pay(_spaceTokenId, _amount);
 
-    erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), _amount);
+    require(
+      erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), _amount) == true,
+      "Failed to transfer ERC20 tokens"
+    );
   }
 
   function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external payable {

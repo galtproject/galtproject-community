@@ -56,7 +56,10 @@ contract FundController {
     require(expectedPayment >= amount, "Amount for transfer exceeds fine value");
 
     if (_currency == Currency.ERC20) {
-      IERC20(erc20Contract).transferFrom(msg.sender, address(fundStorage.getMultiSig()), amount);
+      require(
+        IERC20(erc20Contract).transferFrom(msg.sender, address(fundStorage.getMultiSig()), amount) == true,
+        "Failed to transfer ERC20 tokens"
+      );
     } else {
       address(fundStorage.getMultiSig()).transfer(amount);
     }
