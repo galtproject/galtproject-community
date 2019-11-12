@@ -16,13 +16,14 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-import "./FundMultiSig.sol";
-import "./FundController.sol";
-import "./interfaces/IFundRA.sol";
-import "./FundProposalManager.sol";
+import "../common/FundMultiSig.sol";
+import "../common/FundProposalManager.sol";
+//import "../FundController.sol";
+import "../common/interfaces/IFundRA.sol";
+import "./interfaces/IAbstractFundStorage.sol";
 
 
-contract FundStorage is Permissionable, Initializable {
+contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializable {
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
@@ -123,47 +124,32 @@ contract FundStorage is Permissionable, Initializable {
   uint256 public periodLength;
   uint256 public defaultProposalThreshold;
 
-  GaltGlobalRegistry public ggr;
-
-  ArraySet.AddressSet private _whiteListedContractsList;
-  ArraySet.Bytes32Set private _proposalMarkersList;
-  ArraySet.Uint256Set private _activeFundRules;
-  ArraySet.Bytes32Set private _configKeys;
-  ArraySet.Uint256Set private _finesSpaceTokens;
-  ArraySet.AddressSet private feeContracts;
+  ArraySet.AddressSet internal _whiteListedContractsList;
+  ArraySet.Bytes32Set internal _proposalMarkersList;
+  ArraySet.Uint256Set internal _activeFundRules;
+  ArraySet.Bytes32Set internal _configKeys;
+  ArraySet.AddressSet internal feeContracts;
 
   Counters.Counter internal fundRuleCounter;
 
-  mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
+  ArraySet.AddressSet internal _activeMultisigManagers;
+  ArraySet.AddressSet internal _activePeriodLimitsContracts;
 
-  ArraySet.AddressSet private _activeMultisigManagers;
-  ArraySet.AddressSet private _activePeriodLimitsContracts;
-
-  mapping(bytes32 => bytes32) private _config;
-  // spaceTokenId => isMintApproved
-  mapping(uint256 => bool) private _mintApprovals;
-  // spaceTokenId => isExpelled
-  mapping(uint256 => bool) private _expelledTokens;
-  // spaceTokenId => availableAmountToBurn
-  mapping(uint256 => uint256) private _expelledTokenReputation;
-  // spaceTokenId => isLocked
-  mapping(uint256 => bool) private _lockedSpaceTokens;
+  mapping(bytes32 => bytes32) internal _config;
   // contractAddress => details
-  mapping(address => WhitelistedContract) private _whitelistedContracts;
+  mapping(address => WhitelistedContract) internal _whitelistedContracts;
   // marker => details
-  mapping(bytes32 => ProposalMarker) private _proposalMarkers;
+  mapping(bytes32 => ProposalMarker) internal _proposalMarkers;
   // role => address
-  mapping(bytes32 => address) private _coreContracts;
-  // spaceTokenId => details
-  mapping(uint256 => MemberFines) private _fines;
+  mapping(bytes32 => address) internal _coreContracts;
   // manager => details
-  mapping(address => MultiSigManager) private _multiSigManagers;
+  mapping(address => MultiSigManager) internal _multiSigManagers;
   // erc20Contract => details
-  mapping(address => PeriodLimit) private _periodLimits;
+  mapping(address => PeriodLimit) internal _periodLimits;
   // periodId => (erc20Contract => runningTotal)
-  mapping(uint256 => mapping(address => uint256)) private _periodRunningTotals;
+  mapping(uint256 => mapping(address => uint256)) internal _periodRunningTotals;
   // member => identification hash
-  mapping(address => bytes32) private _membersIdentification;
+  mapping(address => bytes32) internal _membersIdentification;
 
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
@@ -183,13 +169,10 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   constructor (
-    GaltGlobalRegistry _ggr,
     bool _isPrivate,
     uint256 _defaultProposalThreshold,
     uint256 _periodLength
   ) public {
-    ggr = _ggr;
-
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
 
     periodLength = _periodLength;
@@ -200,18 +183,18 @@ contract FundStorage is Permissionable, Initializable {
   }
 
   function initialize(
-    FundMultiSig _fundMultiSig,
-    FundController _fundController,
-    IFundRA _fundRA,
-    FundProposalManager _fundProposalManager
+    address _fundMultiSig,
+    address _fundController,
+    address _fundRA,
+    address _fundProposalManager
   )
     external
     isInitializer
   {
-    _coreContracts[CONTRACT_CORE_MULTISIG] = address(_fundMultiSig);
-    _coreContracts[CONTRACT_CORE_CONTROLLER] = address(_fundController);
-    _coreContracts[CONTRACT_CORE_RA] = address(_fundRA);
-    _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = address(_fundProposalManager);
+    _coreContracts[CONTRACT_CORE_MULTISIG] = _fundMultiSig;
+    _coreContracts[CONTRACT_CORE_CONTROLLER] = _fundController;
+    _coreContracts[CONTRACT_CORE_RA] = _fundRA;
+    _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
   }
 
   function setDefaultProposalThreshold(uint256 _value) external onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
@@ -233,59 +216,6 @@ contract FundStorage is Permissionable, Initializable {
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
     _config[_key] = _value;
     _configKeys.addSilent(_key);
-  }
-
-  function approveMint(uint256 _spaceTokenId) external onlyRole(ROLE_NEW_MEMBER_MANAGER) {
-    _mintApprovals[_spaceTokenId] = true;
-  }
-
-  function expel(uint256 _spaceTokenId) external onlyRole(ROLE_EXPEL_MEMBER_MANAGER) {
-    require(_expelledTokens[_spaceTokenId] == false, "Already Expelled");
-
-    address owner = ggr.getSpaceToken().ownerOf(_spaceTokenId);
-    uint256 amount = ISpaceLocker(owner).reputation();
-
-    assert(amount > 0);
-
-    _expelledTokens[_spaceTokenId] = true;
-    _expelledTokenReputation[_spaceTokenId] = amount;
-  }
-
-  function decrementExpelledTokenReputation(
-    uint256 _spaceTokenId,
-    uint256 _amount
-  )
-    external
-    onlyRole(ROLE_DECREMENT_TOKEN_REPUTATION)
-    returns (bool completelyBurned)
-  {
-    require(_amount > 0 && _amount <= _expelledTokenReputation[_spaceTokenId], "Invalid reputation amount");
-
-    _expelledTokenReputation[_spaceTokenId] = _expelledTokenReputation[_spaceTokenId] - _amount;
-
-    completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
-  }
-
-  function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_INCREMENT_MANAGER) {
-    // TODO: track relation to proposal id
-    _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
-    _fines[_spaceTokenId].total += _amount;
-
-    _finesSpaceTokens.addSilent(_spaceTokenId);
-    _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
-  }
-
-  function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_DECREMENT_MANAGER) {
-    _fines[_spaceTokenId].tokenFines[_contract].amount -= _amount;
-    _fines[_spaceTokenId].total -= _amount;
-
-    if (_fines[_spaceTokenId].tokenFines[_contract].amount == 0) {
-      _finesContractsBySpaceToken[_spaceTokenId].remove(_contract);
-    }
-
-    if (_fines[_spaceTokenId].total == 0) {
-      _finesSpaceTokens.remove(_spaceTokenId);
-    }
   }
 
   function addWhiteListedContract(
@@ -384,15 +314,6 @@ contract FundStorage is Permissionable, Initializable {
     return _membersIdentification[_member];
   }
 
-  function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
-    _lockedSpaceTokens[_spaceTokenId] = true;
-  }
-
-  //TODO: possibility to unlock from removed contracts
-  function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
-    _lockedSpaceTokens[_spaceTokenId] = false;
-  }
-
   function disableFundRule(uint256 _id) external onlyRole(ROLE_DEACTIVATE_FUND_RULE_MANAGER) {
     fundRules[_id].active = false;
 
@@ -484,18 +405,6 @@ contract FundStorage is Permissionable, Initializable {
     return _config[_key];
   }
 
-  function getFineAmount(uint256 _spaceTokenId, address _erc20Contract) external view returns (uint256) {
-    return _fines[_spaceTokenId].tokenFines[_erc20Contract].amount;
-  }
-
-  function getTotalFineAmount(uint256 _spaceTokenId) external view returns (uint256) {
-    return _fines[_spaceTokenId].total;
-  }
-
-  function getExpelledToken(uint256 _spaceTokenId) external view returns (bool isExpelled, uint256 amount) {
-    return (_expelledTokens[_spaceTokenId], _expelledTokenReputation[_spaceTokenId]);
-  }
-
   function getConfigKeys() external view returns (bytes32[] memory) {
     return _configKeys.elements();
   }
@@ -508,22 +417,6 @@ contract FundStorage is Permissionable, Initializable {
     return _activeFundRules.size();
   }
 
-  function getFineSpaceTokens() external view returns (uint256[] memory) {
-    return _finesSpaceTokens.elements();
-  }
-
-  function getFineSpaceTokensCount() external view returns (uint256) {
-    return _finesSpaceTokens.size();
-  }
-
-  function getFineContractsBySpaceToken(uint256 _spaceTokenId) external view returns (address[] memory) {
-    return _finesContractsBySpaceToken[_spaceTokenId].elements();
-  }
-
-  function getFineContractsBySpaceTokenCount(uint256 _spaceTokenId) external view returns (uint256) {
-    return _finesContractsBySpaceToken[_spaceTokenId].size();
-  }
-
   function getMultiSig() public view returns (FundMultiSig) {
     address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
     return FundMultiSig(ms);
@@ -533,10 +426,10 @@ contract FundStorage is Permissionable, Initializable {
     return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
   }
 
-  function getController() public view returns (FundController) {
-    return FundController(_coreContracts[CONTRACT_CORE_CONTROLLER]);
-  }
-
+//  function getController() public view returns (FundController) {
+//    return FundController(_coreContracts[CONTRACT_CORE_CONTROLLER]);
+//  }
+//
   function getProposalManager() public view returns (FundProposalManager) {
     return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
   }
@@ -577,18 +470,6 @@ contract FundStorage is Permissionable, Initializable {
     _destination = m.destination;
     _name = m.name;
     _description = m.description;
-  }
-
-  function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
-    if (_expelledTokens[_spaceTokenId] == true) {
-      return false;
-    }
-
-    if (uint256(_config[IS_PRIVATE]) == uint256(1)) {
-      return _mintApprovals[_spaceTokenId];
-    } else {
-      return true;
-    }
   }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
@@ -633,10 +514,6 @@ contract FundStorage is Permissionable, Initializable {
 
   function getFeeContractCount() external view returns (uint256) {
     return feeContracts.size();
-  }
-
-  function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {
-    return _lockedSpaceTokens[_spaceTokenId];
   }
 
   function getMultisigManager(address _manager) external view returns (

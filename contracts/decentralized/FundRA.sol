@@ -10,15 +10,12 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/components/SpaceInputRA.sol";
-import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
 import "./FundStorage.sol";
-import "./interfaces/IFundRA.sol";
+import "../common/interfaces/IFundRA.sol";
 
 
 contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {

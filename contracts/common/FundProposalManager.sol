@@ -12,8 +12,7 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/drafts/Counters.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
-import "./FundStorage.sol";
-import "./interfaces/IFundRA.sol";
+import "../abstract/interfaces/IAbstractFundStorage.sol";
 
 
 contract FundProposalManager {
@@ -50,7 +49,7 @@ contract FundProposalManager {
     bytes response;
   }
 
-  FundStorage fundStorage;
+  IAbstractFundStorage public fundStorage;
   Counters.Counter internal idCounter;
 
   mapping(uint256 => Proposal) public proposals;
@@ -84,7 +83,7 @@ contract FundProposalManager {
     _;
   }
 
-  constructor(FundStorage _fundStorage) public {
+  constructor(IAbstractFundStorage _fundStorage) public {
     fundStorage = _fundStorage;
   }
 

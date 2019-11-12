@@ -11,7 +11,7 @@ pragma solidity 0.5.10;
 
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/multisig/contracts/MultiSigWallet.sol";
-import "./FundStorage.sol";
+import "../abstract/interfaces/IAbstractFundStorage.sol";
 
 
 contract FundMultiSig is MultiSigWallet, Permissionable {
@@ -20,13 +20,12 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
   string public constant ROLE_OWNER_MANAGER = "owner_manager";
   address public constant ETH_CONTRACT_ADDRESS = address(1);
 
-  FundStorage fundStorage;
-
+  IAbstractFundStorage public fundStorage;
 
   constructor(
     address[] memory _initialOwners,
     uint256 _required,
-    FundStorage _fundStorage
+    IAbstractFundStorage _fundStorage
   )
     public
     MultiSigWallet(_initialOwners, _required)

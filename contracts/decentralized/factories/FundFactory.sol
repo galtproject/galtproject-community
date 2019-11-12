@@ -14,13 +14,14 @@ import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 import "../FundStorage.sol";
 import "../FundController.sol";
-import "../FundProposalManager.sol";
+import "../../common/FundProposalManager.sol";
 
 import "./FundRAFactory.sol";
 import "./FundStorageFactory.sol";
-import "./FundMultiSigFactory.sol";
 import "./FundControllerFactory.sol";
-import "./FundProposalManagerFactory.sol";
+import "../../common/factories/FundMultiSigFactory.sol";
+import "../../common/factories/FundProposalManagerFactory.sol";
+
 
 contract FundFactory is Ownable {
   // Pre-defined proposal contracts
@@ -322,10 +323,10 @@ contract FundFactory is Ownable {
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_NEW_MEMBER_MANAGER());
 
     _fundStorage.initialize(
-      c.fundMultiSig,
-      c.fundController,
-      c.fundRA,
-      c.fundProposalManager
+      address(c.fundMultiSig),
+      address(c.fundController),
+      address(c.fundRA),
+      address(c.fundProposalManager)
     );
 
     _fundStorage.addRoleTo(msg.sender, _fundStorage.ROLE_ROLE_MANAGER());

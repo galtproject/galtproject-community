@@ -11,14 +11,10 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "@galtproject/libs/contracts/collections/ArraySet.sol";
-import "./FundMultiSig.sol";
 import "./FundStorage.sol";
 
 
 contract FundController {
-  using ArraySet for ArraySet.AddressSet;
-
   enum Currency {
     ETH,
     ERC20
@@ -26,7 +22,7 @@ contract FundController {
 
   address public constant ETH_CONTRACT = address(1);
 
-  FundStorage fundStorage;
+  FundStorage public fundStorage;
 
   constructor (
     FundStorage _fundStorage

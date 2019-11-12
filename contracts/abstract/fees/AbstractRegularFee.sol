@@ -11,14 +11,12 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "../FundStorage.sol";
 import "./interfaces/IRegularFee.sol";
+import "./traits/DetailableFee.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
-contract AbstractRegularFee is IRegularFee {
-  FundStorage public fundStorage;
-
+contract AbstractRegularFee is DetailableFee, IRegularFee {
   uint256 public initialTimestamp;
   // Period in seconds
   uint256 public periodLength;
@@ -27,13 +25,7 @@ contract AbstractRegularFee is IRegularFee {
   // Amount of funds to pay in a single period
   uint256 public rate;
 
-  // tokenId => timestamp
-  mapping(uint256 => uint256) public paidUntil;
-  // tokenId => amount
-  mapping(uint256 => uint256) public totalPaid;
-
   constructor (
-    FundStorage _fundStorage,
     uint256 _initialTimestamp,
     uint256 _period,
     uint256 _rate
@@ -43,48 +35,10 @@ contract AbstractRegularFee is IRegularFee {
     require(_rate > 0, "Rate is 0");
 
     initialTimestamp = _initialTimestamp;
-    fundStorage = _fundStorage;
     periodLength = _period;
     rate = _rate;
     // 1 month (30 days)
     prePaidPeriodGap = 2592000;
-  }
-
-  function lockSpaceToken(uint256 _spaceTokenId) public {
-    require(paidUntil[_spaceTokenId] < getNextPeriodTimestamp(), "paidUntil too small");
-    fundStorage.lockSpaceToken(_spaceTokenId);
-  }
-
-  function lockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
-    for (uint i = 0; i < _spaceTokensIds.length; i++) {
-      lockSpaceToken(_spaceTokensIds[i]);
-    }
-  }
-
-  function unlockSpaceToken(uint256 _spaceTokenId) public {
-    require(paidUntil[_spaceTokenId] >= getNextPeriodTimestamp(), "paidUntil too big");
-    fundStorage.unlockSpaceToken(_spaceTokenId);
-  }
-
-  function unlockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
-    for (uint i = 0; i < _spaceTokensIds.length; i++) {
-      unlockSpaceToken(_spaceTokensIds[i]);
-    }
-  }
-
-  function _pay(uint256 _spaceTokenId, uint256 _amount) internal {
-    uint256 currentPaidUntil = paidUntil[_spaceTokenId];
-    if (currentPaidUntil == 0) {
-      currentPaidUntil = getCurrentPeriodTimestamp();
-    }
-
-    uint256 newPaidUntil = currentPaidUntil + (_amount * periodLength / rate);
-    uint256 permittedPaidUntil = getNextPeriodTimestamp() + prePaidPeriodGap;
-
-    require(newPaidUntil <= permittedPaidUntil, "Payment exceeds permitted pre-payment timestamp");
-
-    paidUntil[_spaceTokenId] = newPaidUntil;
-    totalPaid[_spaceTokenId] += _amount;
   }
 
   // GETTERS

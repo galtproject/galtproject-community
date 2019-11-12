@@ -9,6 +9,7 @@
 
 pragma solidity 0.5.10;
 
+
 contract DetailableFee {
 
   // "regular_erc20" or "regular_eth"

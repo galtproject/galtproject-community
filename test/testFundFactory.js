@@ -1,6 +1,6 @@
 const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
+const MockSpaceGeoDataRegistry = artifacts.require('./MockSpaceGeoDataRegistry.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
@@ -23,7 +23,7 @@ contract('FundFactory', accounts => {
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.acl = await ACL.new({ from: coreTeam });
-    this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
+    this.spaceGeoDataRegistry = await MockSpaceGeoDataRegistry.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new(this.ggr.address, 'Name', 'Symbol', { from: coreTeam });
     this.feeRegistry = await FeeRegistry.new({ from: coreTeam });
 

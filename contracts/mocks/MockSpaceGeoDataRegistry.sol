@@ -10,14 +10,14 @@
 pragma solidity ^0.5.10;
 
 
-contract MockSplitMerge {
+contract MockSpaceGeoDataRegistry {
   mapping(uint256 => uint256) private _tokenAreas;
 
-  function setSpaceTokenArea(uint256 _tokenId, uint256 _amount) external {
+  function setArea(uint256 _tokenId, uint256 _amount) external {
     _tokenAreas[_tokenId] = _amount;
   }
 
-  function getSpaceTokenArea(uint256 _tokenId) external view returns(uint256) {
+  function getArea(uint256 _tokenId) external view returns(uint256) {
     return _tokenAreas[_tokenId];
   }
 }

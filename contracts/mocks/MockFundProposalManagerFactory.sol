@@ -10,7 +10,7 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
+import "../decentralized/FundStorage.sol";
 
 // This contract will be included into the current one
 import "./MockFundProposalManager.sol";

@@ -10,9 +10,7 @@
 pragma solidity ^0.5.10;
 
 import "openzeppelin-solidity/contracts/drafts/Counters.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
-import "../FundRA.sol";
+import "../decentralized/FundRA.sol";
 
 
 contract MockFundRA is FundRA {

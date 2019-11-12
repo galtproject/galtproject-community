@@ -3,12 +3,15 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const LockerRegistry = artifacts.require('./LockerRegistry.sol');
 const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
 const SpaceLocker = artifacts.require('./SpaceLocker.sol');
-const MockSplitMerge = artifacts.require('./MockSplitMerge.sol');
+const MockSpaceGeoDataRegistry = artifacts.require('./MockSpaceGeoDataRegistry.sol');
 const RegularEthFee = artifacts.require('./RegularEthFee.sol');
 const RegularEthFeeFactory = artifacts.require('./RegularEthFeeFactory.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
+
+SpaceToken.numberFormat = 'String';
+SpaceLocker.numberFormat = 'String';
 
 const { deployFundFactory, buildFund } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, paymentMethods } = require('./helpers');
@@ -33,7 +36,7 @@ contract('FundRA', accounts => {
     this.galtToken = await GaltToken.new({ from: coreTeam });
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
     this.acl = await ACL.new({ from: coreTeam });
-    this.splitMerge = await MockSplitMerge.new({ from: coreTeam });
+    this.spaceGeoDataRegistry = await MockSpaceGeoDataRegistry.new({ from: coreTeam });
     this.spaceToken = await SpaceToken.new(this.ggr.address, 'Name', 'Symbol', { from: coreTeam });
     this.spaceLockerRegistry = await LockerRegistry.new(this.ggr.address, bytes32('SPACE_LOCKER_REGISTRAR'), {
       from: coreTeam
@@ -48,7 +51,9 @@ contract('FundRA', accounts => {
     await this.ggr.setContract(await this.ggr.FEE_REGISTRY(), this.feeRegistry.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.SPACE_TOKEN(), this.spaceToken.address, { from: coreTeam });
     await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
-    await this.ggr.setContract(await this.ggr.SPACE_GEO_DATA_REGISTRY(), this.splitMerge.address, { from: coreTeam });
+    await this.ggr.setContract(await this.ggr.SPACE_GEO_DATA_REGISTRY(), this.spaceGeoDataRegistry.address, {
+      from: coreTeam
+    });
     await this.ggr.setContract(await this.ggr.SPACE_LOCKER_REGISTRY(), this.spaceLockerRegistry.address, {
       from: coreTeam
     });
@@ -85,11 +90,11 @@ contract('FundRA', accounts => {
     this.fundProposalManagerX = fund.fundProposalManager;
 
     let res = await this.spaceToken.mint(alice, { from: minter });
-    this.token1 = res.logs[0].args.tokenId.toNumber();
+    this.token1 = res.logs[0].args.tokenId;
     res = await this.spaceToken.mint(bob, { from: minter });
-    this.token2 = res.logs[0].args.tokenId.toNumber();
+    this.token2 = res.logs[0].args.tokenId;
     res = await this.spaceToken.mint(charlie, { from: minter });
-    this.token3 = res.logs[0].args.tokenId.toNumber();
+    this.token3 = res.logs[0].args.tokenId;
 
     res = await this.spaceToken.ownerOf(this.token1);
     assert.equal(res, alice);
@@ -99,9 +104,9 @@ contract('FundRA', accounts => {
     assert.equal(res, charlie);
 
     // HACK
-    await this.splitMerge.setSpaceTokenArea(this.token1, 800, { from: geoDateManagement });
-    await this.splitMerge.setSpaceTokenArea(this.token2, 0, { from: geoDateManagement });
-    await this.splitMerge.setSpaceTokenArea(this.token3, 0, { from: geoDateManagement });
+    await this.spaceGeoDataRegistry.setArea(this.token1, 800, { from: geoDateManagement });
+    await this.spaceGeoDataRegistry.setArea(this.token2, 0, { from: geoDateManagement });
+    await this.spaceGeoDataRegistry.setArea(this.token3, 0, { from: geoDateManagement });
 
     await this.galtToken.approve(this.spaceLockerFactory.address, ether(10), { from: alice });
     res = await this.spaceLockerFactory.build({ from: alice });
@@ -133,6 +138,7 @@ contract('FundRA', accounts => {
     await this.aliceLocker.approveMint(this.fundRAX.address, { from: alice });
     await this.bobLocker.approveMint(this.fundRAX.address, { from: bob });
     await this.charlieLocker.approveMint(this.fundRAX.address, { from: charlie });
+
     await this.fundRAX.mint(this.aliceLockerAddress, { from: alice });
     await this.fundRAX.mint(this.bobLockerAddress, { from: bob });
     await this.fundRAX.mint(this.charlieLockerAddress, { from: charlie });

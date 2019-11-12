@@ -11,8 +11,8 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "../../../abstract/fees/interfaces/IRegularFee.sol";
 import "../../FundStorage.sol";
-import "../../fees/interfaces/IRegularFee.sol";
 
 // This contract will be included into the current one
 import "../../fees/RegularEthFee.sol";
@@ -38,8 +38,5 @@ contract RegularEthFeeFactory is Ownable {
     );
 
     emit NewContract(address(regularFee));
-
-//    regularFee.addRoleTo(msg.sender, "role_manager");
-//    regularFee.removeRoleFrom(address(this), "role_manager");
   }
 }

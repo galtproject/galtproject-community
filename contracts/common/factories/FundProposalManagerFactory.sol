@@ -18,7 +18,7 @@ import "../FundProposalManager.sol";
 
 contract FundProposalManagerFactory is Ownable {
   function build(
-    FundStorage _fundStorage
+    IAbstractFundStorage _fundStorage
   )
     external
     returns (FundProposalManager)
