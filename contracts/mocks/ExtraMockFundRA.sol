@@ -11,6 +11,7 @@ pragma solidity ^0.5.10;
 
 import "./MockFundRA.sol";
 
+
 contract ExtraMockFundRA is MockFundRA {
 
   function mintAllAmounts(address[] calldata _addresses, uint256[] calldata _spaceTokens, uint256[] calldata _amounts) external {

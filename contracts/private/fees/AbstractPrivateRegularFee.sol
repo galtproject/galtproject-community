@@ -14,7 +14,7 @@ import "../PrivateFundStorage.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
-contract AbstractPrivateRegularFee is AbstractRegularFee  {
+contract AbstractPrivateRegularFee is AbstractRegularFee {
   PrivateFundStorage public fundStorage;
 
   // registry => (tokenId => timestamp)

@@ -10,17 +10,10 @@
 pragma solidity 0.5.10;
 
 import "../../common/interfaces/IFundRA.sol";
+import "../../common/FundMultiSig.sol";
 
 
 contract IAbstractFundStorage {
-//  function initialize(
-//    FundMultiSig _fundMultiSig,
-//    FundController _fundController,
-//    IFundRA _fundRA,
-//    FundProposalManager _fundProposalManager
-//  )
-//    external;
-
   function setDefaultProposalThreshold(uint256 _value) external;
 
   function setProposalThreshold(bytes32 _key, uint256 _value) external;
@@ -80,13 +73,7 @@ contract IAbstractFundStorage {
   )
     external;
 
-  function setPeriodLimit(
-    bool _active,
-    address _erc20Contract,
-    uint256 _amount
-  )
-    external;
-
+  function setPeriodLimit(bool _active, address _erc20Contract, uint256 _amount) external;
 
   function handleMultiSigTransaction(
     address _erc20Contract,
@@ -109,10 +96,8 @@ contract IAbstractFundStorage {
 
   function getActiveFundRulesCount() external view returns (uint256);
 
-//  function getMultiSig() public view returns (FundMultiSig);
+  function getMultiSig() public view returns (FundMultiSig);
   function getRA() external view returns (IFundRA);
-//  function getController() public view returns (FundController);
-//  function getProposalManager() public view returns (FundProposalManager);
 
   function getWhiteListedContract(
     address _contract
@@ -155,11 +140,14 @@ contract IAbstractFundStorage {
 
   function getFeeContractCount() external view returns (uint256);
 
-  function getMultisigManager(address _manager) external view returns (
-    bool active,
-    string memory managerName,
-    bytes32[] memory documents
-  );
+  function getMultisigManager(address _manager)
+    external
+    view
+    returns (
+      bool active,
+      string memory managerName,
+      bytes32[] memory documents
+    );
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount);
   function getCurrentPeriod() public view returns (uint256);

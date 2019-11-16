@@ -148,7 +148,7 @@ contract FundFactory is Ownable {
     external
     onlyOwner
   {
-    require(initialized == false);
+    require(initialized == false, "Already initialized");
 
     initialized = true;
 

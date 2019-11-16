@@ -396,7 +396,10 @@ contract('FundProposalManager', accounts => {
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       res = await this.fundStorageX.getMultisigManager(george);
-      assert.deepEqual(res.documents.map(doc => doc.toString(10)), [fullHex(bytes32('asdf'))]);
+      assert.deepEqual(
+        res.documents.map(doc => doc.toString(10)),
+        [fullHex(bytes32('asdf'))]
+      );
       res = await this.fundStorageX.getActiveMultisigManagers();
       assert.deepEqual(res, [alice, george]);
 

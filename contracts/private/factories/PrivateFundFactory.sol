@@ -139,7 +139,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     external
     onlyOwner
   {
-    require(initialized == false);
+    require(initialized == false, "Already initialized");
 
     initialized = true;
 

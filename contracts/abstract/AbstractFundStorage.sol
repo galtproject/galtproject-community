@@ -264,7 +264,14 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _proposalMarkersList.remove(_marker);
   }
 
-  function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
+  function replaceProposalMarker(
+    bytes32 _oldMarker,
+    bytes32 _newMethodSignature,
+    address _newDestination
+  )
+    external
+    onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
+  {
     bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
     _proposalMarkersList.remove(_oldMarker);
     _proposalMarkersList.addSilent(_newMarker);

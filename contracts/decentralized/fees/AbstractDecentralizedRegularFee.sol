@@ -16,7 +16,7 @@ import "../FundStorage.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
-contract AbstractDecentralizedRegularFee is AbstractRegularFee  {
+contract AbstractDecentralizedRegularFee is AbstractRegularFee {
   FundStorage public fundStorage;
 
   // tokenId => timestamp
