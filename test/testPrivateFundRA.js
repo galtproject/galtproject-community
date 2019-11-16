@@ -29,7 +29,7 @@ const ONE_DAY = 86400;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-contract.only('FundRA', accounts => {
+contract('FundRA', accounts => {
   const [coreTeam, minter, alice, bob, charlie, unauthorized, lockerFeeManager] = accounts;
 
   const ethFee = ether(10);
