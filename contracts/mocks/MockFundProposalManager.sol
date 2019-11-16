@@ -9,7 +9,9 @@
 
 pragma solidity ^0.5.10;
 
-import "../FundProposalManager.sol";
+import "../common/FundProposalManager.sol";
+import "../decentralized/FundStorage.sol";
+
 
 contract MockFundProposalManager is FundProposalManager {
 

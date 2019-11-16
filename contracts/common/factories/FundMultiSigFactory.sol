@@ -10,21 +10,29 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../decentralized/FundStorage.sol";
 
 // This contract will be included into the current one
-import "./MockFundProposalManager.sol";
+import "../FundMultiSig.sol";
+import "../../abstract/interfaces/IAbstractFundStorage.sol";
 
 
-contract MockFundProposalManagerFactory is Ownable {
+contract FundMultiSigFactory is Ownable {
   function build(
-    FundStorage _fundStorage
+    address[] calldata _initialOwners,
+    uint256 _required,
+    IAbstractFundStorage _fundStorage
   )
     external
-    returns (FundProposalManager)
+    returns (FundMultiSig fundMultiSig)
   {
-    MockFundProposalManager fundProposalManager = new MockFundProposalManager(_fundStorage);
+    fundMultiSig = new FundMultiSig(
+      _initialOwners,
+      _required,
+      _fundStorage
+    );
 
-    return fundProposalManager;
+    fundMultiSig.addRoleTo(msg.sender, "role_manager");
+    fundMultiSig.removeRoleFrom(address(this), "role_manager");
+
   }
 }

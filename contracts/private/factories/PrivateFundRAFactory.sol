@@ -10,21 +10,23 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../decentralized/FundStorage.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
+import "../PrivateFundStorage.sol";
 
 // This contract will be included into the current one
-import "./MockFundProposalManager.sol";
+import "../PrivateFundRA.sol";
 
 
-contract MockFundProposalManagerFactory is Ownable {
+contract PrivateFundRAFactory is Ownable {
   function build(
-    FundStorage _fundStorage
+    PrivateFundStorage fundStorage
   )
     external
-    returns (FundProposalManager)
+    returns (PrivateFundRA)
   {
-    MockFundProposalManager fundProposalManager = new MockFundProposalManager(_fundStorage);
+    PrivateFundRA fundRA = new PrivateFundRA();
+    fundRA.initialize(fundStorage);
 
-    return fundProposalManager;
+    return fundRA;
   }
 }

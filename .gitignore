@@ -6,3 +6,4 @@ build
 .nyc_output
 deployed/*.json
 report/*.csv
+*.sol2

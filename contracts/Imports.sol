@@ -16,6 +16,16 @@ import "@galtproject/core/contracts/factories/SpaceLockerFactory.sol";
 import "@galtproject/core/contracts/registries/LockerRegistry.sol";
 import "@galtproject/core/contracts/registries/FeeRegistry.sol";
 
+import "@galtproject/private-property-registry/contracts/PPGlobalRegistry.sol";
+import "@galtproject/private-property-registry/contracts/PPACL.sol";
+import "@galtproject/private-property-registry/contracts/PPMarket.sol";
+import "@galtproject/private-property-registry/contracts/PPToken.sol";
+import "@galtproject/private-property-registry/contracts/PPLocker.sol";
+import "@galtproject/private-property-registry/contracts/PPTokenRegistry.sol";
+import "@galtproject/private-property-registry/contracts/PPLockerRegistry.sol";
+import "@galtproject/private-property-registry/contracts/PPTokenFactory.sol";
+import "@galtproject/private-property-registry/contracts/PPLockerFactory.sol";
+
 
 // solium-disable-next-line no-empty-blocks
 contract Imports {

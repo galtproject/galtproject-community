@@ -7,24 +7,25 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-pragma solidity 0.5.10;
+pragma solidity ^0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../decentralized/FundStorage.sol";
 
 // This contract will be included into the current one
-import "./MockFundProposalManager.sol";
+import "./MockPrivateFundRA.sol";
 
 
-contract MockFundProposalManagerFactory is Ownable {
+contract MockPrivateFundRAFactory is Ownable {
   function build(
-    FundStorage _fundStorage
+    PrivateFundStorage fundStorage
   )
     external
-    returns (FundProposalManager)
+    returns (MockPrivateFundRA)
   {
-    MockFundProposalManager fundProposalManager = new MockFundProposalManager(_fundStorage);
+    MockPrivateFundRA fundRA = new MockPrivateFundRA();
+    fundRA.initialize(fundStorage);
 
-    return fundProposalManager;
+    return fundRA;
   }
 }

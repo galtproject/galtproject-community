@@ -9,9 +9,7 @@
 
 pragma solidity ^0.5.10;
 
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "@galtproject/core/contracts/registries/interfaces/ILockerRegistry.sol";
-import "../factories/FundFactory.sol";
+import "../decentralized/factories/FundFactory.sol";
 
 
 contract MockFundFactory is FundFactory {
