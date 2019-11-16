@@ -89,6 +89,8 @@ contract('FundRA', accounts => {
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
 
+    await assertRevert(this.fundRAX.initialize(alice));
+
     let res = await this.spaceToken.mint(alice, { from: minter });
     this.token1 = res.logs[0].args.tokenId;
     res = await this.spaceToken.mint(bob, { from: minter });
@@ -145,7 +147,7 @@ contract('FundRA', accounts => {
   });
 
   describe('lock', () => {
-    it('should handle basic reputation transfer case', async function() {
+    it.only('should handle basic reputation transfer case', async function() {
       let res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 

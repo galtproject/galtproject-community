@@ -12,6 +12,7 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLockerRegistry.sol";
@@ -22,7 +23,7 @@ import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.so
 // FundRA - LiquidRA + SpaceInputRA + SharableRA
 
 
-contract PPTokenInputRA is LiquidRA {
+contract PPTokenInputRA is LiquidRA, Initializable {
   IPPGlobalRegistry public globalRegistry;
 
   ArraySet.AddressSet internal _tokenOwners;

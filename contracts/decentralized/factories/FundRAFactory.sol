@@ -25,7 +25,7 @@ contract FundRAFactory is Ownable {
     returns (FundRA)
   {
     FundRA fundRA = new FundRA();
-    fundRA.initialize(fundStorage);
+    fundRA.initialize2(fundStorage);
 
     return fundRA;
   }

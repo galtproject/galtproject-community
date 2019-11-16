@@ -35,15 +35,8 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   mapping(uint256 => bool) internal _tokensToExpel;
   Checkpoint[] _cachedTotalSupply;
 
-  function initialize(
-    PrivateFundStorage _fundStorage
-  )
-    public
-  {
-    // TODO: disable
-//    LiquidRA.initializeInternal(address(this));
-    PPTokenInputRA.initializeInternal(_fundStorage.globalRegistry());
-
+  function initialize(PrivateFundStorage _fundStorage) external isInitializer {
+    super.initializeInternal(_fundStorage.globalRegistry());
     fundStorage = _fundStorage;
   }
 

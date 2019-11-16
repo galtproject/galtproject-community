@@ -24,7 +24,7 @@ contract MockFundRAFactory is Ownable {
     returns (MockFundRA)
   {
     MockFundRA fundRA = new MockFundRA();
-    fundRA.initialize(fundStorage);
+    fundRA.initialize2(fundStorage);
 
     return fundRA;
   }

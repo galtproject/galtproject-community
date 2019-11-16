@@ -10,6 +10,7 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/components/SpaceInputRA.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
@@ -31,16 +32,16 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   FundStorage public fundStorage;
 
   mapping(address => Checkpoint[]) _cachedBalances;
-//  mapping(uint256 => bool) internal _tokensToExpel;
   Checkpoint[] _cachedTotalSupply;
 
-  function initialize(
+  // alternative initializer to Decentralized.initialize(GaltGlobalRegistry _ggr)
+  function initialize2(
     FundStorage _fundStorage
   )
     public
+    isInitializer
   {
-    LiquidRA.initializeInternal(_fundStorage.ggr());
-
+    ggr = _fundStorage.ggr();
     fundStorage = _fundStorage;
   }
 
