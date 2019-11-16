@@ -15,7 +15,6 @@ import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
-import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "../common/FundMultiSig.sol";
 import "../common/FundProposalManager.sol";
 //import "../FundController.sol";

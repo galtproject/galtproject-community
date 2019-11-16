@@ -11,14 +11,15 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
-import "@galtproject/core/contracts/reputation/components/SpaceInputRA.sol";
-import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
-import "./FundStorage.sol";
+import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRA.sol";
 
+import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
+import "./traits/PPTokenInputRA.sol";
 
-contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
+
+contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
 
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
@@ -28,50 +29,58 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     uint128 value;
   }
 
-  FundStorage public fundStorage;
+  PrivateFundStorage public fundStorage;
 
   mapping(address => Checkpoint[]) _cachedBalances;
-//  mapping(uint256 => bool) internal _tokensToExpel;
+  mapping(uint256 => bool) internal _tokensToExpel;
   Checkpoint[] _cachedTotalSupply;
 
   function initialize(
-    FundStorage _fundStorage
+    PrivateFundStorage _fundStorage
   )
     public
   {
-    LiquidRA.initializeInternal(_fundStorage.ggr());
+    // TODO: disable
+//    LiquidRA.initializeInternal(address(this));
+    PPTokenInputRA.initializeInternal(_fundStorage.globalRegistry());
 
     fundStorage = _fundStorage;
   }
 
   function mint(
-    ISpaceLocker _spaceLocker
+    IPPLocker _tokenLocker
   )
     public
   {
-    uint256 spaceTokenId = _spaceLocker.spaceTokenId();
-    require(fundStorage.isMintApproved(spaceTokenId), "No mint permissions");
-    super.mint(_spaceLocker);
+    // TODO: Check validity
+    address registry = address(_tokenLocker.tokenContract());
+    uint256 tokenId = _tokenLocker.tokenId();
+
+    require(fundStorage.isMintApproved(registry, tokenId), "No mint permissions");
+    super.mint(_tokenLocker);
   }
 
   function approveBurn(
-    ISpaceLocker _spaceLocker
+    IPPLocker _tokenLocker
   )
     public
   {
-    require(fundStorage.getTotalFineAmount(_spaceLocker.spaceTokenId()) == 0, "There are pending fines");
-    require(fundStorage.isSpaceTokenLocked(_spaceLocker.spaceTokenId()) == false, "Token is locked by a fee contract");
+    // TODO: Check validity
+    address registry = address(_tokenLocker.tokenContract());
 
-    super.approveBurn(_spaceLocker);
+    require(fundStorage.getTotalFineAmount(registry, _tokenLocker.tokenId()) == 0, "There are pending fines");
+    require(fundStorage.isTokenLocked(registry, _tokenLocker.tokenId()) == false, "Token is locked by a fee contract");
+
+    super.approveBurn(_tokenLocker);
   }
 
-  function burnExpelled(uint256 _spaceTokenId, address _delegate, address _owner, uint256 _amount) external {
-    bool completelyBurned = fundStorage.decrementExpelledTokenReputation(_spaceTokenId, _amount);
+  function burnExpelled(address _registry, uint256 _tokenId, address _delegate, address _owner, uint256 _amount) external {
+    bool completelyBurned = fundStorage.decrementExpelledTokenReputation(_registry, _tokenId, _amount);
 
     _debitAccount(_delegate, _owner, _amount);
 
     if (completelyBurned) {
-      reputationMinted[_spaceTokenId] = false;
+      reputationMinted[_registry][_tokenId] = false;
     }
   }
 

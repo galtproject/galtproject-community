@@ -21,6 +21,7 @@ import "../abstract/AbstractFundStorage.sol";
 
 
 contract FundStorage is AbstractFundStorage {
+  // TODO: use SafeMath
   GaltGlobalRegistry public ggr;
 
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -150,18 +151,6 @@ contract FundStorage is AbstractFundStorage {
     } else {
       return true;
     }
-  }
-
-  function areMembersValid(address[] calldata _members) external view returns (bool) {
-    uint256 len = _members.length;
-
-    for (uint256 i = 0; i < len; i++) {
-      if (_multiSigManagers[_members[i]].active == false) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   function isSpaceTokenLocked(uint256 _spaceTokenId) external view returns (bool) {

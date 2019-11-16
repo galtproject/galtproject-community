@@ -33,9 +33,9 @@ contract AbstractDecentralizedRegularFee is AbstractRegularFee  {
     fundStorage.lockSpaceToken(_spaceTokenId);
   }
 
-  function lockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
-    for (uint i = 0; i < _spaceTokensIds.length; i++) {
-      lockSpaceToken(_spaceTokensIds[i]);
+  function lockSpaceTokenArray(uint256[] calldata _spaceTokenIds) external {
+    for (uint i = 0; i < _spaceTokenIds.length; i++) {
+      lockSpaceToken(_spaceTokenIds[i]);
     }
   }
 
@@ -44,9 +44,9 @@ contract AbstractDecentralizedRegularFee is AbstractRegularFee  {
     fundStorage.unlockSpaceToken(_spaceTokenId);
   }
 
-  function unlockSpaceTokensArray(uint256[] calldata _spaceTokensIds) external {
-    for (uint i = 0; i < _spaceTokensIds.length; i++) {
-      unlockSpaceToken(_spaceTokensIds[i]);
+  function unlockSpaceTokenArray(uint256[] calldata _spaceTokenIds) external {
+    for (uint i = 0; i < _spaceTokenIds.length; i++) {
+      unlockSpaceToken(_spaceTokenIds[i]);
     }
   }
 

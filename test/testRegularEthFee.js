@@ -179,7 +179,7 @@ contract('Regular ETH Fees', accounts => {
     });
   });
 
-  it('should allow any address locking spaceTokens', async function() {
+  it.skip('should allow any address locking spaceTokens', async function() {
     const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
     let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
       from: alice
