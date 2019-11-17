@@ -71,7 +71,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   event AddProposalMarker(bytes32 indexed _marker);
   event RemoveProposalMarker(bytes32 indexed _marker);
-  
+
   event SetProposalThreshold(bytes32 indexed key, uint256 value);
   event SetDefaultProposalThreshold(uint256 value);
 
@@ -261,7 +261,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     m.destination = _destination;
     m.name = _name;
     m.description = _description;
-    
+
     emit AddProposalMarker(_marker);
   }
 
