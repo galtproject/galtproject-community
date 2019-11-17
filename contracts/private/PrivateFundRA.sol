@@ -24,8 +24,8 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
-  event LockerMint(address lockerAddress, address indexed registry, uint256 indexed tokenId);
-  event LockerBurn(address lockerAddress, address indexed registry, uint256 indexed tokenId);
+  event LockerMint(address indexed lockerAddress, address indexed registry, uint256 indexed tokenId);
+  event LockerBurn(address indexed lockerAddress, address indexed registry, uint256 indexed tokenId);
 
   struct Checkpoint {
     uint128 fromBlock;

@@ -24,8 +24,8 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
-  event LockerMint(address lockerAddress, uint256 indexed tokenId);
-  event LockerBurn(address lockerAddress, uint256 indexed tokenId);
+  event LockerMint(address indexed lockerAddress, uint256 indexed tokenId);
+  event LockerBurn(address indexed lockerAddress, uint256 indexed tokenId);
 
   struct Checkpoint {
     uint128 fromBlock;
