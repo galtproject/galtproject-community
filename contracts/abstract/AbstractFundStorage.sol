@@ -268,7 +268,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
     _proposalMarkersList.remove(_marker);
 
-    emit RemoveProposalMarker(_marker, _proposalManager);
+    emit RemoveProposalMarker(_marker, _proposalMarkers[_marker].proposalManager);
   }
 
   function replaceProposalMarker(
