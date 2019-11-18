@@ -69,8 +69,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
-  event AddProposalMarker(bytes32 indexed _marker);
-  event RemoveProposalMarker(bytes32 indexed _marker);
+  event AddProposalMarker(bytes32 indexed marker);
+  event RemoveProposalMarker(bytes32 indexed marker);
 
   event SetProposalThreshold(bytes32 indexed key, uint256 value);
   event SetDefaultProposalThreshold(uint256 value);
