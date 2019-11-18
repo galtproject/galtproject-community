@@ -69,8 +69,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
-  event AddProposalMarker(bytes32 indexed marker);
-  event RemoveProposalMarker(bytes32 indexed marker);
+  event AddProposalMarker(bytes32 indexed marker, address indexed proposalManager);
+  event RemoveProposalMarker(bytes32 indexed marker, address indexed proposalManager);
 
   event SetProposalThreshold(bytes32 indexed key, uint256 value);
   event SetDefaultProposalThreshold(uint256 value);
@@ -262,13 +262,13 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     m.name = _name;
     m.description = _description;
 
-    emit AddProposalMarker(_marker);
+    emit AddProposalMarker(_marker, _proposalManager);
   }
 
   function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
     _proposalMarkersList.remove(_marker);
 
-    emit RemoveProposalMarker(_marker);
+    emit RemoveProposalMarker(_marker, _proposalMarkers[_marker].proposalManager);
   }
 
   function replaceProposalMarker(

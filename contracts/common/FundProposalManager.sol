@@ -24,7 +24,10 @@ contract FundProposalManager {
   // 100% == 10**6
   uint256 public constant DECIMALS = 10**6;
 
-  event NewProposal(uint256 proposalId, address indexed proposer, bytes32 indexed marker);
+  event NewProposal(uint256 indexed proposalId, address indexed proposer, bytes32 indexed marker);
+  event AyeProposal(uint256 indexed proposalId, address indexed voter);
+  event NayProposal(uint256 indexed proposalId, address indexed voter);
+
   event Approved(uint256 ayeShare, uint256 threshold, bytes32 indexed marker);
   event Rejected(uint256 nayShare, uint256 threshold, bytes32 indexed marker);
 
@@ -190,6 +193,8 @@ contract FundProposalManager {
     pV.participants[_voter] = Choice.AYE;
     pV.ayes.add(_voter);
     pV.totalAyes = pV.totalAyes.add(reputation);
+
+    emit AyeProposal(_proposalId, _voter);
   }
 
   function _nay(uint256 _proposalId, address _voter) internal {
@@ -204,6 +209,8 @@ contract FundProposalManager {
     pV.participants[msg.sender] = Choice.NAY;
     pV.nays.add(msg.sender);
     pV.totalNays = pV.totalNays.add(reputation);
+
+    emit NayProposal(_proposalId, _voter);
   }
 
   function _onNewProposal(uint256 _proposalId) internal {
