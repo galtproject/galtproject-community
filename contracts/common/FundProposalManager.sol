@@ -27,7 +27,7 @@ contract FundProposalManager {
   event NewProposal(uint256 indexed proposalId, address indexed proposer, bytes32 indexed marker);
   event AyeProposal(uint256 indexed proposalId, address indexed voter);
   event NayProposal(uint256 indexed proposalId, address indexed voter);
-  
+
   event Approved(uint256 ayeShare, uint256 threshold, bytes32 indexed marker);
   event Rejected(uint256 nayShare, uint256 threshold, bytes32 indexed marker);
 
@@ -193,7 +193,7 @@ contract FundProposalManager {
     pV.participants[_voter] = Choice.AYE;
     pV.ayes.add(_voter);
     pV.totalAyes = pV.totalAyes.add(reputation);
-    
+
     emit AyeProposal(_proposalId, _voter);
   }
 
