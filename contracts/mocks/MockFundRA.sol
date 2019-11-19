@@ -21,6 +21,8 @@ contract MockFundRA is FundRA {
   function mintHack(address _beneficiary, uint256 _amount, uint256 _spaceTokenId) external {
     _mint(_beneficiary, _amount);
     _cacheSpaceTokenOwner(_beneficiary, _spaceTokenId);
+
+    emit TokenMint(_spaceTokenId);
   }
 
   function delegateHack(address _to, address _from, address _owner, uint256 _amount) external {
@@ -31,6 +33,8 @@ contract MockFundRA is FundRA {
     for (uint256 i = 0; i < _addresses.length; i++) {
       _mint(_addresses[i], _amount);
       _cacheSpaceTokenOwner(_addresses[i], _spaceTokens[i]);
+
+      emit TokenMint(_spaceTokens[i]);
     }
   }
 }

@@ -21,6 +21,8 @@ contract MockPrivateFundRA is PrivateFundRA {
   function mintHack(address _beneficiary, uint256 _amount, address _registry, uint256 _tokenId) external {
     _mint(_beneficiary, _amount);
     _cacheTokenOwner(_beneficiary, _registry, _tokenId);
+
+    emit TokenMint(_registry, _tokenId);
   }
 
   function delegateHack(address _to, address _from, address _owner, uint256 _amount) external {
@@ -31,6 +33,8 @@ contract MockPrivateFundRA is PrivateFundRA {
     for (uint256 i = 0; i < _addresses.length; i++) {
       _mint(_addresses[i], _amount);
       _cacheTokenOwner(_addresses[i], _registries[i], _tokenIds[i]);
+
+      emit TokenMint(_registries[i], _tokenIds[i]);
     }
   }
 }

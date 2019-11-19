@@ -24,8 +24,8 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
-  event LockerMint(address indexed lockerAddress, address indexed registry, uint256 indexed tokenId);
-  event LockerBurn(address indexed lockerAddress, address indexed registry, uint256 indexed tokenId);
+  event TokenMint(address indexed registry, uint256 indexed tokenId);
+  event TokenBurn(address indexed registry, uint256 indexed tokenId);
 
   struct Checkpoint {
     uint128 fromBlock;
@@ -55,7 +55,7 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
     require(fundStorage.isMintApproved(registry, tokenId), "No mint permissions");
     super.mint(_tokenLocker);
 
-    emit LockerMint(address(_tokenLocker), registry, tokenId);
+    emit TokenMint(registry, tokenId);
   }
 
   function approveBurn(
@@ -72,7 +72,7 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
 
     super.approveBurn(_tokenLocker);
 
-    emit LockerBurn(address(_tokenLocker), registry, tokenId);
+    emit TokenBurn(registry, tokenId);
   }
 
   function burnExpelled(address _registry, uint256 _tokenId, address _delegate, address _owner, uint256 _amount) external {
