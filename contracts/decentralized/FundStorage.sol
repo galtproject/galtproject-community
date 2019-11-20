@@ -41,11 +41,19 @@ contract FundStorage is AbstractFundStorage {
   constructor (
     GaltGlobalRegistry _ggr,
     bool _isPrivate,
-    uint256 _defaultProposalThreshold,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     public
-    AbstractFundStorage(_isPrivate, _defaultProposalThreshold, _periodLength)
+    AbstractFundStorage(
+      _isPrivate,
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout,
+      _periodLength
+    )
   {
     ggr = _ggr;
   }

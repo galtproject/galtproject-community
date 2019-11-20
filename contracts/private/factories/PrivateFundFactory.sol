@@ -95,7 +95,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     FundProposalManager fundProposalManager;
   }
 
-  bool initialized;
+  bool internal initialized;
 
   IPPGlobalRegistry internal globalRegistry;
 
@@ -150,7 +150,9 @@ contract PrivateFundFactory is Ownable, ChargesFee {
   function buildFirstStep(
     address operator,
     bool _isPrivate,
-    uint256 _defaultThreshold,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -167,7 +169,9 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     PrivateFundStorage fundStorage = fundStorageFactory.build(
       globalRegistry,
       _isPrivate,
-      _defaultThreshold,
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout,
       _periodLength
     );
 
@@ -252,19 +256,30 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     );
   }
 
-  function buildFourthStep(bytes32 _fundId, bytes32[] calldata _thresholdKeys, uint256[] calldata _thresholdValues) external {
+  function buildFourthStep(
+    bytes32 _fundId,
+    bytes32[] calldata _markers,
+    uint256[] calldata _supportValues,
+    uint256[] calldata _quorumValues,
+    uint256[] calldata _timeoutValues
+  )
+    external
+  {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.FOURTH, "Requires fourth step");
 
-    uint256 len = _thresholdValues.length;
-    require(len == _thresholdKeys.length, "Thresholds key and value array lengths mismatch");
+    uint256 len = _markers.length;
+    require(
+      len == _supportValues.length && len == _quorumValues.length && len == _timeoutValues.length,
+      "Thresholds key and value array lengths mismatch"
+    );
     PrivateFundStorage _fundStorage = c.fundStorage;
 
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
 
     for (uint256 i = 0; i < len; i++) {
-      _fundStorage.setProposalThreshold(_thresholdKeys[i], _thresholdValues[i]);
+      _fundStorage.setProposalVotingConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
     }
 
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());

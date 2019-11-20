@@ -4,7 +4,7 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, fullHex, int, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -20,7 +20,7 @@ const ProposalStatus = {
   REJECTED: 4
 };
 
-contract('FundProposalManager', accounts => {
+contract.only('FundProposalManager', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
@@ -43,9 +43,8 @@ contract('FundProposalManager', accounts => {
       this.fundFactory,
       alice,
       false,
-      600000,
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
       {},
-      // [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
       2
     );
@@ -66,7 +65,7 @@ contract('FundProposalManager', accounts => {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
+          .setProposalVotingConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -81,13 +80,13 @@ contract('FundProposalManager', accounts => {
     });
 
     describe('(Proposal contracts queries FundRA for addresses locked reputation share)', () => {
-      it('should allow reverting a proposal if negative votes threshold is reached', async function() {
+      it.only('should allow reverting a proposal if negative votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        const marker = getDestinationMarker(this.fundStorageX, 'setProposalThreshold');
+        const marker = getDestinationMarker(this.fundStorageX, 'setProposalVotingConfig');
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalThreshold(bytes32('modify_config_threshold'), 420000)
+          .setProposalVotingConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -119,11 +118,11 @@ contract('FundProposalManager', accounts => {
         assert.sameMembers(res.map(int), []);
 
         res = await this.fundProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 200000);
+        assert.equal(res, ether(20));
         res = await this.fundProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 200000);
+        assert.equal(res, ether(20));
         res = await this.fundProposalManagerX.getThreshold(proposalId);
-        assert.equal(res, 600000);
+        assert.equal(res, ether(60));
 
         // Deny double-vote
         await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
@@ -134,9 +133,9 @@ contract('FundProposalManager', accounts => {
         await this.fundProposalManagerX.nay(proposalId, { from: eve });
 
         res = await this.fundProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 200000);
+        assert.equal(res, ether(20));
         res = await this.fundProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 600000);
+        assert.equal(res, ether(60));
 
         await this.fundProposalManagerX.triggerReject(proposalId, { from: dan });
 

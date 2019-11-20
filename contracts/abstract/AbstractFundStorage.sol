@@ -17,7 +17,6 @@ import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "../common/FundMultiSig.sol";
 import "../common/FundProposalManager.sol";
-//import "../FundController.sol";
 import "../common/interfaces/IFundRA.sol";
 import "./interfaces/IAbstractFundStorage.sol";
 
@@ -28,8 +27,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   using ArraySet for ArraySet.Bytes32Set;
   using Counters for Counters.Counter;
 
-  // 100% == 10**6
-  uint256 public constant DECIMALS = 10**6;
+  // 100% == 100 ether
+  uint256 public constant ONE_HUNDRED_PCT = 100 ether;
 
   string public constant ROLE_CONFIG_MANAGER = "config_manager";
   string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
@@ -72,8 +71,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   event AddProposalMarker(bytes32 indexed marker, address indexed proposalManager);
   event RemoveProposalMarker(bytes32 indexed marker, address indexed proposalManager);
 
-  event SetProposalThreshold(bytes32 indexed key, uint256 value);
-  event SetDefaultProposalThreshold(uint256 value);
+  event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 quorum, uint256 timeout);
+  event SetDefaultProposalVotingConfig(uint256 support, uint256 quorum, uint256 timeout);
 
   struct FundRule {
     bool active;
@@ -124,7 +123,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   string public description;
   uint256 public initialTimestamp;
   uint256 public periodLength;
-  uint256 public defaultProposalThreshold;
 
   ArraySet.AddressSet internal _whiteListedContractsList;
   ArraySet.Bytes32Set internal _proposalMarkersList;
@@ -155,8 +153,16 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
-  // marker => threshold
-  mapping(bytes32 => uint256) public thresholds;
+
+  struct VotingConfig {
+    uint256 support;
+    uint256 quorum;
+    uint256 timeout;
+  }
+
+  // marker => customVotingConfigs
+  mapping(bytes32 => VotingConfig) public customVotingConfigs;
+  VotingConfig public defaultVotingConfig;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -172,14 +178,19 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   constructor (
     bool _isPrivate,
-    uint256 _defaultProposalThreshold,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
-    defaultProposalThreshold = _defaultProposalThreshold;
+
+    defaultVotingConfig.support = _defaultProposalSupport;
+    defaultVotingConfig.quorum = _defaultProposalQuorum;
+    defaultVotingConfig.timeout = _defaultProposalTimeout;
 
     _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
   }
@@ -199,20 +210,71 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
   }
 
-  function setDefaultProposalThreshold(uint256 _value) external onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
-    require(_value > 0 && _value <= DECIMALS, "Invalid threshold value");
+  function getProposalVotingConfig(bytes32 _key) external view returns (uint256 support, uint256 quorum, uint256 timeout) {
+    uint256 to = customVotingConfigs[_key].timeout;
 
-    defaultProposalThreshold = _value;
-
-    emit SetDefaultProposalThreshold(_value);
+    if (to > 0) {
+      return (
+        customVotingConfigs[_key].support,
+        customVotingConfigs[_key].quorum,
+        customVotingConfigs[_key].timeout
+      );
+    } else {
+      return (
+        defaultVotingConfig.support,
+        defaultVotingConfig.quorum,
+        defaultVotingConfig.timeout
+      );
+    }
   }
 
-  function setProposalThreshold(bytes32 _key, uint256 _value) external onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER) {
-    require(_value <= DECIMALS, "Invalid threshold value");
+  function setDefaultProposalVotingConfig(
+    uint256 _support,
+    uint256 _quorum,
+    uint256 _timeout
+  )
+    external
+    onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER)
+  {
+    _validateVotingConfig(_support, _quorum, _timeout);
 
-    thresholds[_key] = _value;
+    defaultVotingConfig.support = _support;
+    defaultVotingConfig.quorum = _quorum;
+    defaultVotingConfig.timeout = _timeout;
 
-    emit SetProposalThreshold(_key, _value);
+    emit SetDefaultProposalVotingConfig(_support, _quorum, _timeout);
+  }
+
+  function _validateVotingConfig(
+    uint256 _support,
+    uint256 _quorum,
+    uint256 _timeout
+  )
+    internal
+  {
+    require(_support > 0 && _support <= ONE_HUNDRED_PCT, "Invalid support value");
+    require(_quorum > 0 && _quorum <= ONE_HUNDRED_PCT, "Invalid quorum value");
+    require(_timeout > 0, "Invalid timeout value");
+  }
+
+  function setProposalVotingConfig(
+    bytes32 _marker,
+    uint256 _support,
+    uint256 _quorum,
+    uint256 _timeout
+  )
+    external
+    onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER)
+  {
+    _validateVotingConfig(_support, _quorum, _timeout);
+
+    customVotingConfigs[_marker] = VotingConfig({
+      support: _support,
+      quorum: _quorum,
+      timeout: _timeout
+    });
+
+    emit SetProposalVotingConfig(_marker, _support, _quorum, _timeout);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
@@ -439,10 +501,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
   }
 
-//  function getController() public view returns (FundController) {
-//    return FundController(_coreContracts[CONTRACT_CORE_CONTROLLER]);
-//  }
-//
   function getProposalManager() public view returns (FundProposalManager) {
     return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
   }

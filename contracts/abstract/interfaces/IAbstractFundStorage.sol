@@ -13,12 +13,27 @@ import "../../common/interfaces/IFundRA.sol";
 import "../../common/FundMultiSig.sol";
 
 
-contract IAbstractFundStorage {
-  function setDefaultProposalThreshold(uint256 _value) external;
-
-  function setProposalThreshold(bytes32 _key, uint256 _value) external;
+interface IAbstractFundStorage {
+//  function setdefaultProposalSupport(uint256 _value) external;
+//  function setProposalThreshold(bytes32 _key, uint256 _value) external;
 
   function setConfigValue(bytes32 _key, bytes32 _value) external;
+
+  function setDefaultProposalVotingConfig(
+    uint256 _support,
+    uint256 _quorum,
+    uint256 _timeout
+  )
+    external;
+
+  function setProposalVotingConfig(
+    bytes32 _marker,
+    uint256 _support,
+    uint256 _quorum,
+    uint256 _timeout
+  )
+    external;
+
   function addWhiteListedContract(
     address _contract,
     bytes32 _type,
@@ -26,7 +41,6 @@ contract IAbstractFundStorage {
     string calldata _description
   )
     external;
-
   function removeWhiteListedContract(address _contract) external;
 
   function addProposalMarker(
@@ -37,9 +51,7 @@ contract IAbstractFundStorage {
     string calldata _description
   )
     external;
-
   function removeProposalMarker(bytes32 _marker) external;
-
   function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external;
 
   function addFundRule(
@@ -82,11 +94,9 @@ contract IAbstractFundStorage {
     external;
 
   // GETTERS
-  function thresholds(bytes32 _key) external view returns (uint256);
+  function getProposalVotingConfig(bytes32 _key) external view returns (uint256 support, uint256 quorum, uint256 timeout);
 
-  function defaultProposalThreshold() external view returns (uint256);
-
-  function getThresholdMarker(address _destination, bytes memory _data) public pure returns (bytes32 marker);
+  function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
 
   function getConfigValue(bytes32 _key) external view returns (bytes32);
 
@@ -96,7 +106,7 @@ contract IAbstractFundStorage {
 
   function getActiveFundRulesCount() external view returns (uint256);
 
-  function getMultiSig() public view returns (FundMultiSig);
+  function getMultiSig() external view returns (FundMultiSig);
   function getRA() external view returns (IFundRA);
 
   function getWhiteListedContract(
@@ -150,5 +160,5 @@ contract IAbstractFundStorage {
     );
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount);
-  function getCurrentPeriod() public view returns (uint256);
+  function getCurrentPeriod() external view returns (uint256);
 }

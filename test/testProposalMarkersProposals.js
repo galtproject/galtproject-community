@@ -2,10 +2,13 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund, getBaseFundStorageMarkersNames } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getDestinationMarker, getMethodSignature, hex } = require('./helpers');
+const { deployFundFactory, buildFund, getBaseFundStorageMarkersNames, VotingConfig } = require('./deploymentHelpers');
+const { initHelperWeb3, getDestinationMarker, getMethodSignature, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
+
+// eslint-disable-next-line import/order
+const { ether, hex, assertRevert } = require('@galtproject/solidity-test-chest')(web3);
 
 initHelperWeb3(web3);
 
@@ -29,7 +32,15 @@ contract('Proposal Markers Proposals', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 400000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -63,6 +74,13 @@ contract('Proposal Markers Proposals', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
+      await assertRevert(
+        this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
+        "Timeout hasn't been passed"
+      );
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       proposalMarkers = await this.fundStorageX.getProposalMarkers();
@@ -73,7 +91,7 @@ contract('Proposal Markers Proposals', accounts => {
 
       let markerDetails = await this.fundStorageX.getProposalMarker(marker);
       assert.equal(markerDetails._proposalManager, proposalManager);
-      assert.equal(markerDetails._name, hex('name'));
+      assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
       assert.equal(markerDetails._description, 'description');
       assert.equal(markerDetails._destination, this.galtToken.address);
 
@@ -92,6 +110,8 @@ contract('Proposal Markers Proposals', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       proposalMarkers = await this.fundStorageX.getProposalMarkers();
@@ -100,7 +120,7 @@ contract('Proposal Markers Proposals', accounts => {
 
       markerDetails = await this.fundStorageX.getProposalMarker(newMarker);
       assert.equal(markerDetails._proposalManager, proposalManager);
-      assert.equal(markerDetails._name, hex('name'));
+      assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
       assert.equal(markerDetails._description, 'description');
       assert.equal(markerDetails._destination, this.spaceToken.address);
     });
