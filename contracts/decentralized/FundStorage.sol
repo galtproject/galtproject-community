@@ -13,10 +13,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-//import "../common/FundMultiSig.sol";
-//import "../common/FundProposalManager.sol";
-//import "../FundController.sol";
-//import "../common/interfaces/IFundRA.sol";
 import "../abstract/AbstractFundStorage.sol";
 
 

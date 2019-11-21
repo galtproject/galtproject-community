@@ -9,7 +9,6 @@
 
 pragma solidity 0.5.10;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";

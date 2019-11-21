@@ -14,12 +14,7 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
-import "@galtproject/private-property-registry/contracts/interfaces/IPPToken.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
-//import "../common/FundMultiSig.sol";
-//import "../common/FundProposalManager.sol";
-//import "./PrivateFundController.sol";
-//import "../common/interfaces/IFundRA.sol";
 import "../abstract/AbstractFundStorage.sol";
 
 

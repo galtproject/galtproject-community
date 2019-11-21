@@ -5,10 +5,13 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, fullHex, int, getDestinationMarker } = require('./helpers');
+const { initHelperWeb3, fullHex, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
+
+// eslint-disable-next-line import/order
+const { ether, assertRevert } = require('@galtproject/solidity-test-chest')(web3);
 
 initHelperWeb3(web3);
 
@@ -20,7 +23,7 @@ const ProposalStatus = {
   REJECTED: 4
 };
 
-contract.only('FundProposalManager', accounts => {
+contract('FundProposalManager', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
 
   before(async function() {
@@ -80,86 +83,19 @@ contract.only('FundProposalManager', accounts => {
     });
 
     describe('(Proposal contracts queries FundRA for addresses locked reputation share)', () => {
-      it.only('should allow reverting a proposal if negative votes threshold is reached', async function() {
+      it('should allow approving proposal if positive votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const marker = getDestinationMarker(this.fundStorageX, 'setProposalVotingConfig');
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalVotingConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
+          .setProposalVotingConfig(marker, ether(42), ether(40), 555)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
           from: bob
         });
-
-        const proposalId = res.logs[0].args.proposalId.toString(10);
-
-        await this.fundProposalManagerX.aye(proposalId, { from: bob });
-        await this.fundProposalManagerX.nay(proposalId, { from: charlie });
-
-        res = await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, bob);
-        assert.equal(res, '1');
-        res = await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie);
-        assert.equal(res, '2');
-
-        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
-        assert.sameMembers(res.ayes, [bob]);
-        assert.sameMembers(res.nays, [charlie]);
-
-        res = await this.fundProposalManagerX.proposals(proposalId);
-        assert.equal(res.status, ProposalStatus.ACTIVE);
-
-        res = await this.fundProposalManagerX.getActiveProposals(marker);
-        assert.sameMembers(res.map(int), [1]);
-        res = await this.fundProposalManagerX.getApprovedProposals(marker);
-        assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getRejectedProposals(marker);
-        assert.sameMembers(res.map(int), []);
-
-        res = await this.fundProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, ether(20));
-        res = await this.fundProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, ether(20));
-        res = await this.fundProposalManagerX.getThreshold(proposalId);
-        assert.equal(res, ether(60));
-
-        // Deny double-vote
-        await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
-
-        await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
-
-        await this.fundProposalManagerX.nay(proposalId, { from: dan });
-        await this.fundProposalManagerX.nay(proposalId, { from: eve });
-
-        res = await this.fundProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, ether(20));
-        res = await this.fundProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, ether(60));
-
-        await this.fundProposalManagerX.triggerReject(proposalId, { from: dan });
-
-        res = await this.fundProposalManagerX.proposals(proposalId);
-        assert.equal(res.status, ProposalStatus.REJECTED);
-
-        res = await this.fundProposalManagerX.getActiveProposals(marker);
-        assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getApprovedProposals(marker);
-        assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getRejectedProposals(marker);
-        assert.sameMembers(res.map(int), [1]);
-      });
-
-      it('should allow approving proposal if positive votes threshold is reached', async function() {
-        await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
-
-        const marker = getDestinationMarker(this.fundStorageX, 'setProposalThreshold');
-
-        const proposalData = this.fundStorageX.contract.methods.setProposalThreshold(marker, 420000).encodeABI();
-
-        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        let timeoutAt = (await web3.eth.getBlock(res.receipt.blockNumber)).timestamp + VotingConfig.ONE_WEEK;
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -180,17 +116,30 @@ contract.only('FundProposalManager', accounts => {
         assert.sameMembers(res.ayes, [bob]);
         assert.sameMembers(res.nays, [charlie]);
 
-        res = await this.fundProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 200000);
-        res = await this.fundProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 200000);
-        res = await this.fundProposalManagerX.getThreshold(proposalId);
-        assert.equal(res, 600000);
+        res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+        assert.equal(res.ayesShare, ether(20));
+        assert.equal(res.naysShare, ether(20));
+        assert.equal(res.totalAyes, 300);
+        assert.equal(res.totalNays, 300);
+        assert.equal(res.currentSupport, ether(50));
+        assert.equal(res.requiredSupport, ether(60));
+        assert.equal(res.minAcceptQuorum, ether(50));
+        assert.equal(res.timeoutAt, timeoutAt);
 
         // Deny double-vote
-        await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
+        await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }), 'Element already exists');
 
-        await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
+        await assertRevert(
+          this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
+          "Timeout hasn't been passed"
+        );
+
+        await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
+        await assertRevert(
+          this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
+          "Support hasn't been reached"
+        );
 
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.ACTIVE);
@@ -198,21 +147,24 @@ contract.only('FundProposalManager', accounts => {
         await this.fundProposalManagerX.aye(proposalId, { from: dan });
         await this.fundProposalManagerX.aye(proposalId, { from: eve });
 
-        res = await this.fundProposalManagerX.getAyeShare(proposalId);
-        assert.equal(res, 600000);
-        res = await this.fundProposalManagerX.getNayShare(proposalId);
-        assert.equal(res, 200000);
-
-        // Revert attempt should fail
-        await assertRevert(this.fundProposalManagerX.triggerReject(proposalId));
+        res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+        assert.equal(res.ayesShare, ether(60));
+        assert.equal(res.naysShare, ether(20));
+        assert.equal(res.totalAyes, 900);
+        assert.equal(res.totalNays, 300);
+        assert.equal(res.currentSupport, ether(75));
+        assert.equal(res.requiredSupport, ether(60));
+        assert.equal(res.minAcceptQuorum, ether(50));
 
         await this.fundProposalManagerX.triggerApprove(proposalId);
 
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.EXECUTED);
 
-        res = await this.fundStorageX.thresholds(marker);
-        assert.equal(res, '420000');
+        res = await this.fundStorageX.customVotingConfigs(marker);
+        assert.equal(res.support, ether(42));
+        assert.equal(res.minAcceptQuorum, ether(40));
+        assert.equal(res.timeout, 555);
 
         res = await this.fundProposalManagerX.getActiveProposals(marker);
         assert.sameMembers(res.map(int), []);
@@ -221,8 +173,33 @@ contract.only('FundProposalManager', accounts => {
         res = await this.fundProposalManagerX.getRejectedProposals(marker);
         assert.sameMembers(res.map(int), []);
 
-        res = await this.fundProposalManagerX.getThreshold(proposalId);
-        assert.equal(res, 420000);
+        // doesn't affect already created proposals
+        res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+        assert.equal(res.ayesShare, ether(60));
+        assert.equal(res.naysShare, ether(20));
+        assert.equal(res.totalAyes, 900);
+        assert.equal(res.totalNays, 300);
+        assert.equal(res.currentSupport, ether(75));
+        assert.equal(res.requiredSupport, ether(60));
+        assert.equal(res.minAcceptQuorum, ether(50));
+
+        // but the new one has a different requirements
+        res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+          from: bob
+        });
+        timeoutAt = (await web3.eth.getBlock(res.receipt.blockNumber)).timestamp + 555;
+
+        const newProposalId = res.logs[0].args.proposalId.toString(10);
+
+        res = await this.fundProposalManagerX.getProposalVotingProgress(newProposalId);
+        assert.equal(res.ayesShare, 0);
+        assert.equal(res.naysShare, 0);
+        assert.equal(res.totalAyes, 0);
+        assert.equal(res.totalNays, 0);
+        assert.equal(res.currentSupport, ether(0));
+        assert.equal(res.requiredSupport, ether(42));
+        assert.equal(res.minAcceptQuorum, ether(40));
+        assert.equal(res.timeoutAt, timeoutAt);
       });
     });
   });
@@ -252,22 +229,23 @@ contract.only('FundProposalManager', accounts => {
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 200000);
-      res = await this.fundProposalManagerX.getNayShare(proposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(20));
+      assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
       await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
+
+      await assertRevert(this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }));
 
       await this.fundProposalManagerX.aye(proposalId, { from: dan });
       await this.fundProposalManagerX.aye(proposalId, { from: eve });
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 600000);
-      res = await this.fundProposalManagerX.getNayShare(proposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(60));
+      assert.equal(res.naysShare, ether(20));
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
@@ -311,22 +289,22 @@ contract.only('FundProposalManager', accounts => {
       res = await this.fundProposalManagerX.proposals(removeProposalId);
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
-      res = await this.fundProposalManagerX.getAyeShare(removeProposalId);
-      assert.equal(res, 200000);
-      res = await this.fundProposalManagerX.getNayShare(removeProposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(removeProposalId);
+      assert.equal(res.ayesShare, ether(20));
+      assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
       await assertRevert(this.fundProposalManagerX.aye(removeProposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerReject(removeProposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.triggerApprove(removeProposalId, { from: dan }));
 
       await this.fundProposalManagerX.aye(removeProposalId, { from: dan });
       await this.fundProposalManagerX.aye(removeProposalId, { from: eve });
 
-      res = await this.fundProposalManagerX.getAyeShare(removeProposalId);
-      assert.equal(res, 600000);
-      res = await this.fundProposalManagerX.getNayShare(removeProposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(removeProposalId);
+      assert.equal(res.ayesShare, ether(60));
+      assert.equal(res.naysShare, ether(20));
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(removeProposalId, { from: dan });
 
@@ -378,6 +356,9 @@ contract.only('FundProposalManager', accounts => {
       await this.fundProposalManagerX.aye(pId, { from: bob });
       await this.fundProposalManagerX.aye(pId, { from: charlie });
       await this.fundProposalManagerX.aye(pId, { from: dan });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve George
@@ -392,6 +373,9 @@ contract.only('FundProposalManager', accounts => {
       await this.fundProposalManagerX.aye(pId, { from: bob });
       await this.fundProposalManagerX.aye(pId, { from: charlie });
       await this.fundProposalManagerX.aye(pId, { from: dan });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       res = await this.fundStorageX.getMultisigManager(george);
@@ -426,22 +410,22 @@ contract.only('FundProposalManager', accounts => {
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 200000);
-      res = await this.fundProposalManagerX.getNayShare(proposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(20));
+      assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
       await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }));
 
       await this.fundProposalManagerX.aye(proposalId, { from: dan });
       await this.fundProposalManagerX.aye(proposalId, { from: eve });
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 600000);
-      res = await this.fundProposalManagerX.getNayShare(proposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(60));
+      assert.equal(res.naysShare, ether(20));
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
@@ -460,6 +444,7 @@ contract.only('FundProposalManager', accounts => {
       await this.fundProposalManagerX.aye(pId, { from: bob });
       await this.fundProposalManagerX.aye(pId, { from: charlie });
       await this.fundProposalManagerX.aye(pId, { from: dan });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve Frank
@@ -474,6 +459,7 @@ contract.only('FundProposalManager', accounts => {
       await this.fundProposalManagerX.aye(pId, { from: bob });
       await this.fundProposalManagerX.aye(pId, { from: charlie });
       await this.fundProposalManagerX.aye(pId, { from: dan });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // now it's ok
@@ -513,6 +499,9 @@ contract.only('FundProposalManager', accounts => {
       await this.fundProposalManagerX.aye(pId, { from: bob });
       await this.fundProposalManagerX.aye(pId, { from: charlie });
       await this.fundProposalManagerX.aye(pId, { from: dan });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);

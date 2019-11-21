@@ -49,7 +49,7 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
       this.fundControllerFactory.address,
       this.fundProposalManagerFactory.address,
       ...ppArguments,
-      { from: owner }
+      { from: owner, gas: 9000000 }
     );
   } else {
     this.fundRAFactory = await MockFundRAFactory.new();
@@ -83,7 +83,6 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
     markersSignatures.push(getMethodSignature(contract._json.abi, methodName));
   });
 
-  console.log('>>>', markersSignatures, markersNames);
   await fundFactory.initialize(markersSignatures, markersNames, { from: owner });
 
   return fundFactory;

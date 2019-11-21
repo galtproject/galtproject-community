@@ -123,6 +123,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     uint256 _galtFee
   )
     public
+    Ownable()
     ChargesFee(_galtToken, _ethFee, _galtFee)
   {
     fundControllerFactory = _fundControllerFactory;

@@ -28,8 +28,7 @@ contract FundProposalManager {
   event AyeProposal(uint256 indexed proposalId, address indexed voter);
   event NayProposal(uint256 indexed proposalId, address indexed voter);
 
-  event Approved(uint256 ayeShare, uint256 threshold, bytes32 indexed marker);
-  event Rejected(uint256 nayShare, uint256 threshold, bytes32 indexed marker);
+  event Approved(uint256 ayeShare, uint256 support, bytes32 indexed marker);
 
   struct ProposalVoting {
     uint256 creationBlock;
@@ -37,7 +36,7 @@ contract FundProposalManager {
     uint256 createdAt;
     uint256 timeoutAt;
     uint256 requiredSupport;
-    uint256 requiredQuorum;
+    uint256 minAcceptQuorum;
     uint256 totalAyes;
     uint256 totalNays;
     mapping(address => Choice) participants;
@@ -143,52 +142,24 @@ contract FundProposalManager {
     // Voting timeout has passed
     require(pv.timeoutAt < block.timestamp, "Timeout hasn't been passed");
 
+    uint256 support = getCurrentSupport(_proposalId);
+
     // Has enough support?
-    require(getSupport(_proposalId) > pv.requiredSupport, "Support hasn't been reached");
+    require(support >= pv.requiredSupport, "Support hasn't been reached");
+
+    uint256 ayeShare = getAyeShare(_proposalId);
 
     // Has min quorum?
-    require(getAyeShare())
-    require(_isValuePct(pv.totalAyes, pv.creationTotalSupply, pv.requiredQuorum) == true, "Quorum hasn't been reached");
+    require(ayeShare >= pv.minAcceptQuorum, "MIN aye quorum hasn't been reached");
 
     _activeProposals[p.marker].remove(_proposalId);
     _activeProposalsBySender[_proposalToSender[_proposalId]][p.marker].remove(_proposalId);
     _approvedProposals[p.marker].push(_proposalId);
 
     p.status = ProposalStatus.APPROVED;
-//    emit Approved(ayeShare, threshold, p.marker);
+    emit Approved(ayeShare, support, p.marker);
 
     execute(_proposalId);
-  }
-
-  /**
-    * @dev Calculates whether `_value` is more than a percentage `_pct` of `_total`
-    */
-//  function _isValuePct(uint256 _value, uint256 _total, uint256 _pct) internal pure returns (bool) {
-//      if (_total == 0) {
-//          return false;
-//      }
-//
-//      uint256 computedPct = _value.mul(ONE_HUNDRED_PCT) / _total;
-//      return computedPct > _pct;
-//  }
-
-  function getSupport(uint256 _proposalId) public view returns (uint256) {
-    ProposalVoting storage pv = _proposalVotings[_proposalId];
-
-    uint256 totalVotes = pv.totalAyes.add(pv.totalNays);
-    return pv.totalAyes.mul(ONE_HUNDRED_PCT) / totalVotes;
-  }
-
-  function getAyeShare(uint256 _proposalId) public view returns (uint256) {
-    ProposalVoting storage p = _proposalVotings[_proposalId];
-
-    return p.totalAyes.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
-  }
-
-  function getNayShare(uint256 _proposalId) public view returns (uint256) {
-    ProposalVoting storage p = _proposalVotings[_proposalId];
-
-    return p.totalNays.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
   }
 
   // INTERNAL
@@ -245,7 +216,7 @@ contract FundProposalManager {
     pv.timeoutAt = block.timestamp + timeout;
 
     pv.requiredSupport = support;
-    pv.requiredQuorum = quorum;
+    pv.minAcceptQuorum = quorum;
   }
 
   function execute(uint256 _proposalId) public {
@@ -331,11 +302,65 @@ contract FundProposalManager {
     );
   }
 
+  function getProposalVotingProgress(
+    uint256 _proposalId
+  )
+    external
+    view
+    returns (
+      uint256 ayesShare,
+      uint256 naysShare,
+      uint256 totalAyes,
+      uint256 totalNays,
+      uint256 currentSupport,
+      uint256 requiredSupport,
+      uint256 minAcceptQuorum,
+      uint256 timeoutAt
+    )
+  {
+    ProposalVoting storage pV = _proposalVotings[_proposalId];
+
+    return (
+      getAyeShare(_proposalId),
+      getNayShare(_proposalId),
+      pV.totalAyes,
+      pV.totalNays,
+      getCurrentSupport(_proposalId),
+      pV.requiredSupport,
+      pV.minAcceptQuorum,
+      pV.timeoutAt
+    );
+  }
+
   function getParticipantProposalChoice(uint256 _proposalId, address _participant) external view returns (Choice) {
     return _proposalVotings[_proposalId].participants[_participant];
   }
 
   function reputationOf(address _address, uint256 _blockNumber) public view returns (uint256) {
     return fundStorage.getRA().balanceOfAt(_address, _blockNumber);
+  }
+
+  function getCurrentSupport(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage pv = _proposalVotings[_proposalId];
+
+    uint256 totalVotes = pv.totalAyes.add(pv.totalNays);
+
+    if (totalVotes == 0) {
+      return 0;
+    }
+
+    return pv.totalAyes.mul(ONE_HUNDRED_PCT) / totalVotes;
+  }
+
+  function getAyeShare(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    return p.totalAyes.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
+  }
+
+  function getNayShare(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    return p.totalNays.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
   }
 }

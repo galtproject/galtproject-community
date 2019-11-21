@@ -2,8 +2,8 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, hex } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, initHelperWeb3, hex, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -29,7 +29,15 @@ contract('Whitelisted Contracts Proposals', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 400000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -45,9 +53,6 @@ contract('Whitelisted Contracts Proposals', accounts => {
     it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      let whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
-      const prevLength = whitelistedContracts.length;
-
       const calldata = this.fundStorageX.contract.methods
         .addWhiteListedContract(customContract, hex('custom'), hex('Qm1'), 'description')
         .encodeABI();
@@ -60,11 +65,9 @@ contract('Whitelisted Contracts Proposals', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
-      assert.equal(whitelistedContracts.length, prevLength + 1);
-      assert.equal(whitelistedContracts[whitelistedContracts.length - 1], customContract);
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       const customContractDetails = await this.fundStorageX.getWhiteListedContract(customContract);
       assert.equal(customContractDetails._contractType, hex('custom'));

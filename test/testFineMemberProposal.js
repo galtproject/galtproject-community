@@ -8,8 +8,8 @@ const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, zeroAddress, paymentMethods } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, initHelperWeb3, zeroAddress, paymentMethods, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
@@ -78,7 +78,15 @@ contract('FineFundMemberProposal', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -157,10 +165,11 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: eve });
       await this.fundProposalManagerX.aye(proposalId, { from: frank });
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 652173);
-      res = await this.fundProposalManagerX.getThreshold(proposalId);
-      assert.equal(res, 600000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, '65217391304347826086');
+      assert.equal(res.requiredSupport, ether(60));
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(proposalId);
 
@@ -234,10 +243,10 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: eve });
       await this.fundProposalManagerX.aye(proposalId, { from: frank });
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 652173);
-      res = await this.fundProposalManagerX.getThreshold(proposalId);
-      assert.equal(res, 600000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, '65217391304347826086');
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(proposalId);
 
@@ -326,6 +335,9 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(ethProposalId, { from: dan });
       await this.fundProposalManagerX.aye(ethProposalId, { from: eve });
       await this.fundProposalManagerX.aye(ethProposalId, { from: frank });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(ethProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
@@ -348,6 +360,9 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(galtProposalId, { from: dan });
       await this.fundProposalManagerX.aye(galtProposalId, { from: eve });
       await this.fundProposalManagerX.aye(galtProposalId, { from: frank });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(galtProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
@@ -370,6 +385,8 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(daiProposalId, { from: dan });
       await this.fundProposalManagerX.aye(daiProposalId, { from: eve });
       await this.fundProposalManagerX.aye(daiProposalId, { from: frank });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(daiProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress, { from: alice }));
@@ -392,6 +409,8 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: dan });
       await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: eve });
       await this.fundProposalManagerX.aye(anotherGaltProposalId, { from: frank });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(anotherGaltProposalId);
 
       await assertRevert(this.fundRAX.approveBurn(this.lockerAddress2, { from: alice }));
@@ -488,6 +507,8 @@ contract('FineFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(ethProposal2Id, { from: dan });
       await this.fundProposalManagerX.aye(ethProposal2Id, { from: eve });
       await this.fundProposalManagerX.aye(ethProposal2Id, { from: frank });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(ethProposal2Id);
 
       res = await this.fundStorageX.getFineAmount(this.token1, this.galtToken.address);

@@ -14,9 +14,6 @@ import "../../common/FundMultiSig.sol";
 
 
 interface IAbstractFundStorage {
-//  function setdefaultProposalSupport(uint256 _value) external;
-//  function setProposalThreshold(bytes32 _key, uint256 _value) external;
-
   function setConfigValue(bytes32 _key, bytes32 _value) external;
 
   function setDefaultProposalVotingConfig(
@@ -134,11 +131,7 @@ interface IAbstractFundStorage {
 
   function areMembersValid(address[] calldata _members) external view returns (bool);
 
-  function getWhitelistedContracts() external view returns (address[] memory);
-
-  function getProposalMarkers() external view returns (bytes32[] memory);
-
-  function getActiveMultisigManagers() external view returns (address[] memory);
+ function getActiveMultisigManagers() external view returns (address[] memory);
 
   function getActiveMultisigManagersCount() external view returns (uint256);
 
