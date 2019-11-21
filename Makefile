@@ -18,6 +18,10 @@ only-skip:
 only-recover:
 	./scripts/only-recover.sh
 
+ftest:
+	-npm test
+	tput bel
+
 test: only-skip
 	-npm test
 	tput bel

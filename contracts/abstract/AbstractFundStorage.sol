@@ -64,6 +64,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   event AddWhiteListedContract(address indexed contractAddress);
   event RemoveWhiteListedContract(address indexed contractAddress);
 
+  event SetConfig(bytes32 indexed key, bytes32 value);
+
   struct FundRule {
     bool active;
     uint256 id;
@@ -74,7 +76,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   struct WhitelistedContract {
-    bool active;
     bytes32 abiIpfsHash;
     bytes32 contractType;
     string description;
@@ -116,8 +117,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   uint256 public initialTimestamp;
   uint256 public periodLength;
 
+  ArraySet.AddressSet internal _whiteListedContractsList;
   ArraySet.Uint256Set internal _activeFundRules;
-  ArraySet.Bytes32Set internal _configKeys;
   ArraySet.AddressSet internal feeContracts;
 
   Counters.Counter internal fundRuleCounter;
@@ -241,7 +242,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
     _config[_key] = _value;
-    _configKeys.addSilent(_key);
+
+    emit SetConfig(_key, _value);
   }
 
   function addWhiteListedContract(
@@ -255,7 +257,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   {
     WhitelistedContract storage c = _whitelistedContracts[_contract];
 
-    c.active = true;
+    _whiteListedContractsList.addSilent(_contract);
+
     c.contractType = _type;
     c.abiIpfsHash = _abiIpfsHash;
     c.description = _description;
@@ -264,7 +267,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function removeWhiteListedContract(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
-    _whitelistedContracts[_contract].active = false;
+     _whiteListedContractsList.remove(_contract);
 
     emit RemoveWhiteListedContract(_contract);
   }
@@ -483,8 +486,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     return _config[_key];
   }
 
-  function getConfigKeys() external view returns (bytes32[] memory) {
-    return _configKeys.elements();
+  function getWhitelistedContracts() external view returns (address[] memory) {
+    return _whiteListedContractsList.elements();
   }
 
   function getActiveFundRules() external view returns (uint256[] memory) {

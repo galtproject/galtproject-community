@@ -53,6 +53,9 @@ contract('Whitelisted Contracts Proposals', accounts => {
     it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
+      let whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
+      const prevLength = whitelistedContracts.length;
+
       const calldata = this.fundStorageX.contract.methods
         .addWhiteListedContract(customContract, hex('custom'), hex('Qm1'), 'description')
         .encodeABI();
@@ -68,6 +71,10 @@ contract('Whitelisted Contracts Proposals', accounts => {
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+
+      whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
+      assert.equal(whitelistedContracts.length, prevLength + 1);
+      assert.equal(whitelistedContracts[whitelistedContracts.length - 1], customContract);
 
       const customContractDetails = await this.fundStorageX.getWhiteListedContract(customContract);
       assert.equal(customContractDetails._contractType, hex('custom'));

@@ -97,7 +97,7 @@ interface IAbstractFundStorage {
 
   function getConfigValue(bytes32 _key) external view returns (bytes32);
 
-  function getConfigKeys() external view returns (bytes32[] memory);
+  function getWhitelistedContracts() external view returns (address[] memory);
 
   function getActiveFundRules() external view returns (uint256[] memory);
 
