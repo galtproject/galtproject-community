@@ -267,7 +267,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function removeWhiteListedContract(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
-     _whiteListedContractsList.remove(_contract);
+    _whiteListedContractsList.remove(_contract);
 
     emit RemoveWhiteListedContract(_contract);
   }
