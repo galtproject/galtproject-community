@@ -13,10 +13,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
-//import "../common/FundMultiSig.sol";
-//import "../common/FundProposalManager.sol";
-//import "../FundController.sol";
-//import "../common/interfaces/IFundRA.sol";
 import "../abstract/AbstractFundStorage.sol";
 
 
@@ -41,11 +37,19 @@ contract FundStorage is AbstractFundStorage {
   constructor (
     GaltGlobalRegistry _ggr,
     bool _isPrivate,
-    uint256 _defaultProposalThreshold,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     public
-    AbstractFundStorage(_isPrivate, _defaultProposalThreshold, _periodLength)
+    AbstractFundStorage(
+      _isPrivate,
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout,
+      _periodLength
+    )
   {
     ggr = _ggr;
   }

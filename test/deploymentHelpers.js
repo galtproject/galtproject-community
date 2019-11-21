@@ -49,7 +49,7 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
       this.fundControllerFactory.address,
       this.fundProposalManagerFactory.address,
       ...ppArguments,
-      { from: owner }
+      { from: owner, gas: 9000000 }
     );
   } else {
     this.fundRAFactory = await MockFundRAFactory.new();
@@ -100,7 +100,7 @@ function getBaseFundStorageMarkersNames() {
     'storage.setMemberIdentification',
     'storage.setNameAndDescription',
     'storage.setPeriodLimit',
-    'storage.setProposalThreshold',
+    'storage.setProposalVotingConfig',
     'storage.setConfigValue',
     'multiSig.setOwners'
   ];
@@ -111,8 +111,8 @@ function getBaseFundStorageMarkersNames() {
  *
  * @param {FundMultiSigFactory} factory
  * @param {boolean} isPrivate
- * @param {number} defaultThreshold
- * @param {Object} customThresholds
+ * @param {VotingConfig} defaultVotingConfig
+ * @param {VotingConfig[]} customVotingConfigs
  * @param {Array<string>} initialMultiSigOwners
  * @param {number} initialMultiSigRequired
  * @param {number} periodLength
@@ -127,8 +127,8 @@ async function buildFund(
   factory,
   creator,
   isPrivate,
-  defaultThreshold,
-  customThresholds,
+  defaultVotingConfig,
+  customVotingConfigs,
   initialMultiSigOwners,
   initialMultiSigRequired,
   periodLength = ONE_MONTH,
@@ -138,10 +138,18 @@ async function buildFund(
   value = 0
 ) {
   // >>> Step #1
-  let res = await factory.buildFirstStep(creator, isPrivate, defaultThreshold, periodLength, {
-    from: creator,
-    value
-  });
+  let res = await factory.buildFirstStep(
+    creator,
+    isPrivate,
+    defaultVotingConfig.support,
+    defaultVotingConfig.quorum,
+    defaultVotingConfig.timeout,
+    periodLength,
+    {
+      from: creator,
+      value
+    }
+  );
   // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await FundStorage.at(res.logs[0].args.fundStorage);
@@ -158,16 +166,18 @@ async function buildFund(
   const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
   const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
-  const keys = Object.keys(customThresholds);
+  const keys = Object.keys(customVotingConfigs);
   let markers = [];
   let signatures = [];
-  const values = [];
+  const supports = [];
+  const quorums = [];
+  const timeouts = [];
 
   signatures = keys.map(k => fundStorage[`${k}_SIGNATURE`]());
   signatures = await Promise.all(signatures);
 
   for (let i = 0; i < keys.length; i++) {
-    const val = customThresholds[keys[i]];
+    const val = customVotingConfigs[keys[i]];
     const localKeys = Object.keys(val);
     assert(localKeys.length === 1, 'Invalid threshold keys length');
     const contract = localKeys[0];
@@ -192,13 +202,15 @@ async function buildFund(
     }
 
     markers.push(marker);
-    values.push(customThresholds[keys[i]][contract]);
+    supports.push(customVotingConfigs[keys[i]][contract].support);
+    quorums.push(customVotingConfigs[keys[i]][contract].quorum);
+    timeouts.push(customVotingConfigs[keys[i]][contract].timeout);
   }
 
   markers = await Promise.all(markers);
 
   // >>> Step #4
-  res = await factory.buildFourthStep(fundId, markers, values, { from: creator });
+  res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
   // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
   res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
@@ -222,8 +234,8 @@ async function buildFund(
  *
  * @param {FundMultiSigFactory} factory
  * @param {boolean} isPrivate
- * @param {number} defaultThreshold
- * @param {Object} customThresholds
+ * @param {VotingConfig} defaultVotingConfig
+ * @param {VotingConfig[]} customVotingConfigs
  * @param {Array<string>} initialMultiSigOwners
  * @param {number} initialMultiSigRequired
  * @param {number} periodLength
@@ -239,8 +251,8 @@ async function buildPrivateFund(
   factory,
   creator,
   isPrivate,
-  defaultThreshold,
-  customThresholds,
+  defaultVotingConfig,
+  customVotingConfigs,
   initialMultiSigOwners,
   initialMultiSigRequired,
   periodLength = ONE_MONTH,
@@ -251,10 +263,18 @@ async function buildPrivateFund(
   value = 0
 ) {
   // >>> Step #1
-  let res = await factory.buildFirstStep(creator, isPrivate, defaultThreshold, periodLength, {
-    from: creator,
-    value
-  });
+  let res = await factory.buildFirstStep(
+    creator,
+    isPrivate,
+    defaultVotingConfig.support,
+    defaultVotingConfig.quorum,
+    defaultVotingConfig.timeout,
+    periodLength,
+    {
+      from: creator,
+      value
+    }
+  );
   // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = await res.logs[0].args.fundId;
   const fundStorage = await PrivateFundStorage.at(res.logs[0].args.fundStorage);
@@ -271,16 +291,18 @@ async function buildPrivateFund(
   const fundRA = await MockPrivateFundRA.at(res.logs[0].args.fundRA);
   const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
-  const keys = Object.keys(customThresholds);
+  const keys = Object.keys(customVotingConfigs);
   let markers = [];
   let signatures = [];
-  const values = [];
+  const supports = [];
+  const quorums = [];
+  const timeouts = [];
 
   signatures = keys.map(k => fundStorage[`${k}_SIGNATURE`]());
   signatures = await Promise.all(signatures);
 
   for (let i = 0; i < keys.length; i++) {
-    const val = customThresholds[keys[i]];
+    const val = customVotingConfigs[keys[i]];
     const localKeys = Object.keys(val);
     assert(localKeys.length === 1, 'Invalid threshold keys length');
     const contract = localKeys[0];
@@ -305,13 +327,15 @@ async function buildPrivateFund(
     }
 
     markers.push(marker);
-    values.push(customThresholds[keys[i]][contract]);
+    supports.push(customVotingConfigs[keys[i]][contract].support);
+    quorums.push(customVotingConfigs[keys[i]][contract].quorum);
+    timeouts.push(customVotingConfigs[keys[i]][contract].timeout);
   }
 
   markers = await Promise.all(markers);
 
   // >>> Step #4
-  res = await factory.buildFourthStep(fundId, markers, values, { from: creator });
+  res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
   // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
   res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
@@ -330,9 +354,18 @@ async function buildPrivateFund(
   };
 }
 
+function VotingConfig(support, quorum, timeout) {
+  this.support = support;
+  this.quorum = quorum;
+  this.timeout = timeout;
+}
+
+VotingConfig.ONE_WEEK = 60 * 60 * 24 * 7;
+
 module.exports = {
   deployFundFactory,
   buildFund,
   buildPrivateFund,
-  getBaseFundStorageMarkersNames
+  getBaseFundStorageMarkersNames,
+  VotingConfig
 };

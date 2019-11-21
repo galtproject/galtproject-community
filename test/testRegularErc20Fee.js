@@ -4,8 +4,8 @@ const RegularErc20FeeFactory = artifacts.require('./RegularErc20FeeFactory.sol')
 const RegularErc20Fee = artifacts.require('./RegularErc20Fee.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -43,7 +43,15 @@ contract('Regular ERC20 Fees', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -145,6 +153,9 @@ contract('Regular ERC20 Fees', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
       await this.fundProposalManagerX.aye(proposalId, { from: alice });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       res = await this.fundStorageX.getFeeContracts();

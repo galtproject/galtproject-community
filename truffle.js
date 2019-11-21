@@ -20,7 +20,8 @@ const config = {
     local: {
       host: '127.0.0.1',
       port: 8545,
-      network_id: '*'
+      network_id: '*',
+      gasLimit: 9000000
     },
     test: {
       // https://github.com/trufflesuite/ganache-core#usage
@@ -29,8 +30,7 @@ const config = {
         total_accounts: 30,
         vmErrorsOnRPCResponse: true,
         default_balance_ether: 5000000,
-        // 7 800 000
-        gasLimit: 0x7704c0
+        gasLimit: 9000000
       }),
       skipDryRun: true,
       network_id: '*'

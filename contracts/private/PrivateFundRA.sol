@@ -12,10 +12,9 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
+import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
 import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRA.sol";
-
-import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
 import "./traits/PPTokenInputRA.sol";
 
 

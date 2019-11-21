@@ -12,8 +12,8 @@ PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
-const { deployFundFactory, buildPrivateFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, initHelperWeb3, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = PPACL;
 const { utf8ToHex } = web3.utils;
@@ -100,7 +100,15 @@ contract('ExpelFundMemberProposal', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildPrivateFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
+    const fund = await buildPrivateFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -205,14 +213,19 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
       assert.equal(res.totalNays, 0);
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 652173); // (500 + 400 + 300 + 300) / 2300
-      res = await this.fundProposalManagerX.getThreshold(proposalId);
-      assert.equal(res, 600000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
+      assert.equal(res.totalNays, 0);
+      assert.equal(res.ayesShare, '65217391304347826086');
+      assert.equal(res.currentSupport, ether(100));
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(50));
 
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
       assert.equal(res.isExpelled, false);
       assert.equal(res.amount, 0);
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       // ACCEPT PROPOSAL
       await this.fundProposalManagerX.triggerApprove(proposalId);
