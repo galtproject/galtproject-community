@@ -20,7 +20,9 @@ contract PrivateFundStorageFactory is Ownable {
   function build(
     IPPGlobalRegistry _globalRegistry,
     bool _isPrivate,
-    uint256 defaultThreshold,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -29,7 +31,9 @@ contract PrivateFundStorageFactory is Ownable {
     PrivateFundStorage fundStorage = new PrivateFundStorage(
       _globalRegistry,
       _isPrivate,
-      defaultThreshold,
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout,
       _periodLength
     );
 

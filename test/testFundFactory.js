@@ -5,7 +5,7 @@ const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, assertEthBalanceChanged, assertGaltBalanceChanged } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -53,7 +53,20 @@ contract('FundFactory', accounts => {
 
   describe('protocol fee', () => {
     async function build(factory, value = 0) {
-      await buildFund(factory, alice, false, 600000, {}, [bob, charlie], 2, 2592000, 'foo', 'bar', [], value);
+      await buildFund(
+        factory,
+        alice,
+        false,
+        new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+        {},
+        [bob, charlie],
+        2,
+        2592000,
+        'foo',
+        'bar',
+        [],
+        value
+      );
     }
 
     describe('payments', async function() {

@@ -2,7 +2,7 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, int, getDestinationMarker } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -37,7 +37,15 @@ contract('Fee Proposals', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -80,38 +88,20 @@ contract('Fee Proposals', accounts => {
       res = await this.fundProposalManagerX.getRejectedProposals(marker);
       assert.sameMembers(res.map(int), []);
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 200000);
-      res = await this.fundProposalManagerX.getNayShare(proposalId);
-      assert.equal(res, 200000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(20));
+      assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
       await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerReject(proposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }));
 
       await this.fundProposalManagerX.aye(proposalId, { from: dan });
       await this.fundProposalManagerX.aye(proposalId, { from: eve });
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 600000);
-      res = await this.fundProposalManagerX.getNayShare(proposalId);
-      assert.equal(res, 200000);
-
-      // await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
-      //
-      // res = await this.changeMultiSigOwnersProposalManager.getProposalVoting(proposalId);
-      // assert.equal(res.status, ProposalStatus.APPROVED);
-      //
-      // res = await this.changeMultiSigOwnersProposalManager.getActiveProposals();
-      // assert.sameMembers(res.map(int), []);
-      // res = await this.changeMultiSigOwnersProposalManager.getApprovedProposals();
-      // assert.sameMembers(res.map(int), [1]);
-      // res = await this.changeMultiSigOwnersProposalManager.getRejectedProposals();
-      // assert.sameMembers(res.map(int), []);
-      //
-      // // verify value changed
-      // res = await this.fundMultiSig.getOwners();
-      // assert.sameMembers(res, [alice, frank, george]);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(60));
+      assert.equal(res.naysShare, ether(20));
     });
   });
 });

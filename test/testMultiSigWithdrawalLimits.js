@@ -2,8 +2,8 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -45,7 +45,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
       this.fundFactory,
       alice,
       false,
-      600000,
+      new VotingConfig(ether(60), ether(60), VotingConfig.ONE_WEEK),
       {},
       // [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
@@ -89,6 +89,9 @@ contract('MultiSig Withdrawal Limits', accounts => {
     await this.fundProposalManagerX.aye(pId, { from: bob });
     await this.fundProposalManagerX.aye(pId, { from: charlie });
     await this.fundProposalManagerX.aye(pId, { from: dan });
+
+    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
     await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
     const limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
@@ -144,6 +147,9 @@ contract('MultiSig Withdrawal Limits', accounts => {
     await this.fundProposalManagerX.aye(pId, { from: bob });
     await this.fundProposalManagerX.aye(pId, { from: charlie });
     await this.fundProposalManagerX.aye(pId, { from: dan });
+
+    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
     await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
     const limit = await this.fundStorageX.getPeriodLimit(ETH_CONTRACT);

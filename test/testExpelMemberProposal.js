@@ -8,8 +8,8 @@ const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, paymentMethods } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, initHelperWeb3, paymentMethods, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
@@ -72,7 +72,15 @@ contract('ExpelFundMemberProposal', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -160,18 +168,19 @@ contract('ExpelFundMemberProposal', accounts => {
       res = await this.fundRAX.balanceOfAt(bob, block0);
       assert.equal(res, 500);
 
-      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
       assert.equal(res.totalNays, 0);
-
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 652173); // (500 + 400 + 300 + 300) / 2300
-      res = await this.fundProposalManagerX.getThreshold(proposalId);
-      assert.equal(res, 600000);
+      assert.equal(res.ayesShare, '65217391304347826086');
+      assert.equal(res.currentSupport, ether(100));
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
 
       res = await this.fundStorageX.getExpelledToken(token1);
       assert.equal(res.isExpelled, false);
       assert.equal(res.amount, 0);
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       // ACCEPT PROPOSAL
       await this.fundProposalManagerX.triggerApprove(proposalId);

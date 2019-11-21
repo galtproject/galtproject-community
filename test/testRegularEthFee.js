@@ -4,8 +4,16 @@ const RegularEthFeeFactory = artifacts.require('./RegularEthFeeFactory.sol');
 const RegularEthFee = artifacts.require('./RegularEthFee.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, hex } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const {
+  ether,
+  assertRevert,
+  lastBlockTimestamp,
+  initHelperWeb3,
+  increaseTime,
+  hex,
+  evmIncreaseTime
+} = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -39,7 +47,15 @@ contract('Regular ETH Fees', accounts => {
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -141,6 +157,9 @@ contract('Regular ETH Fees', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
       await this.fundProposalManagerX.aye(proposalId, { from: alice });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       res = await this.fundStorageX.getFeeContracts();
@@ -189,6 +208,9 @@ contract('Regular ETH Fees', accounts => {
     await this.fundProposalManagerX.aye(proposalId, { from: bob });
     await this.fundProposalManagerX.aye(proposalId, { from: charlie });
     await this.fundProposalManagerX.aye(proposalId, { from: alice });
+
+    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
     await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
     res = await this.fundStorageX.getFeeContracts();

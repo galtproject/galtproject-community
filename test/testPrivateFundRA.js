@@ -13,8 +13,8 @@ const PPACL = artifacts.require('./PPACL.sol');
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
-const { deployFundFactory, buildPrivateFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime } = require('./helpers');
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = PPToken;
 const { utf8ToHex } = web3.utils;
@@ -88,7 +88,15 @@ contract('PrivateFundRA', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildPrivateFund(this.fundFactory, alice, false, 600000, {}, [bob, charlie], 2);
+    const fund = await buildPrivateFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -209,6 +217,9 @@ contract('PrivateFundRA', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
       await this.fundProposalManagerX.aye(proposalId, { from: alice });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: unauthorized });
 
       res = await this.fundStorageX.getFeeContracts();

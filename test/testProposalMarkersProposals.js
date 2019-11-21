@@ -2,10 +2,13 @@ const SpaceToken = artifacts.require('./SpaceToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
-const { deployFundFactory, buildFund, getBaseFundStorageMarkersNames } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getDestinationMarker, getMethodSignature, hex } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { initHelperWeb3, getDestinationMarker, getMethodSignature, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
+
+// eslint-disable-next-line import/order
+const { ether, hex, assertRevert } = require('@galtproject/solidity-test-chest')(web3);
 
 initHelperWeb3(web3);
 
@@ -29,7 +32,15 @@ contract('Proposal Markers Proposals', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, false, 400000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      false,
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -44,9 +55,6 @@ contract('Proposal Markers Proposals', accounts => {
   describe('Add And Replace Proposal Marker', () => {
     it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
-
-      let proposalMarkers = await this.fundStorageX.getProposalMarkers();
-      let prevLength = proposalMarkers.length;
 
       const signature = getMethodSignature(this.galtToken.abi, 'transfer');
       const marker = getDestinationMarker(this.galtToken, 'transfer');
@@ -63,17 +71,18 @@ contract('Proposal Markers Proposals', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
+      await assertRevert(
+        this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
+        "Timeout hasn't been passed"
+      );
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
-
-      proposalMarkers = await this.fundStorageX.getProposalMarkers();
-      assert.equal(proposalMarkers.length, prevLength + 1);
-      assert.equal(proposalMarkers[proposalMarkers.length - 1], marker);
-
-      prevLength = proposalMarkers.length;
 
       let markerDetails = await this.fundStorageX.getProposalMarker(marker);
       assert.equal(markerDetails._proposalManager, proposalManager);
-      assert.equal(markerDetails._name, hex('name'));
+      assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
       assert.equal(markerDetails._description, 'description');
       assert.equal(markerDetails._destination, this.galtToken.address);
 
@@ -92,36 +101,15 @@ contract('Proposal Markers Proposals', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      proposalMarkers = await this.fundStorageX.getProposalMarkers();
-      assert.equal(proposalMarkers.length, prevLength);
-      assert.equal(proposalMarkers[proposalMarkers.length - 1], newMarker);
+      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
       markerDetails = await this.fundStorageX.getProposalMarker(newMarker);
       assert.equal(markerDetails._proposalManager, proposalManager);
-      assert.equal(markerDetails._name, hex('name'));
+      assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
       assert.equal(markerDetails._description, 'description');
       assert.equal(markerDetails._destination, this.spaceToken.address);
-    });
-  });
-
-  describe('Check deployed proposal markers', () => {
-    it('proposal markers should be correct', async function() {
-      const proposalMarkers = await this.fundStorageX.getProposalMarkers();
-
-      getBaseFundStorageMarkersNames().forEach((fullMethodName, index) => {
-        console.log(`check ${fullMethodName} marker`);
-        const contractName = fullMethodName.split('.')[0];
-        const methodName = fullMethodName.split('.')[1];
-        let contract;
-        if (contractName === 'storage') {
-          contract = this.fundStorageX;
-        } else if (contractName === 'multiSig') {
-          contract = this.fundMultiSigX;
-        }
-        assert.equal(proposalMarkers[index], getDestinationMarker(contract, methodName));
-      });
     });
   });
 });

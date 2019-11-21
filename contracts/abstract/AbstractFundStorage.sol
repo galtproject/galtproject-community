@@ -10,26 +10,25 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
-import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "../common/FundMultiSig.sol";
 import "../common/FundProposalManager.sol";
-//import "../FundController.sol";
 import "../common/interfaces/IFundRA.sol";
 import "./interfaces/IAbstractFundStorage.sol";
 
 
 contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializable {
+  // TODO: Use SafeMath
+
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
   using ArraySet for ArraySet.Bytes32Set;
   using Counters for Counters.Counter;
 
-  // 100% == 10**6
-  uint256 public constant DECIMALS = 10**6;
+  // 100% == 100 ether
+  uint256 public constant ONE_HUNDRED_PCT = 100 ether;
 
   string public constant ROLE_CONFIG_MANAGER = "config_manager";
   string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
@@ -54,26 +53,18 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   bytes32 public constant CONTRACT_CORE_CONTROLLER = "contract_core_controller";
   bytes32 public constant CONTRACT_CORE_PROPOSAL_MANAGER = "contract_core_proposal_manager";
 
-  bytes32 public constant MANAGE_WL_THRESHOLD = bytes32("manage_wl_threshold");
-  bytes32 public constant MODIFY_CONFIG_THRESHOLD = bytes32("modify_config_threshold");
-  bytes32 public constant NEW_MEMBER_THRESHOLD = bytes32("new_member_threshold");
-  bytes32 public constant EXPEL_MEMBER_THRESHOLD = bytes32("expel_member_threshold");
-  bytes32 public constant FINE_MEMBER_THRESHOLD = bytes32("fine_member_threshold");
-  bytes32 public constant NAME_AND_DESCRIPTION_THRESHOLD = bytes32("name_and_description_threshold");
-  bytes32 public constant ADD_FUND_RULE_THRESHOLD = bytes32("add_fund_rule_threshold");
-  bytes32 public constant DEACTIVATE_FUND_RULE_THRESHOLD = bytes32("deactivate_fund_rule_threshold");
-  bytes32 public constant CHANGE_MS_OWNERS_THRESHOLD = bytes32("change_ms_owners_threshold");
-  bytes32 public constant MODIFY_FEE_THRESHOLD = bytes32("modify_fee_threshold");
-  bytes32 public constant MODIFY_MANAGER_DETAILS_THRESHOLD = bytes32("modify_manager_details_threshold");
-  bytes32 public constant CHANGE_WITHDRAWAL_LIMITS_THRESHOLD = bytes32("withdrawal_limits_threshold");
-  bytes32 public constant MEMBER_IDENTIFICATION_THRESHOLD = bytes32("member_identification_threshold");
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
   event AddProposalMarker(bytes32 indexed marker, address indexed proposalManager);
   event RemoveProposalMarker(bytes32 indexed marker, address indexed proposalManager);
 
-  event SetProposalThreshold(bytes32 indexed key, uint256 value);
-  event SetDefaultProposalThreshold(uint256 value);
+  event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 minAcceptQuorum, uint256 timeout);
+  event SetDefaultProposalVotingConfig(uint256 support, uint256 minAcceptQuorum, uint256 timeout);
+
+  event AddWhiteListedContract(address indexed contractAddress);
+  event RemoveWhiteListedContract(address indexed contractAddress);
+
+  event SetConfig(bytes32 indexed key, bytes32 value);
 
   struct FundRule {
     bool active;
@@ -91,6 +82,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   struct ProposalMarker {
+    bool active;
     bytes32 name;
     string description;
     address destination;
@@ -124,12 +116,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   string public description;
   uint256 public initialTimestamp;
   uint256 public periodLength;
-  uint256 public defaultProposalThreshold;
 
   ArraySet.AddressSet internal _whiteListedContractsList;
-  ArraySet.Bytes32Set internal _proposalMarkersList;
   ArraySet.Uint256Set internal _activeFundRules;
-  ArraySet.Bytes32Set internal _configKeys;
   ArraySet.AddressSet internal feeContracts;
 
   Counters.Counter internal fundRuleCounter;
@@ -155,8 +144,16 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
-  // marker => threshold
-  mapping(bytes32 => uint256) public thresholds;
+
+  struct VotingConfig {
+    uint256 support;
+    uint256 minAcceptQuorum;
+    uint256 timeout;
+  }
+
+  // marker => customVotingConfigs
+  mapping(bytes32 => VotingConfig) public customVotingConfigs;
+  VotingConfig public defaultVotingConfig;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -172,14 +169,21 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   constructor (
     bool _isPrivate,
-    uint256 _defaultProposalThreshold,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalMinAcceptQuorum,
+    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   ) public {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
-    defaultProposalThreshold = _defaultProposalThreshold;
+
+    _validateVotingConfig(_defaultProposalSupport, _defaultProposalMinAcceptQuorum, _defaultProposalTimeout);
+
+    defaultVotingConfig.support = _defaultProposalSupport;
+    defaultVotingConfig.minAcceptQuorum = _defaultProposalMinAcceptQuorum;
+    defaultVotingConfig.timeout = _defaultProposalTimeout;
 
     _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
   }
@@ -199,25 +203,47 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
   }
 
-  function setDefaultProposalThreshold(uint256 _value) external onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER) {
-    require(_value > 0 && _value <= DECIMALS, "Invalid threshold value");
+  function setDefaultProposalVotingConfig(
+    uint256 _support,
+    uint256 _minAcceptQuorum,
+    uint256 _timeout
+  )
+    external
+    onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER)
+  {
+    _validateVotingConfig(_support, _minAcceptQuorum, _timeout);
 
-    defaultProposalThreshold = _value;
+    defaultVotingConfig.support = _support;
+    defaultVotingConfig.minAcceptQuorum = _minAcceptQuorum;
+    defaultVotingConfig.timeout = _timeout;
 
-    emit SetDefaultProposalThreshold(_value);
+    emit SetDefaultProposalVotingConfig(_support, _minAcceptQuorum, _timeout);
   }
 
-  function setProposalThreshold(bytes32 _key, uint256 _value) external onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER) {
-    require(_value <= DECIMALS, "Invalid threshold value");
+  function setProposalVotingConfig(
+    bytes32 _marker,
+    uint256 _support,
+    uint256 _minAcceptQuorum,
+    uint256 _timeout
+  )
+    external
+    onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER)
+  {
+    _validateVotingConfig(_support, _minAcceptQuorum, _timeout);
 
-    thresholds[_key] = _value;
+    customVotingConfigs[_marker] = VotingConfig({
+      support: _support,
+      minAcceptQuorum: _minAcceptQuorum,
+      timeout: _timeout
+    });
 
-    emit SetProposalThreshold(_key, _value);
+    emit SetProposalVotingConfig(_marker, _support, _minAcceptQuorum, _timeout);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
     _config[_key] = _value;
-    _configKeys.addSilent(_key);
+
+    emit SetConfig(_key, _value);
   }
 
   function addWhiteListedContract(
@@ -229,17 +255,21 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     external
     onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
   {
-    _whiteListedContractsList.addSilent(_contract);
-
     WhitelistedContract storage c = _whitelistedContracts[_contract];
+
+    _whiteListedContractsList.addSilent(_contract);
 
     c.contractType = _type;
     c.abiIpfsHash = _abiIpfsHash;
     c.description = _description;
+
+    emit AddWhiteListedContract(_contract);
   }
 
   function removeWhiteListedContract(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
     _whiteListedContractsList.remove(_contract);
+
+    emit RemoveWhiteListedContract(_contract);
   }
 
   function addProposalMarker(
@@ -253,10 +283,10 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
   {
     bytes32 _marker = keccak256(abi.encode(_destination, _methodSignature));
-    _proposalMarkersList.addSilent(_marker);
 
     ProposalMarker storage m = _proposalMarkers[_marker];
 
+    m.active = true;
     m.proposalManager = _proposalManager;
     m.destination = _destination;
     m.name = _name;
@@ -266,7 +296,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
-    _proposalMarkersList.remove(_marker);
+    _proposalMarkers[_marker].active = false;
 
     emit RemoveProposalMarker(_marker, _proposalMarkers[_marker].proposalManager);
   }
@@ -280,10 +310,10 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
   {
     bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
-    _proposalMarkersList.remove(_oldMarker);
-    _proposalMarkersList.addSilent(_newMarker);
+
     _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
     _proposalMarkers[_newMarker].destination = _newDestination;
+    _proposalMarkers[_oldMarker].active = false;
   }
 
   function addFundRule(
@@ -403,6 +433,20 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
   }
 
+  // INTERNAL
+
+  function _validateVotingConfig(
+    uint256 _support,
+    uint256 _minAcceptQuorum,
+    uint256 _timeout
+  )
+    internal
+  {
+    require(_minAcceptQuorum > 0 && _minAcceptQuorum <= _support, "Invalid min accept quorum value");
+    require(_support > 0 && _support <= ONE_HUNDRED_PCT, "Invalid support value");
+    require(_timeout > 0, "Invalid duration value");
+  }
+
   // GETTERS
   function getThresholdMarker(address _destination, bytes memory _data) public pure returns(bytes32 marker) {
     bytes32 methodName;
@@ -414,12 +458,36 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     return keccak256(abi.encode(_destination, methodName));
   }
 
+  function getProposalVotingConfig(
+    bytes32 _key
+  )
+    external
+    view
+    returns (uint256 support, uint256 minAcceptQuorum, uint256 timeout)
+  {
+    uint256 to = customVotingConfigs[_key].timeout;
+
+    if (to > 0) {
+      return (
+        customVotingConfigs[_key].support,
+        customVotingConfigs[_key].minAcceptQuorum,
+        customVotingConfigs[_key].timeout
+      );
+    } else {
+      return (
+        defaultVotingConfig.support,
+        defaultVotingConfig.minAcceptQuorum,
+        defaultVotingConfig.timeout
+      );
+    }
+  }
+
   function getConfigValue(bytes32 _key) external view returns (bytes32) {
     return _config[_key];
   }
 
-  function getConfigKeys() external view returns (bytes32[] memory) {
-    return _configKeys.elements();
+  function getWhitelistedContracts() external view returns (address[] memory) {
+    return _whiteListedContractsList.elements();
   }
 
   function getActiveFundRules() external view returns (uint256[] memory) {
@@ -439,10 +507,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
   }
 
-//  function getController() public view returns (FundController) {
-//    return FundController(_coreContracts[CONTRACT_CORE_CONTROLLER]);
-//  }
-//
   function getProposalManager() public view returns (FundProposalManager) {
     return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
   }
@@ -495,14 +559,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     }
 
     return true;
-  }
-
-  function getWhitelistedContracts() external view returns (address[] memory) {
-    return _whiteListedContractsList.elements();
-  }
-
-  function getProposalMarkers() external view returns (bytes32[] memory) {
-    return _proposalMarkersList.elements();
   }
 
   function getActiveMultisigManagers() external view returns (address[] memory) {

@@ -8,8 +8,15 @@ const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
-const { deployFundFactory, buildFund } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, paymentMethods, getDestinationMarker } = require('./helpers');
+const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const {
+  ether,
+  assertRevert,
+  initHelperWeb3,
+  paymentMethods,
+  getDestinationMarker,
+  evmIncreaseTime
+} = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
@@ -71,7 +78,15 @@ contract('NewFundMemberProposal', accounts => {
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-    const fund = await buildFund(this.fundFactory, alice, true, 300000, {}, [bob, charlie, dan], 2);
+    const fund = await buildFund(
+      this.fundFactory,
+      alice,
+      true,
+      new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK),
+      {},
+      [bob, charlie, dan],
+      2
+    );
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
@@ -142,10 +157,12 @@ contract('NewFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
 
-      res = await this.fundProposalManagerX.getAyeShare(proposalId);
-      assert.equal(res, 400000);
-      res = await this.fundProposalManagerX.getThreshold(proposalId);
-      assert.equal(res, 300000);
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(40));
+      assert.equal(res.requiredSupport, ether(90));
+      assert.equal(res.minAcceptQuorum, ether(30));
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       await this.fundProposalManagerX.triggerApprove(proposalId);
 

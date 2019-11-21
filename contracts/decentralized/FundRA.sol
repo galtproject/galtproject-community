@@ -10,7 +10,6 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/components/SpaceInputRA.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";

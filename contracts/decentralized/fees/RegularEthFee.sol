@@ -9,7 +9,6 @@
 
 pragma solidity 0.5.10;
 
-import "../../abstract/AbstractFundStorage.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "./AbstractDecentralizedRegularFee.sol";
 import "../FundStorage.sol";

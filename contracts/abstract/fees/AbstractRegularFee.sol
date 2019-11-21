@@ -9,8 +9,6 @@
 
 pragma solidity 0.5.10;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IRegularFee.sol";
 import "./traits/DetailableFee.sol";
 
