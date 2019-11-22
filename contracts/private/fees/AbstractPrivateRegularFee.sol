@@ -26,6 +26,10 @@ contract AbstractPrivateRegularFee is AbstractRegularFee {
     fundStorage = _fundStorage;
   }
 
+  function _onlyValidToken(address _token) internal view {
+    IPPTokenRegistry(fundStorage.globalRegistry().getPPTokenRegistryAddress()).requireValidToken(_token);
+  }
+
   function lockToken(address _registry, uint256 _tokenId) public {
     require(paidUntil[_registry][_tokenId] < getNextPeriodTimestamp(), "paidUntil too small");
     fundStorage.lockSpaceToken(_registry, _tokenId);
@@ -49,6 +53,8 @@ contract AbstractPrivateRegularFee is AbstractRegularFee {
   }
 
   function _pay(address _registry, uint256 _tokenIds, uint256 _amount) internal {
+    _onlyValidToken(_registry);
+
     uint256 currentPaidUntil = paidUntil[_registry][_tokenIds];
     if (currentPaidUntil == 0) {
       currentPaidUntil = getCurrentPeriodTimestamp();
