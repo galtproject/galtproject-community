@@ -68,7 +68,7 @@ contract('FundProposalManager', accounts => {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalVotingConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
+          .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -86,10 +86,10 @@ contract('FundProposalManager', accounts => {
       it('should allow approving proposal if positive votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        const marker = getDestinationMarker(this.fundStorageX, 'setProposalVotingConfig');
+        const marker = getDestinationMarker(this.fundStorageX, 'setProposalConfig');
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalVotingConfig(marker, ether(42), ether(40), 555)
+          .setProposalConfig(marker, ether(42), ether(40), 555)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {

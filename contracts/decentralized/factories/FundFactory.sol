@@ -297,7 +297,7 @@ contract FundFactory is Ownable {
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
 
     for (uint256 i = 0; i < len; i++) {
-      _fundStorage.setProposalVotingConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
+      _fundStorage.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
     }
 
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());

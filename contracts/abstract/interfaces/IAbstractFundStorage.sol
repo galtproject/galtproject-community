@@ -16,14 +16,14 @@ import "../../common/FundMultiSig.sol";
 interface IAbstractFundStorage {
   function setConfigValue(bytes32 _key, bytes32 _value) external;
 
-  function setDefaultProposalVotingConfig(
+  function setDefaultProposalConfig(
     uint256 _support,
     uint256 _quorum,
     uint256 _timeout
   )
     external;
 
-  function setProposalVotingConfig(
+  function setProposalConfig(
     bytes32 _marker,
     uint256 _support,
     uint256 _quorum,

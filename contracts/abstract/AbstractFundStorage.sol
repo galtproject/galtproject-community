@@ -203,7 +203,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
   }
 
-  function setDefaultProposalVotingConfig(
+  function setDefaultProposalConfig(
     uint256 _support,
     uint256 _minAcceptQuorum,
     uint256 _timeout
@@ -220,7 +220,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     emit SetDefaultProposalVotingConfig(_support, _minAcceptQuorum, _timeout);
   }
 
-  function setProposalVotingConfig(
+  function setProposalConfig(
     bytes32 _marker,
     uint256 _support,
     uint256 _minAcceptQuorum,

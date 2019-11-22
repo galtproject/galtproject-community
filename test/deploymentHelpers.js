@@ -100,7 +100,7 @@ function getBaseFundStorageMarkersNames() {
     'storage.setMemberIdentification',
     'storage.setNameAndDescription',
     'storage.setPeriodLimit',
-    'storage.setProposalVotingConfig',
+    'storage.setProposalConfig',
     'storage.setConfigValue',
     'multiSig.setOwners'
   ];
