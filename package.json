@@ -6,12 +6,12 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#56d98e4",
+    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#7a947fc",
     "@galtproject/eslint-config-galt": "1.1.0",
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#9d3eb6d",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#d788618",
     "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest",
-    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#dd89d4d",
+    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#67f5502",
     "@galtproject/utils": "^0.9.1",
     "cli-table": "^0.3.1",
     "ethlint": "1.2.5",
