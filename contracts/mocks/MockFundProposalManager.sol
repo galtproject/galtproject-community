@@ -39,6 +39,8 @@ contract MockFundProposalManager is FundProposalManager {
     p.status = ProposalStatus.ACTIVE;
     _onNewProposal(id);
 
+    _proposalVotings[id].timeoutAt = block.timestamp;
+
     emit NewProposal(id, msg.sender, p.marker);
   }
 
