@@ -23,8 +23,8 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
-  event LockerMint(address indexed lockerAddress, uint256 indexed tokenId);
-  event LockerBurn(address indexed lockerAddress, uint256 indexed tokenId);
+  event TokenMint(uint256 indexed tokenId);
+  event TokenBurn(uint256 indexed tokenId);
 
   struct Checkpoint {
     uint128 fromBlock;
@@ -56,7 +56,7 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     require(fundStorage.isMintApproved(spaceTokenId), "No mint permissions");
     super.mint(_spaceLocker);
 
-    emit LockerMint(address(_spaceLocker), spaceTokenId);
+    emit TokenMint(spaceTokenId);
   }
 
   function approveBurn(
@@ -70,7 +70,7 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
 
     super.approveBurn(_spaceLocker);
 
-    emit LockerBurn(address(_spaceLocker), spaceTokenId);
+    emit TokenBurn(spaceTokenId);
   }
 
   function burnExpelled(uint256 _spaceTokenId, address _delegate, address _owner, uint256 _amount) external {

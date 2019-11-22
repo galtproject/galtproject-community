@@ -28,7 +28,7 @@ contract FundProposalManager {
   event AyeProposal(uint256 indexed proposalId, address indexed voter);
   event NayProposal(uint256 indexed proposalId, address indexed voter);
 
-  event Approved(uint256 ayeShare, uint256 support, bytes32 indexed marker);
+  event Approved(uint256 ayeShare, uint256 support, uint256 indexed proposalId, bytes32 indexed marker);
 
   struct ProposalVoting {
     uint256 creationBlock;
@@ -157,7 +157,7 @@ contract FundProposalManager {
     _approvedProposals[p.marker].push(_proposalId);
 
     p.status = ProposalStatus.APPROVED;
-    emit Approved(ayeShare, support, p.marker);
+    emit Approved(ayeShare, support, _proposalId, p.marker);
 
     execute(_proposalId);
   }
