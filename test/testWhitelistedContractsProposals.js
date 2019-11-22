@@ -57,7 +57,7 @@ contract('Whitelisted Contracts Proposals', accounts => {
       const prevLength = whitelistedContracts.length;
 
       const calldata = this.fundStorageX.contract.methods
-        .addWhiteListedContract(customContract, hex('custom'), hex('Qm1'), 'description')
+        .addWhiteListedContract(customContract, hex('custom'), hex('Qm1'), 'dataLink')
         .encodeABI();
       const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
         from: bob
@@ -78,7 +78,7 @@ contract('Whitelisted Contracts Proposals', accounts => {
 
       const customContractDetails = await this.fundStorageX.getWhiteListedContract(customContract);
       assert.equal(customContractDetails._contractType, hex('custom'));
-      assert.equal(customContractDetails._description, 'description');
+      assert.equal(customContractDetails._dataLink, 'dataLink');
       assert.equal(customContractDetails._abiIpfsHash, hex('Qm1'));
     });
   });

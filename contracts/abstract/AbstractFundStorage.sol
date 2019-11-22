@@ -37,7 +37,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   string public constant ROLE_EXPEL_MEMBER_MANAGER = "expel_member_manager";
   string public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
   string public constant ROLE_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
-  string public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_description_manager";
+  string public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_data_link_manager";
   string public constant ROLE_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
   string public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
   string public constant ROLE_FEE_MANAGER = "contract_fee_manager";
@@ -71,20 +71,20 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     uint256 id;
     address manager;
     bytes32 ipfsHash;
-    string description;
+    string dataLink;
     uint256 createdAt;
   }
 
   struct WhitelistedContract {
     bytes32 abiIpfsHash;
     bytes32 contractType;
-    string description;
+    string dataLink;
   }
 
   struct ProposalMarker {
     bool active;
     bytes32 name;
-    string description;
+    string dataLink;
     address destination;
     address proposalManager;
   }
@@ -113,7 +113,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   string public name;
-  string public description;
+  string public dataLink;
   uint256 public initialTimestamp;
   uint256 public periodLength;
 
@@ -250,7 +250,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
-    string calldata _description
+    string calldata _dataLink
   )
     external
     onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
@@ -261,7 +261,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
     c.contractType = _type;
     c.abiIpfsHash = _abiIpfsHash;
-    c.description = _description;
+    c.dataLink = _dataLink;
 
     emit AddWhiteListedContract(_contract);
   }
@@ -277,7 +277,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     address _destination,
     address _proposalManager,
     bytes32 _name,
-    string calldata _description
+    string calldata _dataLink
   )
     external
     onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER)
@@ -290,7 +290,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     m.proposalManager = _proposalManager;
     m.destination = _destination;
     m.name = _name;
-    m.description = _description;
+    m.dataLink = _dataLink;
 
     emit AddProposalMarker(_marker, _proposalManager);
   }
@@ -318,7 +318,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   function addFundRule(
     bytes32 _ipfsHash,
-    string calldata _description
+    string calldata _dataLink
   )
     external
     onlyRole(ROLE_ADD_FUND_RULE_MANAGER)
@@ -332,7 +332,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     fundRule.active = true;
     fundRule.id = _id;
     fundRule.ipfsHash = _ipfsHash;
-    fundRule.description = _description;
+    fundRule.dataLink = _dataLink;
     fundRule.manager = msg.sender;
     fundRule.createdAt = block.timestamp;
 
@@ -363,15 +363,15 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _activeFundRules.remove(_id);
   }
 
-  function setNameAndDescription(
+  function setNameAndDataLink(
     string calldata _name,
-    string calldata _description
+    string calldata _dataLink
   )
     external
     onlyRole(ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER)
   {
     name = _name;
-    description = _description;
+    dataLink = _dataLink;
   }
 
   function setMultiSigManager(
@@ -519,14 +519,14 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     returns (
       bytes32 _contractType,
       bytes32 _abiIpfsHash,
-      string memory _description
+      string memory _dataLink
     )
   {
     WhitelistedContract storage c = _whitelistedContracts[_contract];
 
     _contractType = c.contractType;
     _abiIpfsHash = c.abiIpfsHash;
-    _description = c.description;
+    _dataLink = c.dataLink;
   }
 
   function getProposalMarker(
@@ -538,7 +538,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
       address _proposalManager,
       address _destination,
       bytes32 _name,
-      string memory _description
+      string memory _dataLink
     )
   {
     ProposalMarker storage m = _proposalMarkers[_marker];
@@ -546,7 +546,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _proposalManager = m.proposalManager;
     _destination = m.destination;
     _name = m.name;
-    _description = m.description;
+    _dataLink = m.dataLink;
   }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {

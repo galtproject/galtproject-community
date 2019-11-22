@@ -60,7 +60,7 @@ contract('Proposal Markers Proposals', accounts => {
       const marker = getDestinationMarker(this.galtToken, 'transfer');
 
       let calldata = this.fundStorageX.contract.methods
-        .addProposalMarker(signature, this.galtToken.address, proposalManager, hex('name'), 'description')
+        .addProposalMarker(signature, this.galtToken.address, proposalManager, hex('name'), 'dataLink')
         .encodeABI();
       let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
         from: bob
@@ -83,7 +83,7 @@ contract('Proposal Markers Proposals', accounts => {
       let markerDetails = await this.fundStorageX.getProposalMarker(marker);
       assert.equal(markerDetails._proposalManager, proposalManager);
       assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
-      assert.equal(markerDetails._description, 'description');
+      assert.equal(markerDetails._dataLink, 'dataLink');
       assert.equal(markerDetails._destination, this.galtToken.address);
 
       const newSignature = getMethodSignature(this.spaceToken.abi, 'transferFrom');
@@ -108,7 +108,7 @@ contract('Proposal Markers Proposals', accounts => {
       markerDetails = await this.fundStorageX.getProposalMarker(newMarker);
       assert.equal(markerDetails._proposalManager, proposalManager);
       assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
-      assert.equal(markerDetails._description, 'description');
+      assert.equal(markerDetails._dataLink, 'dataLink');
       assert.equal(markerDetails._destination, this.spaceToken.address);
     });
   });

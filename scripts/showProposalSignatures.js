@@ -14,7 +14,7 @@ initHelperWeb3(web3);
   'storage.addFeeContract',
   'storage.removeFeeContract',
   'storage.setMemberIdentification',
-  'storage.setNameAndDescription',
+  'storage.setNameAndDataLink',
   'storage.setPeriodLimit',
   'storage.setProposalThreshold',
   'storage.setConfigValue',

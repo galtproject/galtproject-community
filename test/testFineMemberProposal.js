@@ -157,7 +157,7 @@ contract('FineFundMemberProposal', accounts => {
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
       res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.description, 'blah');
+      assert.equal(res.dataLink, 'blah');
 
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });
@@ -235,7 +235,7 @@ contract('FineFundMemberProposal', accounts => {
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
       res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.description, 'blah');
+      assert.equal(res.dataLink, 'blah');
 
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });

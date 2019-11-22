@@ -288,7 +288,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     emit CreateFundFourthStep(_fundId, len);
   }
 
-  function buildFourthStepDone(bytes32 _fundId, string calldata _name, string calldata _description) external {
+  function buildFourthStepDone(bytes32 _fundId, string calldata _name, string calldata _dataLink) external {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.FOURTH, "Requires fourth step");
@@ -296,7 +296,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     PrivateFundStorage _fundStorage = c.fundStorage;
 
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
-    _fundStorage.setNameAndDescription(_name, _description);
+    _fundStorage.setNameAndDataLink(_name, _dataLink);
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
 
     c.currentStep = Step.FIFTH;

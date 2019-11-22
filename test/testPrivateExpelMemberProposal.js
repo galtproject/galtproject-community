@@ -195,7 +195,7 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res, 2300); // 300 * 5 + 800
 
       res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.description, 'blah');
+      assert.equal(res.dataLink, 'blah');
 
       await this.fundProposalManagerX.aye(proposalId, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, { from: charlie });

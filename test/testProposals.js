@@ -78,7 +78,7 @@ contract('FundProposalManager', accounts => {
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
         res = await this.fundProposalManagerX.proposals(proposalId);
-        assert.equal(res.description, 'blah');
+        assert.equal(res.dataLink, 'blah');
       });
     });
 
@@ -263,7 +263,7 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.active, true);
       assert.equal(res.id, 0);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
-      assert.equal(res.description, 'Do that');
+      assert.equal(res.dataLink, 'Do that');
 
       const ruleId = int(res.id);
 
@@ -335,7 +335,7 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.active, false);
       assert.equal(res.id, 0);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
-      assert.equal(res.description, 'Do that');
+      assert.equal(res.dataLink, 'Do that');
     });
   });
 

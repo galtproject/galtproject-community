@@ -35,7 +35,7 @@ interface IAbstractFundStorage {
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
-    string calldata _description
+    string calldata _dataLink
   )
     external;
   function removeWhiteListedContract(address _contract) external;
@@ -45,7 +45,7 @@ interface IAbstractFundStorage {
     address _destination,
     address _proposalManager,
     bytes32 _name,
-    string calldata _description
+    string calldata _dataLink
   )
     external;
   function removeProposalMarker(bytes32 _marker) external;
@@ -53,7 +53,7 @@ interface IAbstractFundStorage {
 
   function addFundRule(
     bytes32 _ipfsHash,
-    string calldata _description
+    string calldata _dataLink
   )
     external
     returns (uint256);
@@ -68,9 +68,9 @@ interface IAbstractFundStorage {
 
   function disableFundRule(uint256 _id) external;
 
-  function setNameAndDescription(
+  function setNameAndDataLink(
     string calldata _name,
-    string calldata _description
+    string calldata _dataLink
   )
     external;
 
@@ -114,7 +114,7 @@ interface IAbstractFundStorage {
     returns (
       bytes32 _contractType,
       bytes32 _abiIpfsHash,
-      string memory _description
+      string memory _dataLink
     );
 
   function getProposalMarker(
@@ -126,7 +126,7 @@ interface IAbstractFundStorage {
       address _proposalManager,
       address _destination,
       bytes32 _name,
-      string memory _description
+      string memory _dataLink
     );
 
   function areMembersValid(address[] calldata _members) external view returns (bool);
