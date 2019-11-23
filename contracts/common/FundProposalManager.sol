@@ -51,7 +51,7 @@ contract FundProposalManager {
     uint256 value;
     bytes32 marker;
     bytes data;
-    string description;
+    string dataLink;
     bytes response;
   }
 
@@ -97,7 +97,7 @@ contract FundProposalManager {
     address _destination,
     uint256 _value,
     bytes calldata _data,
-    string calldata _description
+    string calldata _dataLink
   )
     external
     onlyMember
@@ -110,7 +110,7 @@ contract FundProposalManager {
     p.destination = _destination;
     p.value = _value;
     p.data = _data;
-    p.description = _description;
+    p.dataLink = _dataLink;
     p.marker = fundStorage.getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;

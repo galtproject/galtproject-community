@@ -68,7 +68,7 @@ contract('FundProposalManager', accounts => {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalVotingConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
+          .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -78,7 +78,7 @@ contract('FundProposalManager', accounts => {
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
         res = await this.fundProposalManagerX.proposals(proposalId);
-        assert.equal(res.description, 'blah');
+        assert.equal(res.dataLink, 'blah');
       });
     });
 
@@ -86,10 +86,10 @@ contract('FundProposalManager', accounts => {
       it('should allow approving proposal if positive votes threshold is reached', async function() {
         await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        const marker = getDestinationMarker(this.fundStorageX, 'setProposalVotingConfig');
+        const marker = getDestinationMarker(this.fundStorageX, 'setProposalConfig');
 
         const proposalData = this.fundStorageX.contract.methods
-          .setProposalVotingConfig(marker, ether(42), ether(40), 555)
+          .setProposalConfig(marker, ether(42), ether(40), 555)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -263,7 +263,7 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.active, true);
       assert.equal(res.id, 0);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
-      assert.equal(res.description, 'Do that');
+      assert.equal(res.dataLink, 'Do that');
 
       const ruleId = int(res.id);
 
@@ -335,7 +335,7 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.active, false);
       assert.equal(res.id, 0);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
-      assert.equal(res.description, 'Do that');
+      assert.equal(res.dataLink, 'Do that');
     });
   });
 

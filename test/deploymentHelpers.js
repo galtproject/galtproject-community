@@ -98,9 +98,9 @@ function getBaseFundStorageMarkersNames() {
     'storage.addFeeContract',
     'storage.removeFeeContract',
     'storage.setMemberIdentification',
-    'storage.setNameAndDescription',
+    'storage.setNameAndDataLink',
     'storage.setPeriodLimit',
-    'storage.setProposalVotingConfig',
+    'storage.setProposalConfig',
     'storage.setConfigValue',
     'multiSig.setOwners'
   ];
@@ -117,7 +117,7 @@ function getBaseFundStorageMarkersNames() {
  * @param {number} initialMultiSigRequired
  * @param {number} periodLength
  * @param {string} name
- * @param {string} description
+ * @param {string} dataLink
  * @param {Array<string>} initialSpaceTokens
  * @param {string} creator
  * @param {number} value
@@ -133,7 +133,7 @@ async function buildFund(
   initialMultiSigRequired,
   periodLength = ONE_MONTH,
   name = 'foo',
-  description = 'bar',
+  dataLink = 'bar',
   initialSpaceTokens = [],
   value = 0
 ) {
@@ -213,7 +213,7 @@ async function buildFund(
   res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
   // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
-  res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
+  res = await factory.buildFourthStepDone(fundId, name, dataLink, { from: creator });
   // console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
 
   // >>> Step #5
@@ -240,7 +240,7 @@ async function buildFund(
  * @param {number} initialMultiSigRequired
  * @param {number} periodLength
  * @param {string} name
- * @param {string} description
+ * @param {string} dataLink
  * @param {Array<string>} initialTokens
  * @param {string} creator
  * @param initialRegistries
@@ -257,7 +257,7 @@ async function buildPrivateFund(
   initialMultiSigRequired,
   periodLength = ONE_MONTH,
   name = 'foo',
-  description = 'bar',
+  dataLink = 'bar',
   initialTokens = [],
   initialRegistries = [],
   value = 0
@@ -338,7 +338,7 @@ async function buildPrivateFund(
   res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
   // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
-  res = await factory.buildFourthStepDone(fundId, name, description, { from: creator });
+  res = await factory.buildFourthStepDone(fundId, name, dataLink, { from: creator });
   // console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
 
   // >>> Step #5

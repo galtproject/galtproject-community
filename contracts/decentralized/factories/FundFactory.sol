@@ -297,7 +297,7 @@ contract FundFactory is Ownable {
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
 
     for (uint256 i = 0; i < len; i++) {
-      _fundStorage.setProposalVotingConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
+      _fundStorage.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
     }
 
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
@@ -305,7 +305,7 @@ contract FundFactory is Ownable {
     emit CreateFundFourthStep(_fundId, len);
   }
 
-  function buildFourthStepDone(bytes32 _fundId, string calldata _name, string calldata _description) external {
+  function buildFourthStepDone(bytes32 _fundId, string calldata _name, string calldata _dataLink) external {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.FOURTH, "Requires fourth step");
@@ -313,7 +313,7 @@ contract FundFactory is Ownable {
     FundStorage _fundStorage = c.fundStorage;
 
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
-    _fundStorage.setNameAndDescription(_name, _description);
+    _fundStorage.setNameAndDataLink(_name, _dataLink);
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
 
     c.currentStep = Step.FIFTH;

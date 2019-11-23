@@ -83,7 +83,7 @@ contract('Regular ETH Fees', accounts => {
     );
     this.feeAddress = res.logs[0].args.addr;
     this.regularEthFee = await RegularEthFee.at(this.feeAddress);
-    await this.regularEthFee.setDetails(hex('regular_eth'), 'Fee title', 'Fee description', 'Q...');
+    await this.regularEthFee.setDetails(hex('regular_eth'), 'Fee title', 'Fee dataLink', 'Q...');
   });
 
   it('should instantiate contract correctly', async function() {
@@ -94,7 +94,7 @@ contract('Regular ETH Fees', accounts => {
     res = await this.regularEthFee.rate();
     assert.equal(res, ether(4));
 
-    await assertRevert(this.regularEthFee.setDetails(hex('regular_eth'), 'New title', 'New description', 'Q...'));
+    await assertRevert(this.regularEthFee.setDetails(hex('regular_eth'), 'New title', 'New dataLink', 'Q...'));
   });
 
   describe('period detection', () => {

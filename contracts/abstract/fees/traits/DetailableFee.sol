@@ -16,7 +16,7 @@ contract DetailableFee {
   bytes32 public feeType;
   string public title;
   string public description;
-  string public docLink;
+  string public dataLink;
 
   bool public detailsSet;
 
@@ -28,7 +28,7 @@ contract DetailableFee {
     bytes32 _feeType,
     string memory _title,
     string memory _description,
-    string memory _docLink
+    string memory _dataLink
   )
     public
   {
@@ -38,7 +38,7 @@ contract DetailableFee {
     feeType = _feeType;
     title = _title;
     description = _description;
-    docLink = _docLink;
+    dataLink = _dataLink;
 
     detailsSet = true;
   }
@@ -47,7 +47,7 @@ contract DetailableFee {
     bytes32 _feeType,
     string memory _title,
     string memory _description,
-    string memory _docLink
+    string memory _dataLink
   )
   {
 
@@ -55,7 +55,7 @@ contract DetailableFee {
       feeType,
       title,
       description,
-      docLink
+      dataLink
     );
   }
 }

@@ -149,7 +149,7 @@ contract('NewFundMemberProposal', accounts => {
       const { proposalId } = res.logs[0].args;
 
       res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.description, 'blah');
+      assert.equal(res.dataLink, 'blah');
 
       res = await this.fundStorageX.isMintApproved(token1);
       assert.equal(res, false);

@@ -21,7 +21,7 @@ contract MockFundProposalManager is FundProposalManager {
     address _destination,
     uint256 _value,
     bytes calldata _data,
-    string calldata _description
+    string calldata _dataLink
   )
     external
   {
@@ -33,11 +33,13 @@ contract MockFundProposalManager is FundProposalManager {
     p.destination = _destination;
     p.value = _value;
     p.data = _data;
-    p.description = _description;
+    p.dataLink = _dataLink;
     p.marker = fundStorage.getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;
     _onNewProposal(id);
+
+    _proposalVotings[id].timeoutAt = block.timestamp - 1;
 
     emit NewProposal(id, msg.sender, p.marker);
   }
