@@ -17,7 +17,8 @@ import "../abstract/AbstractFundStorage.sol";
 
 
 contract FundStorage is AbstractFundStorage {
-  // TODO: use SafeMath
+  using SafeMath for uint256;
+
   GaltGlobalRegistry public ggr;
 
   ArraySet.Uint256Set private _finesSpaceTokens;
@@ -80,23 +81,28 @@ contract FundStorage is AbstractFundStorage {
   {
     require(_amount > 0 && _amount <= _expelledTokenReputation[_spaceTokenId], "Invalid reputation amount");
 
-    _expelledTokenReputation[_spaceTokenId] = _expelledTokenReputation[_spaceTokenId] - _amount;
+    // _expelledTokenReputation[_spaceTokenId] = _expelledTokenReputation[_spaceTokenId] - _amount;
+    _expelledTokenReputation[_spaceTokenId] = _expelledTokenReputation[_spaceTokenId].sub(_amount);
 
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
   }
 
   function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_INCREMENT_MANAGER) {
     // TODO: track relation to proposal id
-    _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
-    _fines[_spaceTokenId].total += _amount;
+    // _fines[_spaceTokenId].tokenFines[_contract].amount += _amount;
+    _fines[_spaceTokenId].tokenFines[_contract].amount = _fines[_spaceTokenId].tokenFines[_contract].amount.add(_amount);
+    // _fines[_spaceTokenId].total += _amount;
+    _fines[_spaceTokenId].total = _fines[_spaceTokenId].total.add(_amount);
 
     _finesSpaceTokens.addSilent(_spaceTokenId);
     _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
   }
 
   function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_DECREMENT_MANAGER) {
-    _fines[_spaceTokenId].tokenFines[_contract].amount -= _amount;
-    _fines[_spaceTokenId].total -= _amount;
+    // _fines[_spaceTokenId].tokenFines[_contract].amount -= _amount;
+    _fines[_spaceTokenId].tokenFines[_contract].amount = _fines[_spaceTokenId].tokenFines[_contract].amount.sub(_amount);
+    // _fines[_spaceTokenId].total -= _amount;
+    _fines[_spaceTokenId].total = _fines[_spaceTokenId].total.sub(_amount);
 
     if (_fines[_spaceTokenId].tokenFines[_contract].amount == 0) {
       _finesContractsBySpaceToken[_spaceTokenId].remove(_contract);

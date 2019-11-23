@@ -20,7 +20,7 @@ import "./interfaces/IAbstractFundStorage.sol";
 
 
 contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializable {
-  // TODO: Use SafeMath
+  using SafeMath for uint256;
 
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
@@ -427,7 +427,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     }
 
     uint256 currentPeriod = getCurrentPeriod();
-    uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
+    // uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
+    uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract].add(_amount);
 
     require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
     _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
@@ -604,6 +605,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function getCurrentPeriod() public view returns (uint256) {
-    return (block.timestamp - initialTimestamp) / periodLength;
+    // return (block.timestamp - initialTimestamp) / periodLength;
+    return (block.timestamp.sub(initialTimestamp)) / periodLength;
   }
 }

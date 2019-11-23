@@ -19,7 +19,6 @@ import "../common/interfaces/IFundRA.sol";
 
 
 contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
-
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
