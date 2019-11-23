@@ -9,11 +9,14 @@
 
 pragma solidity 0.5.10;
 
+import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./FundStorage.sol";
 
 
 contract FundController {
+  using SafeERC20 for IERC20;
+
   enum Currency {
     ETH,
     ERC20
@@ -51,10 +54,7 @@ contract FundController {
     require(expectedPayment >= amount, "Amount for transfer exceeds fine value");
 
     if (_currency == Currency.ERC20) {
-      require(
-        IERC20(erc20Contract).transferFrom(msg.sender, address(fundStorage.getMultiSig()), amount) == true,
-        "Failed to transfer ERC20 tokens"
-      );
+      IERC20(erc20Contract).transferFrom(msg.sender, address(fundStorage.getMultiSig()), amount);
     } else {
       address(fundStorage.getMultiSig()).transfer(amount);
     }
