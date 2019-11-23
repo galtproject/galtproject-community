@@ -213,7 +213,8 @@ contract FundProposalManager {
 
     (uint256 support, uint256 quorum, uint256 timeout) = fundStorage.getProposalVotingConfig(marker);
     pv.createdAt = block.timestamp;
-    pv.timeoutAt = block.timestamp + timeout;
+    // pv.timeoutAt = block.timestamp + timeout;
+    pv.timeoutAt = block.timestamp.add(timeout);
 
     pv.requiredSupport = support;
     pv.minAcceptQuorum = quorum;
@@ -229,7 +230,7 @@ contract FundProposalManager {
     (bool ok, bytes memory response) = address(p.destination)
       .call
       .value(p.value)
-      .gas(gasleft() - 50000)(p.data);
+      .gas(gasleft().sub(50000))(p.data);
 
     if (ok == false) {
       p.status = ProposalStatus.APPROVED;

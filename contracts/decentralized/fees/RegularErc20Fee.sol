@@ -11,6 +11,7 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "./AbstractDecentralizedRegularFee.sol";
 import "../FundStorage.sol";
@@ -18,6 +19,7 @@ import "../FundStorage.sol";
 
 contract RegularErc20Fee is AbstractDecentralizedRegularFee {
   using SafeMath for uint256;
+  using SafeERC20 for IERC20;
 
   IERC20 public erc20Token;
 
@@ -42,10 +44,7 @@ contract RegularErc20Fee is AbstractDecentralizedRegularFee {
 
     _pay(_spaceTokenId, _amount);
 
-    require(
-      erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), _amount) == true,
-      "Failed to transfer ERC20 tokens"
-    );
+    erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), _amount);
   }
 
   function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external {
@@ -57,9 +56,6 @@ contract RegularErc20Fee is AbstractDecentralizedRegularFee {
       _pay(_spaceTokensIds[i], _amounts[i]);
     }
 
-    require(
-      erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), totalAmount) == true,
-      "Failed to transfer ERC20 tokens"
-    );
+    erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), totalAmount);
   }
 }

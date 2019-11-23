@@ -112,8 +112,10 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     // TODO: track relation to proposal id
-    _fines[_registry][_tokenId].tokenFines[_contract].amount += _amount;
-    _fines[_registry][_tokenId].total += _amount;
+    // _fines[_registry][_tokenId].tokenFines[_contract].amount += _amount;
+    _fines[_registry][_tokenId].tokenFines[_contract].amount = _fines[_registry][_tokenId].tokenFines[_contract].amount.add(_amount);
+    // _fines[_registry][_tokenId].total += _amount;
+    _fines[_registry][_tokenId].total = _fines[_registry][_tokenId].total.add(_amount);
 
     _tokenFines[_registry].addSilent(_tokenId);
     _fineContractsByToken[_registry][_tokenId].addSilent(_contract);
@@ -130,8 +132,10 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
 
-    _fines[_registry][_tokenId].tokenFines[_contract].amount -= _amount;
-    _fines[_registry][_tokenId].total -= _amount;
+    // _fines[_registry][_tokenId].tokenFines[_contract].amount -= _amount;
+    _fines[_registry][_tokenId].tokenFines[_contract].amount = _fines[_registry][_tokenId].tokenFines[_contract].amount.sub(_amount);
+    // _fines[_registry][_tokenId].total -= _amount;
+    _fines[_registry][_tokenId].total -= _fines[_registry][_tokenId].total.sub(_amount);
 
     if (_fines[_registry][_tokenId].tokenFines[_contract].amount == 0) {
       _fineContractsByToken[_registry][_tokenId].remove(_contract);

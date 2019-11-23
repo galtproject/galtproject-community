@@ -9,12 +9,15 @@
 
 pragma solidity 0.5.10;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "../FundStorage.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
 contract AbstractDecentralizedRegularFee is AbstractRegularFee {
+  using SafeMath for uint256;
+
   FundStorage public fundStorage;
 
   // tokenId => timestamp
@@ -54,12 +57,15 @@ contract AbstractDecentralizedRegularFee is AbstractRegularFee {
       currentPaidUntil = getCurrentPeriodTimestamp();
     }
 
-    uint256 newPaidUntil = currentPaidUntil + (_amount * periodLength / rate);
-    uint256 permittedPaidUntil = getNextPeriodTimestamp() + prePaidPeriodGap;
+    // uint256 newPaidUntil = currentPaidUntil + (_amount * periodLength / rate);
+    uint256 newPaidUntil = currentPaidUntil.add(_amount.mul(periodLength) / rate);
+    // uint256 permittedPaidUntil = getNextPeriodTimestamp() + prePaidPeriodGap;
+    uint256 permittedPaidUntil = getNextPeriodTimestamp().add(prePaidPeriodGap);
 
     require(newPaidUntil <= permittedPaidUntil, "Payment exceeds permitted pre-payment timestamp");
 
     paidUntil[_spaceTokenId] = newPaidUntil;
-    totalPaid[_spaceTokenId] += _amount;
+    // totalPaid[_spaceTokenId] += _amount;
+    totalPaid[_spaceTokenId] = totalPaid[_spaceTokenId].add(_amount);
   }
 }

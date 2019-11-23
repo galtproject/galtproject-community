@@ -40,8 +40,5 @@ contract PrivateRegularErc20FeeFactory is Ownable {
     );
 
     emit NewContract(address(regularFee), address(_erc20Token));
-
-//    regularFee.addRoleTo(msg.sender, "role_manager");
-//    regularFee.removeRoleFrom(address(this), "role_manager");
   }
 }
