@@ -99,7 +99,7 @@ contract FundStorage is AbstractFundStorage {
 
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
 
-    emit DecrementExpelTokenReputation(_spaceTokenId, amount);
+    emit DecrementExpelTokenReputation(_spaceTokenId, _amount);
   }
 
   function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_INCREMENT_MANAGER) {
@@ -110,7 +110,7 @@ contract FundStorage is AbstractFundStorage {
     _finesSpaceTokens.addSilent(_spaceTokenId);
     _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
 
-    emit IncrementFine(_spaceTokenId, _contract, amount);
+    emit IncrementFine(_spaceTokenId, _contract, _amount);
   }
 
   function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_DECREMENT_MANAGER) {
@@ -125,7 +125,7 @@ contract FundStorage is AbstractFundStorage {
       _finesSpaceTokens.remove(_spaceTokenId);
     }
 
-    emit DecrementFine(_spaceTokenId, _contract, amount);
+    emit DecrementFine(_spaceTokenId, _contract, _amount);
   }
 
   function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
