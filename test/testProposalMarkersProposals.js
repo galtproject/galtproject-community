@@ -54,7 +54,7 @@ contract('Proposal Markers Proposals', accounts => {
 
   describe('Add And Replace Proposal Marker', () => {
     it('should correctly set and get', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const signature = getMethodSignature(this.galtToken.abi, 'transfer');
       const marker = getDestinationMarker(this.galtToken, 'transfer');

@@ -51,7 +51,7 @@ contract('Whitelisted Contracts Proposals', accounts => {
 
   describe('Create Member Identifier Proposal', () => {
     it('should correctly set and get', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
       const prevLength = whitelistedContracts.length;

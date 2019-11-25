@@ -63,7 +63,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
     this.beneficiaries = [alice, bob, charlie];
     this.benefeciarSpaceTokens = ['1', '2', '3'];
 
-    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   it('should limit sending ERC20 tokens', async function() {

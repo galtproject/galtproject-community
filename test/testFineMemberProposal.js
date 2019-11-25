@@ -97,7 +97,7 @@ contract('FineFundMemberProposal', accounts => {
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     // NOTICE: hardcoded token IDs, increment when new tests added
     this.benefeciarSpaceTokens = ['4', '5', '6', '7', '8'];
-    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {

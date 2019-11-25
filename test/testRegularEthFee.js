@@ -67,7 +67,7 @@ contract('Regular ETH Fees', accounts => {
     this.beneficiaries = [alice, bob, charlie];
     this.benefeciarSpaceTokens = ['1', '2', '3'];
 
-    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
     this.regularEthFeeFactory = await RegularEthFeeFactory.new({ from: coreTeam });
   });

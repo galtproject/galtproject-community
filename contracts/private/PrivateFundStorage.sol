@@ -36,6 +36,17 @@ contract PrivateFundStorage is AbstractFundStorage {
   // registry => (tokenId => isLocked)
   mapping(address => mapping(uint256 => bool)) private _lockedTokens;
 
+  event ApproveMint(address indexed registry, uint256 indexed tokenId);
+
+  event ExpelTokenReputation(address indexed registry, uint256 indexed tokenId, uint amount);
+  event DecrementExpelTokenReputation(address indexed registry, uint256 indexed tokenId, uint amount);
+
+  event IncrementFine(address indexed registry, uint256 indexed tokenId, address indexed fineContract, uint amount);
+  event DecrementFine(address indexed registry, uint256 indexed tokenId, address indexed fineContract, uint amount);
+
+  event LockToken(address indexed registry, uint256 indexed tokenId);
+  event UnlockToken(address indexed registry, uint256 indexed tokenId);
+
   constructor (
     IPPGlobalRegistry _globalRegistry,
     bool _isPrivate,
@@ -66,6 +77,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     _mintApprovals[_registry][_tokenId] = true;
+
+    emit ApproveMint(_registry, _tokenId);
   }
 
   function expel(address _registry, uint256 _tokenId)
@@ -82,6 +95,8 @@ contract PrivateFundStorage is AbstractFundStorage {
 
     _expelledTokens[_registry][_tokenId] = true;
     _expelledTokenReputation[_registry][_tokenId] = amount;
+
+    emit ExpelTokenReputation(_registry, _tokenId, amount);
   }
 
   function decrementExpelledTokenReputation(
@@ -99,6 +114,8 @@ contract PrivateFundStorage is AbstractFundStorage {
     _expelledTokenReputation[_registry][_tokenId] = _expelledTokenReputation[_registry][_tokenId] - _amount;
 
     completelyBurned = (_expelledTokenReputation[_registry][_tokenId] == 0);
+
+    emit DecrementExpelTokenReputation(_registry, _tokenId, _amount);
   }
 
   function incrementFine(
@@ -117,6 +134,8 @@ contract PrivateFundStorage is AbstractFundStorage {
 
     _tokenFines[_registry].addSilent(_tokenId);
     _fineContractsByToken[_registry][_tokenId].addSilent(_contract);
+
+    emit IncrementFine(_registry, _tokenId, _contract, _amount);
   }
 
   function decrementFine(
@@ -140,6 +159,8 @@ contract PrivateFundStorage is AbstractFundStorage {
     if (_fines[_registry][_tokenId].total == 0) {
       _tokenFines[_registry].remove(_tokenId);
     }
+
+    emit DecrementFine(_registry, _tokenId, _contract, _amount);
   }
 
   function lockSpaceToken(
@@ -151,6 +172,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     _lockedTokens[_registry][_tokenId] = true;
+
+    emit LockToken(_registry, _tokenId);
   }
 
   // TODO: possibility to unlock from removed contracts
@@ -163,6 +186,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     _lockedTokens[_registry][_tokenId] = false;
+
+    emit UnlockToken(_registry, _tokenId);
   }
 
   // GETTERS
