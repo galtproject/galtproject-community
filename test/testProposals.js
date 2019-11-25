@@ -481,7 +481,7 @@ contract('FundProposalManager', accounts => {
     it('should be able to change limit the for each erc20 contract', async function() {
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      let limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
+      let limit = await this.fundStorageX.periodLimits(this.galtToken.address);
       assert.equal(limit.active, false);
       assert.equal(limit.amount, ether(0));
 
@@ -501,7 +501,7 @@ contract('FundProposalManager', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
-      limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
+      limit = await this.fundStorageX.periodLimits(this.galtToken.address);
       assert.equal(limit.active, true);
       assert.equal(limit.amount, ether(3000));
 

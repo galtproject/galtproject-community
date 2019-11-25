@@ -149,6 +149,6 @@ interface IAbstractFundStorage {
       string memory dataLink
     );
 
-  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount);
+  function periodLimits(address _erc20Contract) external view returns (bool active, uint256 amount);
   function getCurrentPeriod() external view returns (uint256);
 }

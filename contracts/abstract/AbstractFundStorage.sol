@@ -132,7 +132,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // manager => details
   mapping(address => MultiSigManager) public multiSigManagers;
   // erc20Contract => details
-  mapping(address => PeriodLimit) internal _periodLimits;
+  mapping(address => PeriodLimit) public periodLimits;
   // periodId => (erc20Contract => runningTotal)
   mapping(uint256 => mapping(address => uint256)) internal _periodRunningTotals;
   // member => identification hash
@@ -400,8 +400,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     external
     onlyRole(ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
   {
-    _periodLimits[_erc20Contract].active = _active;
-    _periodLimits[_erc20Contract].amount = _amount;
+    periodLimits[_erc20Contract].active = _active;
+    periodLimits[_erc20Contract].amount = _amount;
 
     if (_active) {
       _activePeriodLimitsContracts.addSilent(_erc20Contract);
@@ -417,7 +417,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     external
     onlyMultiSig
   {
-    PeriodLimit storage limit = _periodLimits[_erc20Contract];
+    PeriodLimit storage limit = periodLimits[_erc20Contract];
     if (limit.active == false) {
       return;
     }
@@ -426,7 +426,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     // uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
     uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract].add(_amount);
 
-    require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
+    require(runningTotalAfter <= periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
     _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
   }
 
@@ -580,11 +580,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
   function getFeeContractCount() external view returns (uint256) {
     return feeContracts.size();
-  }
-
-  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {
-    PeriodLimit storage p = _periodLimits[_erc20Contract];
-    return (p.active, p.amount);
   }
 
   function getCurrentPeriod() public view returns (uint256) {
