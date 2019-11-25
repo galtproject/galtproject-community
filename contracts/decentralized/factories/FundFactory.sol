@@ -355,7 +355,6 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.FIFTH, "Requires fifth step");
 
     FundStorage _fundStorage = c.fundStorage;
-    FundMultiSig _fundMultiSig = c.fundMultiSig;
     uint256 len = _initialSpaceTokensToApprove.length;
 
     c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);

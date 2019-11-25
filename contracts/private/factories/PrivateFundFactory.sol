@@ -343,7 +343,6 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     require(c.currentStep == Step.FIFTH, "Requires fifth step");
 
     PrivateFundStorage _fundStorage = c.fundStorage;
-    FundMultiSig _fundMultiSig = c.fundMultiSig;
     uint256 len = _initialTokensToApprove.length;
 
     c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);

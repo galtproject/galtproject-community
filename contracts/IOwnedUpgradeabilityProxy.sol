@@ -14,5 +14,5 @@ interface IOwnedUpgradeabilityProxy {
   function proxyOwner() external view returns (address owner);
   function transferProxyOwnership(address newOwner) external;
   function upgradeTo(address implementation) external;
-  function upgradeToAndCall(address implementation, bytes calldata data) payable external;
+  function upgradeToAndCall(address implementation, bytes calldata data) external payable;
 }

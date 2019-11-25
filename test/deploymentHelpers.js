@@ -5,7 +5,6 @@ const PrivateFundStorage = artifacts.require('./PrivateFundStorage.sol');
 const PrivateFundController = artifacts.require('./PrivateFundController.sol');
 const PrivateFundControllerFactory = artifacts.require('./PrivateFundControllerFactory.sol');
 const MockPrivateFundRA = artifacts.require('./MockPrivateFundRA.sol');
-const OwnedUpgradeabilityProxy = artifacts.require('./OwnedUpgradeabilityProxy.sol');
 const FundRegistryFactory = artifacts.require('./FundRegistryFactory.sol');
 const FundACLFactory = artifacts.require('./FundACLFactory.sol');
 const FundFactory = artifacts.require('./FundFactory.sol');
@@ -23,7 +22,7 @@ const FundController = artifacts.require('./FundController.sol');
 const FundMultiSig = artifacts.require('./FundMultiSig.sol');
 const MockFundRA = artifacts.require('./MockFundRA.sol');
 const FundProposalManager = artifacts.require('./FundProposalManager.sol');
-const FundUpgrader = artifacts.require('./FundUpgrader.sol');
+// const FundUpgrader = artifacts.require('./FundUpgrader.sol');
 
 const { initHelperWeb3, getMethodSignature, hex, getEventArg } = require('./helpers');
 

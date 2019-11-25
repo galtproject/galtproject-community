@@ -277,6 +277,8 @@ const Helpers = {
         return current.args[argName];
       }
     }
+
+    throw new Error(`Event ${eventName} not found`);
   }
 };
 
