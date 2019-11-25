@@ -14,6 +14,8 @@ import "@galtproject/private-property-registry/contracts/traits/ChargesFee.sol";
 
 import "../PrivateFundStorage.sol";
 import "../PrivateFundController.sol";
+import "../../common/FundRegistry.sol";
+import "../../common/FundACL.sol";
 import "../../common/FundProposalManager.sol";
 
 import "./PrivateFundRAFactory.sol";
@@ -21,35 +23,26 @@ import "./PrivateFundStorageFactory.sol";
 import "./PrivateFundControllerFactory.sol";
 import "../../common/factories/FundMultiSigFactory.sol";
 import "../../common/factories/FundProposalManagerFactory.sol";
+import "../../common/factories/FundACLFactory.sol";
+import "../../common/factories/FundRegistryFactory.sol";
+import "../../IOwnedUpgradeabilityProxy.sol";
+import "../../common/factories/FundUpgraderFactory.sol";
 
 
 contract PrivateFundFactory is Ownable, ChargesFee {
-  // Pre-defined proposal contracts
-  bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config");
-  bytes32 public constant NEW_MEMBER_TYPE = bytes32("new_member");
-  bytes32 public constant FINE_MEMBER_TYPE = bytes32("fine_member");
-  bytes32 public constant WHITE_LIST_TYPE = bytes32("white_list");
-  bytes32 public constant EXPEL_MEMBER_TYPE = bytes32("expel_member");
-  bytes32 public constant CHANGE_NAME_AND_DESCRIPTION_TYPE = bytes32("change_info");
-  bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule");
-  bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule");
-  bytes32 public constant CHANGE_MULTISIG_OWNERS_TYPE = bytes32("change_ms_owners");
-  bytes32 public constant MODIFY_FEE_TYPE = bytes32("modify_fee");
-  bytes32 public constant MODIFY_MULTISIG_MANAGER_DETAILS_TYPE = bytes32("modify_ms_manager_details");
-  bytes32 public constant CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE = bytes32("change_ms_withdrawal_limits");
-  bytes32 public constant MEMBER_IDENTIFICATION_TYPE = bytes32("member_identification");
-
-  bytes32 public constant ROLE_FEE_COLLECTOR = bytes32("FEE_COLLECTOR");
 
   event CreateFundFirstStep(
     bytes32 fundId,
+    address fundRegistry,
+    address fundACL,
     address fundStorage
   );
 
   event CreateFundSecondStep(
     bytes32 fundId,
     address fundMultiSig,
-    address fundController
+    address fundController,
+    address fundUpgrader
   );
 
   event CreateFundThirdStep(
@@ -88,11 +81,14 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     address creator;
     address operator;
     Step currentStep;
+    FundRegistry fundRegistry;
+    FundACL fundACL;
     PrivateFundRA fundRA;
     FundMultiSig fundMultiSig;
     PrivateFundStorage fundStorage;
     PrivateFundController fundController;
     FundProposalManager fundProposalManager;
+    FundUpgrader fundUpgrader;
   }
 
   bool internal initialized;
@@ -104,6 +100,9 @@ contract PrivateFundFactory is Ownable, ChargesFee {
   FundMultiSigFactory fundMultiSigFactory;
   PrivateFundControllerFactory fundControllerFactory;
   FundProposalManagerFactory fundProposalManagerFactory;
+  FundACLFactory internal fundACLFactory;
+  FundRegistryFactory public fundRegistryFactory;
+  FundUpgraderFactory public fundUpgraderFactory;
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
@@ -118,6 +117,9 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     PrivateFundStorageFactory _fundStorageFactory,
     PrivateFundControllerFactory _fundControllerFactory,
     FundProposalManagerFactory _fundProposalManagerFactory,
+    FundRegistryFactory _fundRegistryFactory,
+    FundACLFactory _fundACLFactory,
+    FundUpgraderFactory _fundUpgraderFactory,
     address _galtToken,
     uint256 _ethFee,
     uint256 _galtFee
@@ -131,6 +133,9 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     fundMultiSigFactory = _fundMultiSigFactory;
     fundRAFactory = _fundRAFactory;
     fundProposalManagerFactory = _fundProposalManagerFactory;
+    fundRegistryFactory = _fundRegistryFactory;
+    fundACLFactory = _fundACLFactory;
+    fundUpgraderFactory = _fundUpgraderFactory;
     globalRegistry = _globalRegistry;
   }
 
@@ -167,8 +172,11 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
     _acceptPayment();
 
+    FundRegistry fundRegistry = fundRegistryFactory.build();
+    FundACL fundACL = fundACLFactory.build();
+
     PrivateFundStorage fundStorage = fundStorageFactory.build(
-      globalRegistry,
+      fundRegistry,
       _isPrivate,
       _defaultProposalSupport,
       _defaultProposalQuorum,
@@ -179,10 +187,16 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     c.creator = msg.sender;
     c.operator = operator;
     c.fundStorage = fundStorage;
+    c.fundRegistry = fundRegistry;
+    c.fundACL = fundACL;
+
+    fundRegistry.setContract(fundRegistry.PPGR(), address(globalRegistry));
+    fundRegistry.setContract(fundRegistry.ACL(), address(fundACL));
+    fundRegistry.setContract(fundRegistry.STORAGE(), address(fundStorage));
 
     c.currentStep = Step.SECOND;
 
-    emit CreateFundFirstStep(fundId, address(fundStorage));
+    emit CreateFundFirstStep(fundId, address(fundRegistry), address(fundACL), address(fundStorage));
 
     return fundId;
   }
@@ -192,23 +206,30 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.SECOND, "Requires second step");
 
-    PrivateFundStorage _fundStorage = c.fundStorage;
+    FundRegistry _fundRegistry = c.fundRegistry;
 
     FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
       _initialMultiSigOwners,
       _initialMultiSigRequired,
-      _fundStorage
+      _fundRegistry
     );
-    c.fundMultiSig = _fundMultiSig;
+    FundUpgrader _fundUpgrader = fundUpgraderFactory.build(_fundRegistry);
 
-    c.fundController = fundControllerFactory.build(_fundStorage);
+    c.fundMultiSig = _fundMultiSig;
+    c.fundController = fundControllerFactory.build(_fundRegistry);
+    c.fundUpgrader = _fundUpgrader;
+
+    c.fundRegistry.setContract(c.fundRegistry.MULTISIG(), address(_fundMultiSig));
+    c.fundRegistry.setContract(c.fundRegistry.CONTROLLER(), address(c.fundController));
+    c.fundRegistry.setContract(c.fundRegistry.UPGRADER(), address(_fundUpgrader));
 
     c.currentStep = Step.THIRD;
 
     emit CreateFundSecondStep(
       _fundId,
       address(_fundMultiSig),
-      address(c.fundController)
+      address(c.fundController),
+      address(_fundUpgrader)
     );
   }
 
@@ -218,35 +239,40 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     require(c.currentStep == Step.THIRD, "Requires third step");
 
     PrivateFundStorage _fundStorage = c.fundStorage;
+    FundRegistry _fundRegistry = c.fundRegistry;
+    FundACL _fundACL = c.fundACL;
 
-    c.fundRA = fundRAFactory.build(_fundStorage);
-    c.fundProposalManager = fundProposalManagerFactory.build(_fundStorage);
+    c.fundRA = fundRAFactory.build(_fundRegistry);
+    c.fundProposalManager = fundProposalManagerFactory.build(_fundRegistry);
+
+    c.fundRegistry.setContract(c.fundRegistry.RA(), address(c.fundRA));
+    c.fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), address(c.fundProposalManager));
 
     address _fundProposalManager = address(c.fundProposalManager);
 
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_CONFIG_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_NEW_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_EXPEL_MEMBER_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_ADD_FUND_RULE_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_FEE_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MEMBER_DETAILS_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
-    _fundStorage.addRoleTo(_fundProposalManager, _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
-    _fundStorage.addRoleTo(address(c.fundController), _fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER());
-    _fundStorage.addRoleTo(address(c.fundRA), _fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION());
-    c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.ROLE_OWNER_MANAGER());
+    _fundACL.setRole(_fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), address(c.fundController), true);
+    _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), address(c.fundRA), true);
+    _fundACL.setRole(c.fundMultiSig.ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
+    _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), address(this), true);
     _fundStorage.addWhiteListedContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
+    _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), address(this), false);
 
     c.currentStep = Step.FOURTH;
 
@@ -275,15 +301,16 @@ contract PrivateFundFactory is Ownable, ChargesFee {
       len == _supportValues.length && len == _quorumValues.length && len == _timeoutValues.length,
       "Thresholds key and value array lengths mismatch"
     );
+
     PrivateFundStorage _fundStorage = c.fundStorage;
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
     for (uint256 i = 0; i < len; i++) {
       _fundStorage.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
     }
 
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
     emit CreateFundFourthStep(_fundId, len);
   }
@@ -295,9 +322,9 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
     PrivateFundStorage _fundStorage = c.fundStorage;
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), true);
     _fundStorage.setNameAndDataLink(_name, _dataLink);
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), false);
 
     c.currentStep = Step.FIFTH;
 
@@ -319,25 +346,15 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     FundMultiSig _fundMultiSig = c.fundMultiSig;
     uint256 len = _initialTokensToApprove.length;
 
-    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_NEW_MEMBER_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);
 
     for (uint i = 0; i < len; i++) {
       _fundStorage.approveMint(_initialRegistriesToApprove[i], _initialTokensToApprove[i]);
     }
 
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_NEW_MEMBER_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), false);
 
-    _fundStorage.initialize(
-      address(c.fundMultiSig),
-      address(c.fundController),
-      address(c.fundRA),
-      address(c.fundProposalManager)
-    );
-
-    _fundStorage.addRoleTo(msg.sender, _fundStorage.ROLE_ROLE_MANAGER());
-    _fundMultiSig.addRoleTo(msg.sender, _fundMultiSig.ROLE_ROLE_MANAGER());
-
-    _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
     for (uint i = 0; i < proposalMarkersSignatures.length; i++) {
       if (bytes8(proposalMarkersNames[i]) == bytes8("storage.")) {
         _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(_fundStorage), address(c.fundProposalManager), proposalMarkersNames[i], "");
@@ -346,12 +363,19 @@ contract PrivateFundFactory is Ownable, ChargesFee {
         _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(c.fundMultiSig), address(c.fundProposalManager), proposalMarkersNames[i], "");
       }
     }
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER());
-
-    _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_ROLE_MANAGER());
-    _fundMultiSig.removeRoleFrom(address(this), _fundMultiSig.ROLE_ROLE_MANAGER());
+    c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
 
     c.currentStep = Step.DONE;
+    address owner = address(c.fundUpgrader);
+
+    IOwnedUpgradeabilityProxy(address(c.fundRegistry)).transferProxyOwnership(owner);
+    IOwnedUpgradeabilityProxy(address(c.fundACL)).transferProxyOwnership(owner);
+    IOwnedUpgradeabilityProxy(address(c.fundStorage)).transferProxyOwnership(owner);
+    IOwnedUpgradeabilityProxy(address(c.fundProposalManager)).transferProxyOwnership(owner);
+    IOwnedUpgradeabilityProxy(address(c.fundRA)).transferProxyOwnership(owner);
+
+    c.fundRegistry.transferOwnership(owner);
+    c.fundACL.transferOwnership(owner);
 
     emit CreateFundFifthStep(_fundId, len);
   }

@@ -30,21 +30,6 @@ import "../../common/factories/FundUpgraderFactory.sol";
 
 
 contract FundFactory is Ownable {
-  // Pre-defined proposal contracts
-  bytes32 public constant MODIFY_CONFIG_TYPE = bytes32("modify_config");
-  bytes32 public constant NEW_MEMBER_TYPE = bytes32("new_member");
-  bytes32 public constant FINE_MEMBER_TYPE = bytes32("fine_member");
-  bytes32 public constant WHITE_LIST_TYPE = bytes32("white_list");
-  bytes32 public constant EXPEL_MEMBER_TYPE = bytes32("expel_member");
-  bytes32 public constant CHANGE_NAME_AND_DESCRIPTION_TYPE = bytes32("change_info");
-  bytes32 public constant ADD_FUND_RULE_TYPE = bytes32("add_rule");
-  bytes32 public constant DEACTIVATE_FUND_RULE_TYPE = bytes32("deactivate_rule");
-  bytes32 public constant CHANGE_MULTISIG_OWNERS_TYPE = bytes32("change_ms_owners");
-  bytes32 public constant MODIFY_FEE_TYPE = bytes32("modify_fee");
-  bytes32 public constant MODIFY_MULTISIG_MANAGER_DETAILS_TYPE = bytes32("modify_ms_manager_details");
-  bytes32 public constant CHANGE_MULTISIG_WITHDRAWAL_LIMIT_TYPE = bytes32("change_ms_withdrawal_limits");
-  bytes32 public constant MEMBER_IDENTIFICATION_TYPE = bytes32("member_identification");
-
   bytes32 public constant ROLE_FEE_COLLECTOR = bytes32("FEE_COLLECTOR");
 
   event CreateFundFirstStep(
