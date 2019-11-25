@@ -103,32 +103,9 @@ interface IAbstractFundStorage {
 
   function getActiveFundRulesCount() external view returns (uint256);
 
-  function getWhiteListedContract(
-    address _contract
-  )
-    external
-    view
-    returns (
-      bytes32 _contractType,
-      bytes32 _abiIpfsHash,
-      string memory _dataLink
-    );
-
-  function proposalMarkers(
-    bytes32 _marker
-  )
-    external
-    view
-    returns (
-      address _proposalManager,
-      address _destination,
-      bytes32 _name,
-      string memory _dataLink
-    );
-
   function areMembersValid(address[] calldata _members) external view returns (bool);
 
- function getActiveMultisigManagers() external view returns (address[] memory);
+  function getActiveMultisigManagers() external view returns (address[] memory);
 
   function getActiveMultisigManagersCount() external view returns (uint256);
 

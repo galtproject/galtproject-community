@@ -126,7 +126,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
   mapping(bytes32 => bytes32) internal _config;
   // contractAddress => details
-  mapping(address => WhitelistedContract) internal _whitelistedContracts;
+  mapping(address => WhitelistedContract) public whitelistedContracts;
   // marker => details
   mapping(bytes32 => ProposalMarker) public proposalMarkers;
   // manager => details
@@ -251,7 +251,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     external
     onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
   {
-    WhitelistedContract storage c = _whitelistedContracts[_contract];
+    WhitelistedContract storage c = whitelistedContracts[_contract];
 
     _whiteListedContractsList.addSilent(_contract);
 
@@ -507,24 +507,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 //  function getProposalManager() public view returns (FundProposalManager) {
 //    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
 //  }
-
-  function getWhiteListedContract(
-    address _contract
-  )
-    external
-    view
-    returns (
-      bytes32 _contractType,
-      bytes32 _abiIpfsHash,
-      string memory _dataLink
-    )
-  {
-    WhitelistedContract storage c = _whitelistedContracts[_contract];
-
-    _contractType = c.contractType;
-    _abiIpfsHash = c.abiIpfsHash;
-    _dataLink = c.dataLink;
-  }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
     uint256 len = _members.length;
