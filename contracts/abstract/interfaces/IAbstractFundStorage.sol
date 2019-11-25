@@ -64,8 +64,6 @@ interface IAbstractFundStorage {
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external;
 
-  function getMemberIdentification(address _member) external view returns(bytes32);
-
   function disableFundRule(uint256 _id) external;
 
   function setNameAndDataLink(

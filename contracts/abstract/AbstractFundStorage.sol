@@ -136,7 +136,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // periodId => (erc20Contract => runningTotal)
   mapping(uint256 => mapping(address => uint256)) internal _periodRunningTotals;
   // member => identification hash
-  mapping(address => bytes32) internal _membersIdentification;
+  mapping(address => bytes32) public membersIdentification;
 
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
@@ -346,11 +346,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   }
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(ROLE_MEMBER_IDENTIFICATION_MANAGER) {
-    _membersIdentification[_member] = _identificationHash;
-  }
-
-  function getMemberIdentification(address _member) external view returns(bytes32) {
-    return _membersIdentification[_member];
+    membersIdentification[_member] = _identificationHash;
   }
 
   function disableFundRule(uint256 _id) external onlyRole(ROLE_DEACTIVATE_FUND_RULE_MANAGER) {
