@@ -12,26 +12,27 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "../FundStorage.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
 contract AbstractDecentralizedRegularFee is AbstractRegularFee {
   using SafeMath for uint256;
 
-  FundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
 
   // tokenId => timestamp
   mapping(uint256 => uint256) public paidUntil;
   // tokenId => amount
   mapping(uint256 => uint256) public totalPaid;
 
-  constructor(FundStorage _fundStorage) public {
-    fundStorage = _fundStorage;
+  constructor(IFundRegistry _fundRegistry) public {
+    fundRegistry = _fundRegistry;
   }
 
   function lockSpaceToken(uint256 _spaceTokenId) public {
     require(paidUntil[_spaceTokenId] < getNextPeriodTimestamp(), "paidUntil too small");
-    fundStorage.lockSpaceToken(_spaceTokenId);
+    _fundStorage().lockSpaceToken(_spaceTokenId);
   }
 
   function lockSpaceTokenArray(uint256[] calldata _spaceTokenIds) external {
@@ -42,13 +43,17 @@ contract AbstractDecentralizedRegularFee is AbstractRegularFee {
 
   function unlockSpaceToken(uint256 _spaceTokenId) public {
     require(paidUntil[_spaceTokenId] >= getNextPeriodTimestamp(), "paidUntil too big");
-    fundStorage.unlockSpaceToken(_spaceTokenId);
+    _fundStorage().unlockSpaceToken(_spaceTokenId);
   }
 
   function unlockSpaceTokenArray(uint256[] calldata _spaceTokenIds) external {
     for (uint i = 0; i < _spaceTokenIds.length; i++) {
       unlockSpaceToken(_spaceTokenIds[i]);
     }
+  }
+
+  function _fundStorage() internal view returns (FundStorage) {
+    return FundStorage(fundRegistry.getStorageAddress());
   }
 
   function _pay(uint256 _spaceTokenId, uint256 _amount) internal {

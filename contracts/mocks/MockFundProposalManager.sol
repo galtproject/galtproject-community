@@ -10,12 +10,12 @@
 pragma solidity ^0.5.10;
 
 import "../common/FundProposalManager.sol";
-import "../decentralized/FundStorage.sol";
 
 
 contract MockFundProposalManager is FundProposalManager {
 
-  constructor(FundStorage _fundStorage) public FundProposalManager(_fundStorage) { }
+  constructor() public {
+  }
 
   function proposeHack(
     address _destination,
@@ -34,7 +34,7 @@ contract MockFundProposalManager is FundProposalManager {
     p.value = _value;
     p.data = _data;
     p.dataLink = _dataLink;
-    p.marker = fundStorage.getThresholdMarker(_destination, _data);
+    p.marker = _fundStorage().getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;
     _onNewProposal(id);

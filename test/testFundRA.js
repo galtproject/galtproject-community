@@ -102,6 +102,7 @@ contract('FundRA', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
+    this.fundRegistryX = fund.fundRegistry;
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
 
@@ -171,7 +172,7 @@ contract('FundRA', accounts => {
       this.initialTimestamp = res + ONE_HOUR;
       this.regularEthFeeFactory = await RegularEthFeeFactory.new({ from: coreTeam });
       res = await this.regularEthFeeFactory.build(
-        this.fundStorageX.address,
+        this.fundRegistryX.address,
         this.initialTimestamp.toString(10),
         ONE_MONTH,
         ether(4)

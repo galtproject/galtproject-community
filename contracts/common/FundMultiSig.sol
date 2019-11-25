@@ -9,32 +9,38 @@
 
 pragma solidity 0.5.10;
 
-import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/multisig/contracts/MultiSigWallet.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
+import "./interfaces/IFundRegistry.sol";
 
 
-contract FundMultiSig is MultiSigWallet, Permissionable {
+contract FundMultiSig is MultiSigWallet {
   event NewOwnerSet(uint256 required, uint256 total);
 
-  string public constant ROLE_OWNER_MANAGER = "owner_manager";
+  bytes32 public constant ROLE_OWNER_MANAGER = bytes32("owner_manager");
   address public constant ETH_CONTRACT_ADDRESS = address(1);
 
-  IAbstractFundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
 
   constructor(
     address[] memory _initialOwners,
     uint256 _required,
-    IAbstractFundStorage _fundStorage
+    IFundRegistry _fundRegistry
   )
     public
     MultiSigWallet(_initialOwners, _required)
   {
-    fundStorage = _fundStorage;
+    fundRegistry = _fundRegistry;
   }
 
   modifier forbidden() {
     assert(false);
+    _;
+  }
+
+  modifier onlyRole(bytes32 _role) {
+    // TODO: implement check
+
     _;
   }
 
@@ -46,7 +52,7 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
   function setOwners(address[] calldata _newOwners, uint256 _required) external onlyRole(ROLE_OWNER_MANAGER) {
     require(_required <= _newOwners.length, "Required too big");
     require(_required > 0, "Required too low");
-    require(fundStorage.areMembersValid(_newOwners), "Not all members are valid");
+    require(_fundStorage().areMembersValid(_newOwners), "Not all members are valid");
 
     owners = _newOwners;
     required = _required;
@@ -81,10 +87,10 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
 
   function beforeTransactionHook(address _destination, uint _value, uint _dataLength, bytes memory _data) private {
     if (_value > 0) {
-      fundStorage.handleMultiSigTransaction(ETH_CONTRACT_ADDRESS, _value);
+      _fundStorage().handleMultiSigTransaction(ETH_CONTRACT_ADDRESS, _value);
     }
 
-    (bool active,) = fundStorage.getPeriodLimit(_destination);
+    (bool active,) = _fundStorage().getPeriodLimit(_destination);
 
     // If a withdrawal limit exists for this t_destination
     if (active) {
@@ -109,7 +115,11 @@ contract FundMultiSig is MultiSigWallet, Permissionable {
         return;
       }
 
-      fundStorage.handleMultiSigTransaction(_destination, erc20Value);
+      _fundStorage().handleMultiSigTransaction(_destination, erc20Value);
     }
+  }
+
+  function _fundStorage() internal view returns (IAbstractFundStorage) {
+    return IAbstractFundStorage(fundRegistry.getStorageAddress());
   }
 }

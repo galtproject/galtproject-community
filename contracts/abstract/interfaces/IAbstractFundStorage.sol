@@ -103,9 +103,6 @@ interface IAbstractFundStorage {
 
   function getActiveFundRulesCount() external view returns (uint256);
 
-  function getMultiSig() external view returns (FundMultiSig);
-  function getRA() external view returns (IFundRA);
-
   function getWhiteListedContract(
     address _contract
   )

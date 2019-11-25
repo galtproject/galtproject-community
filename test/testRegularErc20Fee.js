@@ -55,6 +55,7 @@ contract('Regular ERC20 Fees', accounts => {
 
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
+    this.fundRegistryX = fund.fundRegistry;
     this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
@@ -73,7 +74,7 @@ contract('Regular ERC20 Fees', accounts => {
     this.initialTimestamp = res + ONE_HOUR;
     res = await this.regularErc20FeeFactory.build(
       this.daiToken.address,
-      this.fundStorageX.address,
+      this.fundRegistryX.address,
       this.initialTimestamp.toString(10),
       ONE_MONTH,
       ether(40)
