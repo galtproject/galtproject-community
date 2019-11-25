@@ -26,7 +26,7 @@ contract FundStorage is AbstractFundStorage {
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
   // spaceTokenId => isMintApproved
-  mapping(uint256 => bool) private _mintApprovals;
+  mapping(uint256 => bool) internal _mintApprovals;
   // spaceTokenId => isExpelled
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
