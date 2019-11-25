@@ -345,7 +345,7 @@ contract('FundProposalManager', accounts => {
 
       // approve Alice
       let proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')])
+        .setMultiSigManager(true, alice, 'Alice', 'asdf')
         .encodeABI();
 
       let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -363,7 +363,7 @@ contract('FundProposalManager', accounts => {
 
       // approve George
       proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, george, 'George', [bytes32('asdf')])
+        .setMultiSigManager(true, george, 'George', 'asdf')
         .encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -379,10 +379,7 @@ contract('FundProposalManager', accounts => {
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       res = await this.fundStorageX.multiSigManagers(george);
-      assert.deepEqual(
-        res.documents.map(doc => doc.toString(10)),
-        [fullHex(bytes32('asdf'))]
-      );
+      assert.equal(res.dataLink, 'asdf');
       res = await this.fundStorageX.getActiveMultisigManagers();
       assert.deepEqual(res, [alice, george]);
 
@@ -434,7 +431,7 @@ contract('FundProposalManager', accounts => {
 
       // approve Dan
       proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, dan, 'Dan', [bytes32('asdf')])
+        .setMultiSigManager(true, dan, 'Dan', 'asdf')
         .encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -449,7 +446,7 @@ contract('FundProposalManager', accounts => {
 
       // approve Frank
       proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')])
+        .setMultiSigManager(true, frank, 'Frank', 'asdf')
         .encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {

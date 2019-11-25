@@ -186,9 +186,9 @@ contract('MultiSig Withdrawal Limits', accounts => {
         from: alice
       });
 
-      await this.fundStorageX.setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')], { from: eve });
-      await this.fundStorageX.setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')], { from: eve });
-      await this.fundStorageX.setMultiSigManager(true, george, 'George', [bytes32('asdf')], { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, alice, 'Alice', 'asdf', { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, frank, 'Frank', 'asdf', { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, george, 'George', 'asdf', { from: eve });
 
       await assertRevert(this.fundMultiSigX.setOwners([alice, frank, george], 4), { from: eve });
       await assertRevert(this.fundMultiSigX.setOwners([alice, frank, george], 0), { from: eve });

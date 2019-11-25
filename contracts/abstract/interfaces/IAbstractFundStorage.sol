@@ -78,7 +78,7 @@ interface IAbstractFundStorage {
     bool _active,
     address _manager,
     string calldata _name,
-    bytes32[] calldata _documents
+    string calldata _dataLink
   )
     external;
 
@@ -146,7 +146,7 @@ interface IAbstractFundStorage {
     returns (
       bool active,
       string memory managerName,
-      bytes32[] memory documents
+      string memory dataLink
     );
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount);

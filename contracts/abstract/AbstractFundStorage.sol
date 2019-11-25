@@ -88,7 +88,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     bool active;
     address manager;
     string name;
-    bytes32[] documents;
+    string dataLink;
   }
 
   // TODO: separate caching data with config to another contract
@@ -374,7 +374,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     bool _active,
     address _manager,
     string calldata _name,
-    bytes32[] calldata _documents
+    string calldata _dataLink
   )
     external
     onlyRole(ROLE_MEMBER_DETAILS_MANAGER)
@@ -383,7 +383,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
     m.active = _active;
     m.name = _name;
-    m.documents = _documents;
+    m.dataLink = _dataLink;
 
     if (_active) {
       _activeMultisigManagers.addSilent(_manager);
