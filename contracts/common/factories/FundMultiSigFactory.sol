@@ -10,29 +10,25 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "../FundMultiSig.sol";
-import "../../abstract/interfaces/IAbstractFundStorage.sol";
 
 
 contract FundMultiSigFactory is Ownable {
   function build(
     address[] calldata _initialOwners,
     uint256 _required,
-    IAbstractFundStorage _fundStorage
+    IFundRegistry _fundRegistry
   )
     external
     returns (FundMultiSig fundMultiSig)
   {
-    fundMultiSig = new FundMultiSig(
+    return new FundMultiSig(
       _initialOwners,
       _required,
-      _fundStorage
+      _fundRegistry
     );
-
-    fundMultiSig.addRoleTo(msg.sender, "role_manager");
-    fundMultiSig.removeRoleFrom(address(this), "role_manager");
-
   }
 }

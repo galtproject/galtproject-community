@@ -9,31 +9,58 @@
 
 pragma solidity 0.5.10;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "./AbstractPrivateRegularFee.sol";
-import "../PrivateFundStorage.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 
 contract PrivateRegularEthFee is AbstractPrivateRegularFee {
+  using SafeMath for uint256;
+
   constructor (
-    PrivateFundStorage _fundStorage,
+    IFundRegistry _fundRegistry,
     uint256 _initialTimestamp,
     uint256 _periodLength,
     uint256 _rate
   )
     public
-    AbstractPrivateRegularFee(_fundStorage)
+    AbstractPrivateRegularFee(_fundRegistry)
     AbstractRegularFee(_initialTimestamp, _periodLength, _rate)
   {
   }
 
-  function pay(address _registry, uint256 _tokenId) public payable {
+  function pay(address _registry, uint256 _tokenId) external payable {
     uint256 value = msg.value;
 
     require(value > 0, "Expect ETH payment");
 
     _pay(_registry, _tokenId, value);
 
-    address(fundStorage.getMultiSig()).transfer(value);
+    address(fundRegistry.getMultiSigAddress()).transfer(value);
+  }
+
+  function payArray(
+    address[] calldata _registries,
+    uint256[] calldata _spaceTokensIds,
+    uint256[] calldata _amounts
+  )
+    external
+    payable
+  {
+    uint256 value = msg.value;
+    require(value > 0, "Expect ETH payment");
+
+    uint256 totalAmount = 0;
+
+    for (uint i = 0; i < _spaceTokensIds.length; i++) {
+      // totalAmount += _amounts[_i];
+      totalAmount = totalAmount.add(_amounts[i]);
+      _pay(_registries[i], _spaceTokensIds[i], _amounts[i]);
+    }
+
+    require(value == totalAmount, "Amounts sum doesn't match msg.value");
+
+    address(fundRegistry.getMultiSigAddress()).transfer(value);
   }
 }

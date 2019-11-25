@@ -19,7 +19,6 @@ import "../common/interfaces/IFundRA.sol";
 
 
 contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
-
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
@@ -31,20 +30,21 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     uint128 value;
   }
 
-  FundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
 
-  mapping(address => Checkpoint[]) _cachedBalances;
-  Checkpoint[] _cachedTotalSupply;
+  mapping(address => Checkpoint[]) internal _cachedBalances;
+  Checkpoint[] internal _cachedTotalSupply;
 
   // alternative initializer to Decentralized.initialize(GaltGlobalRegistry _ggr)
   function initialize2(
-    FundStorage _fundStorage
+    IFundRegistry _fundRegistry
   )
     public
     isInitializer
   {
-    ggr = _fundStorage.ggr();
-    fundStorage = _fundStorage;
+    // NOTICE: can't update GGR address within this contract later
+    ggr = GaltGlobalRegistry(_fundRegistry.getGGRAddress());
+    fundRegistry = _fundRegistry;
   }
 
   function mint(
@@ -53,7 +53,7 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     public
   {
     uint256 spaceTokenId = _spaceLocker.spaceTokenId();
-    require(fundStorage.isMintApproved(spaceTokenId), "No mint permissions");
+    require(_fundStorage().isMintApproved(spaceTokenId), "No mint permissions");
     super.mint(_spaceLocker);
 
     emit TokenMint(spaceTokenId);
@@ -65,8 +65,8 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     public
   {
     uint256 spaceTokenId = _spaceLocker.spaceTokenId();
-    require(fundStorage.getTotalFineAmount(spaceTokenId) == 0, "There are pending fines");
-    require(fundStorage.isSpaceTokenLocked(spaceTokenId) == false, "Token is locked by a fee contract");
+    require(_fundStorage().getTotalFineAmount(spaceTokenId) == 0, "There are pending fines");
+    require(_fundStorage().isSpaceTokenLocked(spaceTokenId) == false, "Token is locked by a fee contract");
 
     super.approveBurn(_spaceLocker);
 
@@ -74,7 +74,7 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   }
 
   function burnExpelled(uint256 _spaceTokenId, address _delegate, address _owner, uint256 _amount) external {
-    bool completelyBurned = fundStorage.decrementExpelledTokenReputation(_spaceTokenId, _amount);
+    bool completelyBurned = _fundStorage().decrementExpelledTokenReputation(_spaceTokenId, _amount);
 
     _debitAccount(_delegate, _owner, _amount);
 
@@ -105,6 +105,10 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
     LiquidRA._burn(_benefactor, _amount);
 
     updateValueAtNow(_cachedTotalSupply, totalSupply());
+  }
+
+  function _fundStorage() internal view returns (FundStorage) {
+    return FundStorage(fundRegistry.getStorageAddress());
   }
 
   function updateValueAtNow(Checkpoint[] storage checkpoints, uint256 _value) internal {

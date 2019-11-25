@@ -9,12 +9,15 @@
 
 pragma solidity 0.5.10;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./interfaces/IRegularFee.sol";
 import "./traits/DetailableFee.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
 contract AbstractRegularFee is DetailableFee, IRegularFee {
+  using SafeMath for uint256;
+
   uint256 public initialTimestamp;
   // Period in seconds
   uint256 public periodLength;
@@ -44,7 +47,8 @@ contract AbstractRegularFee is DetailableFee, IRegularFee {
   function getCurrentPeriod() public view returns (uint256) {
     require(block.timestamp > initialTimestamp, "Contract not initiated yet");
 
-    return (block.timestamp - initialTimestamp) / periodLength;
+    // return (block.timestamp - initialTimestamp) / periodLength;
+    return (block.timestamp.sub(initialTimestamp)) / periodLength;
   }
 
   function getNextPeriodTimestamp() public view returns (uint256) {
@@ -52,7 +56,8 @@ contract AbstractRegularFee is DetailableFee, IRegularFee {
       return initialTimestamp;
     }
 
-    return ((getCurrentPeriod() + 1) * periodLength) + initialTimestamp;
+    // return ((getCurrentPeriod() + 1) * periodLength) + initialTimestamp;
+    return ((getCurrentPeriod() + 1).mul(periodLength)).add(initialTimestamp);
   }
 
   function getCurrentPeriodTimestamp() public view returns (uint256) {
@@ -60,6 +65,7 @@ contract AbstractRegularFee is DetailableFee, IRegularFee {
       return initialTimestamp;
     }
 
-    return (getCurrentPeriod() * periodLength) + initialTimestamp;
+    // return (getCurrentPeriod() * periodLength) + initialTimestamp;
+    return (getCurrentPeriod().mul(periodLength)).add(initialTimestamp);
   }
 }

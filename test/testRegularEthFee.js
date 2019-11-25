@@ -60,6 +60,7 @@ contract('Regular ETH Fees', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
+    this.fundRegistryX = fund.fundRegistry;
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
 
@@ -76,7 +77,7 @@ contract('Regular ETH Fees', accounts => {
     let res = await lastBlockTimestamp();
     this.initialTimestamp = res + ONE_HOUR;
     res = await this.regularEthFeeFactory.build(
-      this.fundStorageX.address,
+      this.fundRegistryX.address,
       this.initialTimestamp.toString(10),
       ONE_MONTH,
       ether(4)
@@ -198,7 +199,7 @@ contract('Regular ETH Fees', accounts => {
     });
   });
 
-  it.skip('should allow any address locking spaceTokens', async function() {
+  it('should allow any address locking spaceTokens', async function() {
     const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
     let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
       from: alice
@@ -226,7 +227,7 @@ contract('Regular ETH Fees', accounts => {
     // not locked yet
     await assertRevert(this.regularEthFee.unlockSpaceToken('1', { from: unauthorized }));
 
-    await this.regularEthFee.lockSpaceTokensArray(['1', '2'], { from: unauthorized });
+    await this.regularEthFee.lockSpaceTokenArray(['1', '2'], { from: unauthorized });
     res = await this.fundStorageX.isSpaceTokenLocked('1');
     assert.equal(res, true);
     res = await this.fundStorageX.isSpaceTokenLocked('2');
@@ -238,7 +239,7 @@ contract('Regular ETH Fees', accounts => {
     // the current period is completely paid upfront
     await this.regularEthFee.payArray(['1', '2'], [ether(1), ether(4)], { from: alice, value: ether(5) });
     // unlock
-    this.regularEthFee.unlockSpaceTokensArray(['1', '2'], { from: unauthorized });
+    this.regularEthFee.unlockSpaceTokenArray(['1', '2'], { from: unauthorized });
 
     // unable to lock again
     await assertRevert(this.regularEthFee.lockSpaceToken('1', { from: unauthorized }));

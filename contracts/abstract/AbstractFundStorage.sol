@@ -10,17 +10,17 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "@galtproject/libs/contracts/traits/Permissionable.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../common/FundMultiSig.sol";
 import "../common/FundProposalManager.sol";
 import "../common/interfaces/IFundRA.sol";
 import "./interfaces/IAbstractFundStorage.sol";
+import "../common/interfaces/IFundRegistry.sol";
 
 
-contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializable {
-  // TODO: Use SafeMath
+contract AbstractFundStorage is IAbstractFundStorage, Initializable {
+  using SafeMath for uint256;
 
   using ArraySet for ArraySet.AddressSet;
   using ArraySet for ArraySet.Uint256Set;
@@ -30,28 +30,23 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   // 100% == 100 ether
   uint256 public constant ONE_HUNDRED_PCT = 100 ether;
 
-  string public constant ROLE_CONFIG_MANAGER = "config_manager";
-  string public constant ROLE_WHITELIST_CONTRACTS_MANAGER = "wl_manager";
-  string public constant ROLE_PROPOSAL_MARKERS_MANAGER = "marker_manager";
-  string public constant ROLE_NEW_MEMBER_MANAGER = "new_member_manager";
-  string public constant ROLE_EXPEL_MEMBER_MANAGER = "expel_member_manager";
-  string public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = "fine_member_increment_manager";
-  string public constant ROLE_FINE_MEMBER_DECREMENT_MANAGER = "fine_member_decrement_manager";
-  string public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = "change_name_and_data_link_manager";
-  string public constant ROLE_ADD_FUND_RULE_MANAGER = "add_fund_rule_manager";
-  string public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = "deactivate_fund_rule_manager";
-  string public constant ROLE_FEE_MANAGER = "contract_fee_manager";
-  string public constant ROLE_MEMBER_DETAILS_MANAGER = "contract_member_details_manager";
-  string public constant ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = "contract_multi_sig_withdrawal_limits_manager";
-  string public constant ROLE_MEMBER_IDENTIFICATION_MANAGER = "contract_member_identification_manager";
-  string public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = "contract_threshold_manager";
-  string public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = "contract_default_threshold_manager";
-  string public constant ROLE_DECREMENT_TOKEN_REPUTATION = "decrement_token_reputation_role";
-
-  bytes32 public constant CONTRACT_CORE_RA = "contract_core_ra";
-  bytes32 public constant CONTRACT_CORE_MULTISIG = "contract_core_multisig";
-  bytes32 public constant CONTRACT_CORE_CONTROLLER = "contract_core_controller";
-  bytes32 public constant CONTRACT_CORE_PROPOSAL_MANAGER = "contract_core_proposal_manager";
+  bytes32 public constant ROLE_CONFIG_MANAGER = bytes32("CONFIG_MANAGER");
+  bytes32 public constant ROLE_WHITELIST_CONTRACTS_MANAGER = bytes32("WL_MANAGER");
+  bytes32 public constant ROLE_PROPOSAL_MARKERS_MANAGER = bytes32("MARKER_MANAGER");
+  bytes32 public constant ROLE_NEW_MEMBER_MANAGER = bytes32("NEW_MEMBER_MANAGER");
+  bytes32 public constant ROLE_EXPEL_MEMBER_MANAGER = bytes32("EXPEL_MEMBER_MANAGER");
+  bytes32 public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = bytes32("FINE_MEMBER_INCREMENT_MANAGER");
+  bytes32 public constant ROLE_FINE_MEMBER_DECREMENT_MANAGER = bytes32("FINE_MEMBER_DECREMENT_MANAGER");
+  bytes32 public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = bytes32("CHANGE_NAME_DATA_LINK_MANAGER");
+  bytes32 public constant ROLE_ADD_FUND_RULE_MANAGER = bytes32("ADD_FUND_RULE_MANAGER");
+  bytes32 public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = bytes32("DEACTIVATE_FUND_RULE_MANAGER");
+  bytes32 public constant ROLE_FEE_MANAGER = bytes32("FEE_MANAGER");
+  bytes32 public constant ROLE_MEMBER_DETAILS_MANAGER = bytes32("MEMBER_DETAILS_MANAGER");
+  bytes32 public constant ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = bytes32("MULTISIG_WITHDRAWAL_MANAGER");
+  bytes32 public constant ROLE_MEMBER_IDENTIFICATION_MANAGER = bytes32("MEMBER_IDENTIFICATION_MANAGER");
+  bytes32 public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = bytes32("THRESHOLD_MANAGER");
+  bytes32 public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = bytes32("DEFAULT_THRESHOLD_MANAGER");
+  bytes32 public constant ROLE_DECREMENT_TOKEN_REPUTATION = bytes32("DECREMENT_TOKEN_REPUTATION_ROLE");
 
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
@@ -112,6 +107,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     uint256 amount;
   }
 
+  IFundRegistry public fundRegistry;
+  VotingConfig public defaultVotingConfig;
+
   string public name;
   string public dataLink;
   uint256 public initialTimestamp;
@@ -131,8 +129,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   mapping(address => WhitelistedContract) internal _whitelistedContracts;
   // marker => details
   mapping(bytes32 => ProposalMarker) internal _proposalMarkers;
-  // role => address
-  mapping(bytes32 => address) internal _coreContracts;
   // manager => details
   mapping(address => MultiSigManager) internal _multiSigManagers;
   // erc20Contract => details
@@ -153,7 +149,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
 
   // marker => customVotingConfigs
   mapping(bytes32 => VotingConfig) public customVotingConfigs;
-  VotingConfig public defaultVotingConfig;
 
   modifier onlyFeeContract() {
     require(feeContracts.has(msg.sender), "Not a fee contract");
@@ -161,19 +156,33 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     _;
   }
 
+  // TODO: use role instead of this
   modifier onlyMultiSig() {
-    require(msg.sender == _coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
+//    require(msg.sender == _coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
 
     _;
   }
 
-  constructor (
+  modifier onlyRole(bytes32 _role) {
+    require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
+
+    _;
+  }
+
+  constructor() public {
+  }
+
+  function initializeInternal(
+    IFundRegistry _fundRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalMinAcceptQuorum,
     uint256 _defaultProposalTimeout,
     uint256 _periodLength
-  ) public {
+  )
+    internal
+    isInitializer
+  {
     _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
 
     periodLength = _periodLength;
@@ -185,22 +194,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     defaultVotingConfig.minAcceptQuorum = _defaultProposalMinAcceptQuorum;
     defaultVotingConfig.timeout = _defaultProposalTimeout;
 
-    _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
-  }
+//    _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
 
-  function initialize(
-    address _fundMultiSig,
-    address _fundController,
-    address _fundRA,
-    address _fundProposalManager
-  )
-    external
-    isInitializer
-  {
-    _coreContracts[CONTRACT_CORE_MULTISIG] = _fundMultiSig;
-    _coreContracts[CONTRACT_CORE_CONTROLLER] = _fundController;
-    _coreContracts[CONTRACT_CORE_RA] = _fundRA;
-    _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
+    fundRegistry = _fundRegistry;
   }
 
   function setDefaultProposalConfig(
@@ -427,7 +423,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     }
 
     uint256 currentPeriod = getCurrentPeriod();
-    uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
+    // uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
+    uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract].add(_amount);
 
     require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
     _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
@@ -498,18 +495,18 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     return _activeFundRules.size();
   }
 
-  function getMultiSig() public view returns (FundMultiSig) {
-    address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
-    return FundMultiSig(ms);
-  }
+//  function getMultiSig() public view returns (FundMultiSig) {
+//    address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
+//    return FundMultiSig(ms);
+//  }
 
-  function getRA() public view returns (IFundRA) {
-    return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
-  }
-
-  function getProposalManager() public view returns (FundProposalManager) {
-    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
-  }
+//  function getRA() public view returns (IFundRA) {
+//    return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
+//  }
+//
+//  function getProposalManager() public view returns (FundProposalManager) {
+//    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
+//  }
 
   function getWhiteListedContract(
     address _contract
@@ -604,6 +601,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function getCurrentPeriod() public view returns (uint256) {
-    return (block.timestamp - initialTimestamp) / periodLength;
+    // return (block.timestamp - initialTimestamp) / periodLength;
+    return (block.timestamp.sub(initialTimestamp)) / periodLength;
   }
 }

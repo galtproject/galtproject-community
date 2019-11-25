@@ -31,15 +31,15 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
     uint128 value;
   }
 
-  PrivateFundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
 
   mapping(address => Checkpoint[]) _cachedBalances;
   mapping(uint256 => bool) internal _tokensToExpel;
   Checkpoint[] _cachedTotalSupply;
 
-  function initialize(PrivateFundStorage _fundStorage) external isInitializer {
-    super.initializeInternal(_fundStorage.globalRegistry());
-    fundStorage = _fundStorage;
+  function initialize(IFundRegistry _fundRegistry) external isInitializer {
+    super.initializeInternal(IPPGlobalRegistry(_fundRegistry.getPPGRAddress()));
+    fundRegistry = _fundRegistry;
   }
 
   function mint(
@@ -51,7 +51,7 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
 
-    require(fundStorage.isMintApproved(registry, tokenId), "No mint permissions");
+    require(_fundStorage().isMintApproved(registry, tokenId), "No mint permissions");
     super.mint(_tokenLocker);
 
     emit TokenMint(registry, tokenId);
@@ -66,8 +66,8 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
 
-    require(fundStorage.getTotalFineAmount(registry, tokenId) == 0, "There are pending fines");
-    require(fundStorage.isTokenLocked(registry, tokenId) == false, "Token is locked by a fee contract");
+    require(_fundStorage().getTotalFineAmount(registry, tokenId) == 0, "There are pending fines");
+    require(_fundStorage().isTokenLocked(registry, tokenId) == false, "Token is locked by a fee contract");
 
     super.approveBurn(_tokenLocker);
 
@@ -75,7 +75,7 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   }
 
   function burnExpelled(address _registry, uint256 _tokenId, address _delegate, address _owner, uint256 _amount) external {
-    bool completelyBurned = fundStorage.decrementExpelledTokenReputation(_registry, _tokenId, _amount);
+    bool completelyBurned = _fundStorage().decrementExpelledTokenReputation(_registry, _tokenId, _amount);
 
     _debitAccount(_delegate, _owner, _amount);
 
@@ -145,6 +145,10 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
       }
     }
     return checkpoints[min].value;
+  }
+
+  function _fundStorage() internal returns (PrivateFundStorage) {
+    return PrivateFundStorage(fundRegistry.getStorageAddress());
   }
 
   // GETTERS

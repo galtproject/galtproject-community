@@ -19,9 +19,6 @@ import "../abstract/AbstractFundStorage.sol";
 
 
 contract PrivateFundStorage is AbstractFundStorage {
-  // TODO: use SafeMath
-  IPPGlobalRegistry public globalRegistry;
-
   mapping(address => ArraySet.Uint256Set) private _tokenFines;
   // registry => (tokenId => fineContracts[]))
   mapping(address => mapping(uint256 => ArraySet.AddressSet)) private _fineContractsByToken;
@@ -47,28 +44,34 @@ contract PrivateFundStorage is AbstractFundStorage {
   event LockToken(address indexed registry, uint256 indexed tokenId);
   event UnlockToken(address indexed registry, uint256 indexed tokenId);
 
-  constructor (
-    IPPGlobalRegistry _globalRegistry,
+  constructor() public {
+  }
+
+  function initialize(
+    IFundRegistry _fundRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalQuorum,
     uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
-    public
-    AbstractFundStorage(
+    external
+  {
+    AbstractFundStorage.initializeInternal(
+      _fundRegistry,
       _isPrivate,
       _defaultProposalSupport,
       _defaultProposalQuorum,
       _defaultProposalTimeout,
       _periodLength
-    )
-  {
-    globalRegistry = _globalRegistry;
+    );
   }
 
   function _onlyValidToken(address _token) internal view {
-    IPPTokenRegistry(globalRegistry.getPPTokenRegistryAddress()).requireValidToken(_token);
+    IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
+
+    IPPTokenRegistry(ppgr.getPPTokenRegistryAddress())
+      .requireValidToken(_token);
   }
 
   function approveMint(address _registry, uint256 _tokenId)
@@ -129,8 +132,10 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     // TODO: track relation to proposal id
-    _fines[_registry][_tokenId].tokenFines[_contract].amount += _amount;
-    _fines[_registry][_tokenId].total += _amount;
+    // _fines[_registry][_tokenId].tokenFines[_contract].amount += _amount;
+    _fines[_registry][_tokenId].tokenFines[_contract].amount = _fines[_registry][_tokenId].tokenFines[_contract].amount.add(_amount);
+    // _fines[_registry][_tokenId].total += _amount;
+    _fines[_registry][_tokenId].total = _fines[_registry][_tokenId].total.add(_amount);
 
     _tokenFines[_registry].addSilent(_tokenId);
     _fineContractsByToken[_registry][_tokenId].addSilent(_contract);
@@ -149,8 +154,10 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
 
-    _fines[_registry][_tokenId].tokenFines[_contract].amount -= _amount;
-    _fines[_registry][_tokenId].total -= _amount;
+    // _fines[_registry][_tokenId].tokenFines[_contract].amount -= _amount;
+    _fines[_registry][_tokenId].tokenFines[_contract].amount = _fines[_registry][_tokenId].tokenFines[_contract].amount.sub(_amount);
+    // _fines[_registry][_tokenId].total -= _amount;
+    _fines[_registry][_tokenId].total -= _fines[_registry][_tokenId].total.sub(_amount);
 
     if (_fines[_registry][_tokenId].tokenFines[_contract].amount == 0) {
       _fineContractsByToken[_registry][_tokenId].remove(_contract);
