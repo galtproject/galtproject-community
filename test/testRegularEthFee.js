@@ -60,6 +60,7 @@ contract('Regular ETH Fees', accounts => {
     this.fundStorageX = fund.fundStorage;
     this.fundControllerX = fund.fundController;
     this.fundMultiSigX = fund.fundMultiSig;
+    this.fundRegistryX = fund.fundRegistry;
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
 
@@ -76,7 +77,7 @@ contract('Regular ETH Fees', accounts => {
     let res = await lastBlockTimestamp();
     this.initialTimestamp = res + ONE_HOUR;
     res = await this.regularEthFeeFactory.build(
-      this.fundStorageX.address,
+      this.fundRegistryX.address,
       this.initialTimestamp.toString(10),
       ONE_MONTH,
       ether(4)

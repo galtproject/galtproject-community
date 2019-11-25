@@ -10,7 +10,7 @@
 pragma solidity ^0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../decentralized/FundStorage.sol";
+import "../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "./ExtraMockFundRA.sol";
@@ -18,13 +18,13 @@ import "./ExtraMockFundRA.sol";
 
 contract ExtraMockFundRAFactory is Ownable {
   function build(
-    FundStorage fundStorage
+    IFundRegistry _fundRegistry
   )
     external
     returns (ExtraMockFundRA)
   {
     ExtraMockFundRA fundRA = new ExtraMockFundRA();
-    fundRA.initialize2(fundStorage);
+    fundRA.initialize2(_fundRegistry);
 
     return fundRA;
   }

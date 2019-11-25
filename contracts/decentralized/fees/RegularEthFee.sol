@@ -12,20 +12,20 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "./AbstractDecentralizedRegularFee.sol";
-import "../FundStorage.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 
 contract RegularEthFee is AbstractDecentralizedRegularFee {
   using SafeMath for uint256;
 
   constructor (
-    FundStorage _fundStorage,
+    IFundRegistry _fundRegistry,
     uint256 _initialTimestamp,
     uint256 _periodLength,
     uint256 _rate
   )
     public
-    AbstractDecentralizedRegularFee(_fundStorage)
+    AbstractDecentralizedRegularFee(_fundRegistry)
     AbstractRegularFee(_initialTimestamp, _periodLength, _rate)
   {
   }
@@ -37,7 +37,7 @@ contract RegularEthFee is AbstractDecentralizedRegularFee {
 
     _pay(_spaceTokenId, value);
 
-    address(fundStorage.getMultiSig()).transfer(value);
+    address(fundRegistry.getMultiSigAddress()).transfer(value);
   }
 
   function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external payable {
@@ -54,6 +54,6 @@ contract RegularEthFee is AbstractDecentralizedRegularFee {
 
     require(value == totalAmount, "Amounts sum doesn't match msg.value");
 
-    address(fundStorage.getMultiSig()).transfer(value);
+    address(fundRegistry.getMultiSigAddress()).transfer(value);
   }
 }

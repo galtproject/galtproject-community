@@ -19,9 +19,6 @@ import "../abstract/AbstractFundStorage.sol";
 
 
 contract PrivateFundStorage is AbstractFundStorage {
-  // TODO: use SafeMath
-  IPPGlobalRegistry public globalRegistry;
-
   mapping(address => ArraySet.Uint256Set) private _tokenFines;
   // registry => (tokenId => fineContracts[]))
   mapping(address => mapping(uint256 => ArraySet.AddressSet)) private _fineContractsByToken;
@@ -36,28 +33,34 @@ contract PrivateFundStorage is AbstractFundStorage {
   // registry => (tokenId => isLocked)
   mapping(address => mapping(uint256 => bool)) private _lockedTokens;
 
-  constructor (
-    IPPGlobalRegistry _globalRegistry,
+  constructor() public {
+  }
+
+  function initialize(
+    IFundRegistry _fundRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalQuorum,
     uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
-    public
-    AbstractFundStorage(
+    external
+  {
+    AbstractFundStorage.initializeInternal(
+      _fundRegistry,
       _isPrivate,
       _defaultProposalSupport,
       _defaultProposalQuorum,
       _defaultProposalTimeout,
       _periodLength
-    )
-  {
-    globalRegistry = _globalRegistry;
+    );
   }
 
   function _onlyValidToken(address _token) internal view {
-    IPPTokenRegistry(globalRegistry.getPPTokenRegistryAddress()).requireValidToken(_token);
+    IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
+
+    IPPTokenRegistry(ppgr.getPPTokenRegistryAddress())
+      .requireValidToken(_token);
   }
 
   function approveMint(address _registry, uint256 _tokenId)

@@ -10,7 +10,8 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "../FundStorage.sol";
@@ -18,7 +19,7 @@ import "../FundStorage.sol";
 
 contract FundStorageFactory is Ownable {
   function build(
-    GaltGlobalRegistry _ggr,
+    IFundRegistry _fundRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalQuorum,
@@ -28,18 +29,25 @@ contract FundStorageFactory is Ownable {
     external
     returns (FundStorage)
   {
-    FundStorage fundStorage = new FundStorage(
-      _ggr,
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
+    OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
+
+    FundStorage fundStorage = new FundStorage();
+
+    proxy.upgradeToAndCall(
+      address(fundStorage),
+      abi.encodeWithSignature(
+          "initialize(address,bool,uint256,uint256,uint256,uint256)",
+          _fundRegistry,
+          _isPrivate,
+          _defaultProposalSupport,
+          _defaultProposalQuorum,
+          _defaultProposalTimeout,
+          _periodLength
+      )
     );
 
-    fundStorage.addRoleTo(msg.sender, "role_manager");
-    fundStorage.removeRoleFrom(address(this), "role_manager");
+    proxy.transferProxyOwnership(msg.sender);
 
-    return fundStorage;
+    return FundStorage(address(proxy));
   }
 }

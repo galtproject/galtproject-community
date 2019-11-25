@@ -14,7 +14,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "./AbstractDecentralizedRegularFee.sol";
-import "../FundStorage.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 
 contract RegularErc20Fee is AbstractDecentralizedRegularFee {
@@ -25,13 +25,13 @@ contract RegularErc20Fee is AbstractDecentralizedRegularFee {
 
   constructor (
     IERC20 _token,
-    FundStorage _fundStorage,
+    IFundRegistry _fundRegistry,
     uint256 _initialTimestamp,
     uint256 _periodLength,
     uint256 _rate
   )
     public
-    AbstractDecentralizedRegularFee(_fundStorage)
+    AbstractDecentralizedRegularFee(_fundRegistry)
     AbstractRegularFee(_initialTimestamp, _periodLength, _rate)
   {
     erc20Token = _token;
@@ -44,7 +44,7 @@ contract RegularErc20Fee is AbstractDecentralizedRegularFee {
 
     _pay(_spaceTokenId, _amount);
 
-    erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), _amount);
+    erc20Token.transferFrom(msg.sender, address(fundRegistry.getMultiSigAddress()), _amount);
   }
 
   function payArray(uint256[] calldata _spaceTokensIds, uint256[] calldata _amounts) external {
@@ -56,6 +56,6 @@ contract RegularErc20Fee is AbstractDecentralizedRegularFee {
       _pay(_spaceTokensIds[i], _amounts[i]);
     }
 
-    erc20Token.transferFrom(msg.sender, address(fundStorage.getMultiSig()), totalAmount);
+    erc20Token.transferFrom(msg.sender, address(fundRegistry.getMultiSigAddress()), totalAmount);
   }
 }

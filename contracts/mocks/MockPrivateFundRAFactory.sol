@@ -18,13 +18,13 @@ import "./MockPrivateFundRA.sol";
 
 contract MockPrivateFundRAFactory is Ownable {
   function build(
-    PrivateFundStorage fundStorage
+    IFundRegistry _fundRegistry
   )
     external
     returns (MockPrivateFundRA)
   {
     MockPrivateFundRA fundRA = new MockPrivateFundRA();
-    fundRA.initialize(fundStorage);
+    fundRA.initialize(_fundRegistry);
 
     return fundRA;
   }
