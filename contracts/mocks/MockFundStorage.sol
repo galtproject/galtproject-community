@@ -14,7 +14,7 @@ import "../decentralized/FundStorage.sol";
 
 contract MockFundStorage is FundStorage {
 
-  function approveMintAllHack(uint256[] _spaceTokenIdList) external {
+  function approveMintAllHack(uint256[] calldata _spaceTokenIdList) external {
     for (uint256 i = 0; i < _spaceTokenIdList.length; i++) {
       _mintApprovals[_spaceTokenIdList[i]] = true;
       emit ApproveMint(_spaceTokenIdList[i]);
