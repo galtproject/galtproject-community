@@ -95,7 +95,7 @@ interface IAbstractFundStorage {
 
   function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
 
-  function getConfigValue(bytes32 _key) external view returns (bytes32);
+  function config(bytes32 _key) external view returns (bytes32);
 
   function getWhitelistedContracts() external view returns (address[] memory);
 

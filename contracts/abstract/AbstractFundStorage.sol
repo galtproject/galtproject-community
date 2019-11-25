@@ -124,7 +124,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   ArraySet.AddressSet internal _activeMultisigManagers;
   ArraySet.AddressSet internal _activePeriodLimitsContracts;
 
-  mapping(bytes32 => bytes32) internal _config;
+  mapping(bytes32 => bytes32) public config;
   // contractAddress => details
   mapping(address => WhitelistedContract) public whitelistedContracts;
   // marker => details
@@ -183,7 +183,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     internal
     isInitializer
   {
-    _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
+    config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
@@ -237,7 +237,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
-    _config[_key] = _value;
+    config[_key] = _value;
 
     emit SetConfig(_key, _value);
   }
@@ -477,10 +477,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
         defaultVotingConfig.timeout
       );
     }
-  }
-
-  function getConfigValue(bytes32 _key) external view returns (bytes32) {
-    return _config[_key];
   }
 
   function getWhitelistedContracts() external view returns (address[] memory) {
