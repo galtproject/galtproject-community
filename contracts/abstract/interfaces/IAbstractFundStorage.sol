@@ -114,7 +114,7 @@ interface IAbstractFundStorage {
       string memory _dataLink
     );
 
-  function getProposalMarker(
+  function proposalMarkers(
     bytes32 _marker
   )
     external

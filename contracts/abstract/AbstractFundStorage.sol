@@ -128,7 +128,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // contractAddress => details
   mapping(address => WhitelistedContract) internal _whitelistedContracts;
   // marker => details
-  mapping(bytes32 => ProposalMarker) internal _proposalMarkers;
+  mapping(bytes32 => ProposalMarker) public proposalMarkers;
   // manager => details
   mapping(address => MultiSigManager) public multiSigManagers;
   // erc20Contract => details
@@ -280,7 +280,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   {
     bytes32 _marker = keccak256(abi.encode(_destination, _methodSignature));
 
-    ProposalMarker storage m = _proposalMarkers[_marker];
+    ProposalMarker storage m = proposalMarkers[_marker];
 
     m.active = true;
     m.proposalManager = _proposalManager;
@@ -292,9 +292,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   }
 
   function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
-    _proposalMarkers[_marker].active = false;
+    proposalMarkers[_marker].active = false;
 
-    emit RemoveProposalMarker(_marker, _proposalMarkers[_marker].proposalManager);
+    emit RemoveProposalMarker(_marker, proposalMarkers[_marker].proposalManager);
   }
 
   function replaceProposalMarker(
@@ -307,9 +307,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   {
     bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
 
-    _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
-    _proposalMarkers[_newMarker].destination = _newDestination;
-    _proposalMarkers[_oldMarker].active = false;
+    proposalMarkers[_newMarker] = proposalMarkers[_oldMarker];
+    proposalMarkers[_newMarker].destination = _newDestination;
+    proposalMarkers[_oldMarker].active = false;
   }
 
   function addFundRule(
@@ -524,26 +524,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     _contractType = c.contractType;
     _abiIpfsHash = c.abiIpfsHash;
     _dataLink = c.dataLink;
-  }
-
-  function getProposalMarker(
-    bytes32 _marker
-  )
-    external
-    view
-    returns (
-      address _proposalManager,
-      address _destination,
-      bytes32 _name,
-      string memory _dataLink
-    )
-  {
-    ProposalMarker storage m = _proposalMarkers[_marker];
-
-    _proposalManager = m.proposalManager;
-    _destination = m.destination;
-    _name = m.name;
-    _dataLink = m.dataLink;
   }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
