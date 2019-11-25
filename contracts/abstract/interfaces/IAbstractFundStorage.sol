@@ -140,7 +140,7 @@ interface IAbstractFundStorage {
 
   function getFeeContractCount() external view returns (uint256);
 
-  function getMultisigManager(address _manager)
+  function multiSigManagers(address _manager)
     external
     view
     returns (

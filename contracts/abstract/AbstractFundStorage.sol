@@ -130,7 +130,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // marker => details
   mapping(bytes32 => ProposalMarker) internal _proposalMarkers;
   // manager => details
-  mapping(address => MultiSigManager) internal _multiSigManagers;
+  mapping(address => MultiSigManager) public multiSigManagers;
   // erc20Contract => details
   mapping(address => PeriodLimit) internal _periodLimits;
   // periodId => (erc20Contract => runningTotal)
@@ -379,7 +379,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     external
     onlyRole(ROLE_MEMBER_DETAILS_MANAGER)
   {
-    MultiSigManager storage m = _multiSigManagers[_manager];
+    MultiSigManager storage m = multiSigManagers[_manager];
 
     m.active = _active;
     m.name = _name;
@@ -550,7 +550,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 len = _members.length;
 
     for (uint256 i = 0; i < len; i++) {
-      if (_multiSigManagers[_members[i]].active == false) {
+      if (multiSigManagers[_members[i]].active == false) {
         return false;
       }
     }
@@ -580,19 +580,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
   function getFeeContractCount() external view returns (uint256) {
     return feeContracts.size();
-  }
-
-  function getMultisigManager(address _manager) external view returns (
-    bool active,
-    string memory managerName,
-    bytes32[] memory documents
-  )
-  {
-    return (
-      _multiSigManagers[_manager].active,
-      _multiSigManagers[_manager].name,
-      _multiSigManagers[_manager].documents
-    );
   }
 
   function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {
