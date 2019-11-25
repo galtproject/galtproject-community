@@ -6,7 +6,6 @@ const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelp
 const { ether, assertRevert, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
-const bytes32 = web3.utils.utf8ToHex;
 
 initHelperWeb3(web3);
 

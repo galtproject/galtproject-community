@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { initHelperWeb3, fullHex, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
+const { initHelperWeb3, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -362,9 +362,7 @@ contract('FundProposalManager', accounts => {
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve George
-      proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, george, 'George', 'asdf')
-        .encodeABI();
+      proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, george, 'George', 'asdf').encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
@@ -430,9 +428,7 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       // approve Dan
-      proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, dan, 'Dan', 'asdf')
-        .encodeABI();
+      proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, dan, 'Dan', 'asdf').encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
@@ -445,9 +441,7 @@ contract('FundProposalManager', accounts => {
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve Frank
-      proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, frank, 'Frank', 'asdf')
-        .encodeABI();
+      proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, frank, 'Frank', 'asdf').encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
