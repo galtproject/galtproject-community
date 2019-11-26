@@ -11,6 +11,7 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "@galtproject/private-property-registry/contracts/traits/ChargesFee.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
 
 import "../PrivateFundStorage.sol";
 import "../PrivateFundController.sol";
@@ -25,7 +26,6 @@ import "../../common/factories/FundMultiSigFactory.sol";
 import "../../common/factories/FundProposalManagerFactory.sol";
 import "../../common/factories/FundACLFactory.sol";
 import "../../common/factories/FundRegistryFactory.sol";
-import "../../IOwnedUpgradeabilityProxy.sol";
 import "../../common/factories/FundUpgraderFactory.sol";
 
 
