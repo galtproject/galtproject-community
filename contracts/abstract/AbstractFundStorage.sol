@@ -58,6 +58,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = bytes32("THRESHOLD_MANAGER");
   bytes32 public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = bytes32("DEFAULT_THRESHOLD_MANAGER");
   bytes32 public constant ROLE_DECREMENT_TOKEN_REPUTATION = bytes32("DECREMENT_TOKEN_REPUTATION_ROLE");
+  bytes32 public constant ROLE_MULTISIG = bytes32("MULTISIG");
 
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
@@ -107,6 +108,12 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 amount;
   }
 
+  struct VotingConfig {
+    uint256 support;
+    uint256 minAcceptQuorum;
+    uint256 timeout;
+  }
+
   IFundRegistry public fundRegistry;
   VotingConfig public defaultVotingConfig;
 
@@ -141,12 +148,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
 
-  struct VotingConfig {
-    uint256 support;
-    uint256 minAcceptQuorum;
-    uint256 timeout;
-  }
-
   // marker => customVotingConfigs
   mapping(bytes32 => VotingConfig) public customVotingConfigs;
 
@@ -156,9 +157,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     _;
   }
 
-  // TODO: use role instead of this
   modifier onlyMultiSig() {
-//    require(msg.sender == _coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
+    require(fundRegistry.getACL().hasRole(msg.sender, ROLE_MULTISIG), "Invalid role");
 
     _;
   }

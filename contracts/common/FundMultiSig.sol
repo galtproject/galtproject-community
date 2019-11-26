@@ -39,7 +39,7 @@ contract FundMultiSig is MultiSigWallet {
   }
 
   modifier onlyRole(bytes32 _role) {
-    // TODO: implement check
+    require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
 
     _;
   }

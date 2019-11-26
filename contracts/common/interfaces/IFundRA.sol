@@ -13,5 +13,4 @@ interface IFundRA {
   function balanceOf(address _owner) external view returns (uint256);
   function balanceOfAt(address _owner, uint256 _blockNumber) external view returns (uint256);
   function totalSupplyAt(uint256 _blockNumber) external view returns (uint256);
-//  function getShare(address[] calldata _addresses) external view returns (uint256);
 }

@@ -37,6 +37,13 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   mapping(uint256 => bool) internal _tokensToExpel;
   Checkpoint[] _cachedTotalSupply;
 
+  function onlyValidToken(address _token) internal view {
+    IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
+
+    IPPTokenRegistry(ppgr.getPPTokenRegistryAddress())
+      .requireValidToken(_token);
+  }
+
   function initialize(IFundRegistry _fundRegistry) external isInitializer {
     super.initializeInternal(IPPGlobalRegistry(_fundRegistry.getPPGRAddress()));
     fundRegistry = _fundRegistry;
@@ -47,9 +54,10 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   )
     public
   {
-    // TODO: Check validity
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
+
+    onlyValidToken(registry);
 
     require(_fundStorage().isMintApproved(registry, tokenId), "No mint permissions");
     super.mint(_tokenLocker);
@@ -62,9 +70,10 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
   )
     public
   {
-    // TODO: Check validity
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
+
+    onlyValidToken(registry);
 
     require(_fundStorage().getTotalFineAmount(registry, tokenId) == 0, "There are pending fines");
     require(_fundStorage().isTokenLocked(registry, tokenId) == false, "Token is locked by a fee contract");
