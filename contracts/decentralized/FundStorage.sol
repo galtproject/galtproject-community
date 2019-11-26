@@ -20,6 +20,17 @@ import "../common/interfaces/IFundRegistry.sol";
 contract FundStorage is AbstractFundStorage {
   using SafeMath for uint256;
 
+  event ApproveMint(uint256 indexed tokenId);
+
+  event ExpelTokenReputation(uint256 indexed tokenId, uint amount);
+  event DecrementExpelTokenReputation(uint256 indexed tokenId, uint amount);
+
+  event IncrementFine(uint256 indexed tokenId, address indexed fineContract, uint amount);
+  event DecrementFine(uint256 indexed tokenId, address indexed fineContract, uint amount);
+
+  event LockToken(uint256 indexed tokenId);
+  event UnlockToken(uint256 indexed tokenId);
+
   ArraySet.Uint256Set private _finesSpaceTokens;
 
   mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
@@ -33,17 +44,6 @@ contract FundStorage is AbstractFundStorage {
   mapping(uint256 => uint256) private _expelledTokenReputation;
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
-
-  event ApproveMint(uint256 indexed tokenId);
-
-  event ExpelTokenReputation(uint256 indexed tokenId, uint amount);
-  event DecrementExpelTokenReputation(uint256 indexed tokenId, uint amount);
-
-  event IncrementFine(uint256 indexed tokenId, address indexed fineContract, uint amount);
-  event DecrementFine(uint256 indexed tokenId, address indexed fineContract, uint amount);
-
-  event LockToken(uint256 indexed tokenId);
-  event UnlockToken(uint256 indexed tokenId);
 
   constructor() public {
   }

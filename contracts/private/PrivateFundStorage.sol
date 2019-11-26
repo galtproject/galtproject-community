@@ -19,6 +19,18 @@ import "../abstract/AbstractFundStorage.sol";
 
 
 contract PrivateFundStorage is AbstractFundStorage {
+
+  event ApproveMint(address indexed registry, uint256 indexed tokenId);
+
+  event ExpelTokenReputation(address indexed registry, uint256 indexed tokenId, uint amount);
+  event DecrementExpelTokenReputation(address indexed registry, uint256 indexed tokenId, uint amount);
+
+  event IncrementFine(address indexed registry, uint256 indexed tokenId, address indexed fineContract, uint amount);
+  event DecrementFine(address indexed registry, uint256 indexed tokenId, address indexed fineContract, uint amount);
+
+  event LockToken(address indexed registry, uint256 indexed tokenId);
+  event UnlockToken(address indexed registry, uint256 indexed tokenId);
+
   mapping(address => ArraySet.Uint256Set) private _tokenFines;
   // registry => (tokenId => fineContracts[]))
   mapping(address => mapping(uint256 => ArraySet.AddressSet)) private _fineContractsByToken;
@@ -32,17 +44,6 @@ contract PrivateFundStorage is AbstractFundStorage {
   mapping(address => mapping(uint256 => uint256)) private _expelledTokenReputation;
   // registry => (tokenId => isLocked)
   mapping(address => mapping(uint256 => bool)) private _lockedTokens;
-
-  event ApproveMint(address indexed registry, uint256 indexed tokenId);
-
-  event ExpelTokenReputation(address indexed registry, uint256 indexed tokenId, uint amount);
-  event DecrementExpelTokenReputation(address indexed registry, uint256 indexed tokenId, uint amount);
-
-  event IncrementFine(address indexed registry, uint256 indexed tokenId, address indexed fineContract, uint amount);
-  event DecrementFine(address indexed registry, uint256 indexed tokenId, address indexed fineContract, uint amount);
-
-  event LockToken(address indexed registry, uint256 indexed tokenId);
-  event UnlockToken(address indexed registry, uint256 indexed tokenId);
 
   constructor() public {
   }

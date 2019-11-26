@@ -27,6 +27,17 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   using ArraySet for ArraySet.Bytes32Set;
   using Counters for Counters.Counter;
 
+  event AddProposalMarker(bytes32 indexed marker, address indexed proposalManager);
+  event RemoveProposalMarker(bytes32 indexed marker, address indexed proposalManager);
+
+  event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 minAcceptQuorum, uint256 timeout);
+  event SetDefaultProposalVotingConfig(uint256 support, uint256 minAcceptQuorum, uint256 timeout);
+
+  event AddWhiteListedContract(address indexed contractAddress);
+  event RemoveWhiteListedContract(address indexed contractAddress);
+
+  event SetConfig(bytes32 indexed key, bytes32 value);
+
   // 100% == 100 ether
   uint256 public constant ONE_HUNDRED_PCT = 100 ether;
 
@@ -49,17 +60,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_DECREMENT_TOKEN_REPUTATION = bytes32("DECREMENT_TOKEN_REPUTATION_ROLE");
 
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
-
-  event AddProposalMarker(bytes32 indexed marker, address indexed proposalManager);
-  event RemoveProposalMarker(bytes32 indexed marker, address indexed proposalManager);
-
-  event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 minAcceptQuorum, uint256 timeout);
-  event SetDefaultProposalVotingConfig(uint256 support, uint256 minAcceptQuorum, uint256 timeout);
-
-  event AddWhiteListedContract(address indexed contractAddress);
-  event RemoveWhiteListedContract(address indexed contractAddress);
-
-  event SetConfig(bytes32 indexed key, bytes32 value);
 
   struct FundRule {
     bool active;
