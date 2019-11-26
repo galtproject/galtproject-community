@@ -48,26 +48,6 @@ contract PrivateFundStorage is AbstractFundStorage {
   constructor() public {
   }
 
-  function initialize(
-    IFundRegistry _fundRegistry,
-    bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength
-  )
-    external
-  {
-    AbstractFundStorage.initializeInternal(
-      _fundRegistry,
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
-    );
-  }
-
   function _onlyValidToken(address _token) internal view {
     IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
 

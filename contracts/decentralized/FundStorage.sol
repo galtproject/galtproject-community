@@ -48,26 +48,6 @@ contract FundStorage is AbstractFundStorage {
   constructor() public {
   }
 
-  function initialize(
-    IFundRegistry _fundRegistry,
-    bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength
-  )
-    external
-  {
-    AbstractFundStorage.initializeInternal(
-      _fundRegistry,
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
-    );
-  }
-
   function approveMint(uint256 _spaceTokenId) external onlyRole(ROLE_NEW_MEMBER_MANAGER) {
     _mintApprovals[_spaceTokenId] = true;
 

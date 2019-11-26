@@ -95,14 +95,14 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
   IPPGlobalRegistry internal globalRegistry;
 
-  PrivateFundRAFactory fundRAFactory;
-  PrivateFundStorageFactory fundStorageFactory;
-  FundMultiSigFactory fundMultiSigFactory;
-  PrivateFundControllerFactory fundControllerFactory;
-  FundProposalManagerFactory fundProposalManagerFactory;
+  PrivateFundRAFactory internal fundRAFactory;
+  PrivateFundStorageFactory internal fundStorageFactory;
+  FundMultiSigFactory internal fundMultiSigFactory;
+  PrivateFundControllerFactory internal fundControllerFactory;
+  FundProposalManagerFactory internal fundProposalManagerFactory;
   FundACLFactory internal fundACLFactory;
-  FundRegistryFactory public fundRegistryFactory;
-  FundUpgraderFactory public fundUpgraderFactory;
+  FundRegistryFactory internal fundRegistryFactory;
+  FundUpgraderFactory internal fundUpgraderFactory;
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;

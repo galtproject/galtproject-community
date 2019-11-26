@@ -12,12 +12,20 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 import "../../common/interfaces/IFundRegistry.sol";
+import "../../common/factories/OwnedUpgradeabilityProxyFactory.sol";
+import "../../IOwnedUpgradeabilityProxy.sol";
 
 // This contract will be included into the current one
 import "../PrivateFundStorage.sol";
 
 
 contract PrivateFundStorageFactory is Ownable {
+  IOwnedUpgradeabilityProxyFactory internal ownedUpgradeabilityProxyFactory;
+
+  constructor(IOwnedUpgradeabilityProxyFactory _factory) public {
+    ownedUpgradeabilityProxyFactory = _factory;
+  }
+
   function build(
     IFundRegistry _globalRegistry,
     bool _isPrivate,
@@ -29,7 +37,7 @@ contract PrivateFundStorageFactory is Ownable {
     external
     returns (PrivateFundStorage)
   {
-    OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
+    OwnedUpgradeabilityProxy proxy = ownedUpgradeabilityProxyFactory.build();
 
     PrivateFundStorage fundStorage = new PrivateFundStorage();
 

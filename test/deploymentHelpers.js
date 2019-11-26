@@ -22,6 +22,7 @@ const FundController = artifacts.require('./FundController.sol');
 const FundMultiSig = artifacts.require('./FundMultiSig.sol');
 const MockFundRA = artifacts.require('./MockFundRA.sol');
 const FundProposalManager = artifacts.require('./FundProposalManager.sol');
+const OwnedUpgradeabilityProxyFactory = artifacts.require('./OwnedUpgradeabilityProxyFactory.sol');
 // const FundUpgrader = artifacts.require('./FundUpgrader.sol');
 
 const { initHelperWeb3, getMethodSignature, hex, getEventArg } = require('./helpers');
@@ -41,11 +42,13 @@ const ONE_MONTH = 2592000;
 async function deployFundFactory(globalRegistry, owner, privateProperty = false, ...ppArguments) {
   let fundFactory;
 
+  this.ownedUpgradeabilityProxyFactory = await OwnedUpgradeabilityProxyFactory.new();
+  this.fundRegistryFactory = await FundRegistryFactory.new();
+  this.fundACLFactory = await FundACLFactory.new();
+
   if (privateProperty) {
-    this.fundRegistryFactory = await FundRegistryFactory.new();
-    this.fundACLFactory = await FundACLFactory.new();
     this.fundRAFactory = await MockPrivateFundRAFactory.new();
-    this.fundStorageFactory = await PrivateFundStorageFactory.new();
+    this.fundStorageFactory = await PrivateFundStorageFactory.new(this.ownedUpgradeabilityProxyFactory.address);
     this.fundMultiSigFactory = await FundMultiSigFactory.new();
     this.fundControllerFactory = await PrivateFundControllerFactory.new();
     this.fundProposalManagerFactory = await FundProposalManagerFactory.new();
@@ -64,8 +67,6 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
       { from: owner, gas: 9000000 }
     );
   } else {
-    this.fundRegistryFactory = await FundRegistryFactory.new();
-    this.fundACLFactory = await FundACLFactory.new();
     this.fundRAFactory = await MockFundRAFactory.new();
     this.fundStorageFactory = await FundStorageFactory.new();
     this.fundMultiSigFactory = await FundMultiSigFactory.new();

@@ -172,7 +172,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   constructor() public {
   }
 
-  function initializeInternal(
+  function initialize(
     IFundRegistry _fundRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
@@ -180,7 +180,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
-    internal
+    external
     isInitializer
   {
     config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
@@ -193,8 +193,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     defaultVotingConfig.support = _defaultProposalSupport;
     defaultVotingConfig.minAcceptQuorum = _defaultProposalMinAcceptQuorum;
     defaultVotingConfig.timeout = _defaultProposalTimeout;
-
-//    _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
 
     fundRegistry = _fundRegistry;
   }
@@ -486,19 +484,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   function getActiveFundRulesCount() external view returns (uint256) {
     return _activeFundRules.size();
   }
-
-//  function getMultiSig() public view returns (FundMultiSig) {
-//    address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
-//    return FundMultiSig(ms);
-//  }
-
-//  function getRA() public view returns (IFundRA) {
-//    return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
-//  }
-//
-//  function getProposalManager() public view returns (FundProposalManager) {
-//    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
-//  }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
     uint256 len = _members.length;
