@@ -64,8 +64,6 @@ interface IAbstractFundStorage {
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external;
 
-  function getMemberIdentification(address _member) external view returns(bytes32);
-
   function disableFundRule(uint256 _id) external;
 
   function setNameAndDataLink(
@@ -78,7 +76,7 @@ interface IAbstractFundStorage {
     bool _active,
     address _manager,
     string calldata _name,
-    bytes32[] calldata _documents
+    string calldata _dataLink
   )
     external;
 
@@ -95,7 +93,7 @@ interface IAbstractFundStorage {
 
   function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
 
-  function getConfigValue(bytes32 _key) external view returns (bytes32);
+  function config(bytes32 _key) external view returns (bytes32);
 
   function getWhitelistedContracts() external view returns (address[] memory);
 
@@ -103,32 +101,9 @@ interface IAbstractFundStorage {
 
   function getActiveFundRulesCount() external view returns (uint256);
 
-  function getWhiteListedContract(
-    address _contract
-  )
-    external
-    view
-    returns (
-      bytes32 _contractType,
-      bytes32 _abiIpfsHash,
-      string memory _dataLink
-    );
-
-  function getProposalMarker(
-    bytes32 _marker
-  )
-    external
-    view
-    returns (
-      address _proposalManager,
-      address _destination,
-      bytes32 _name,
-      string memory _dataLink
-    );
-
   function areMembersValid(address[] calldata _members) external view returns (bool);
 
- function getActiveMultisigManagers() external view returns (address[] memory);
+  function getActiveMultisigManagers() external view returns (address[] memory);
 
   function getActiveMultisigManagersCount() external view returns (uint256);
 
@@ -140,15 +115,15 @@ interface IAbstractFundStorage {
 
   function getFeeContractCount() external view returns (uint256);
 
-  function getMultisigManager(address _manager)
+  function multiSigManagers(address _manager)
     external
     view
     returns (
       bool active,
       string memory managerName,
-      bytes32[] memory documents
+      string memory dataLink
     );
 
-  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount);
+  function periodLimits(address _erc20Contract) external view returns (bool active, uint256 amount);
   function getCurrentPeriod() external view returns (uint256);
 }

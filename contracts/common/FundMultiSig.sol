@@ -90,7 +90,7 @@ contract FundMultiSig is MultiSigWallet {
       _fundStorage().handleMultiSigTransaction(ETH_CONTRACT_ADDRESS, _value);
     }
 
-    (bool active,) = _fundStorage().getPeriodLimit(_destination);
+    (bool active,) = _fundStorage().periodLimits(_destination);
 
     // If a withdrawal limit exists for this t_destination
     if (active) {

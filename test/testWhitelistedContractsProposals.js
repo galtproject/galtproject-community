@@ -51,7 +51,7 @@ contract('Whitelisted Contracts Proposals', accounts => {
 
   describe('Create Member Identifier Proposal', () => {
     it('should correctly set and get', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
       const prevLength = whitelistedContracts.length;
@@ -76,10 +76,10 @@ contract('Whitelisted Contracts Proposals', accounts => {
       assert.equal(whitelistedContracts.length, prevLength + 1);
       assert.equal(whitelistedContracts[whitelistedContracts.length - 1], customContract);
 
-      const customContractDetails = await this.fundStorageX.getWhiteListedContract(customContract);
-      assert.equal(customContractDetails._contractType, hex('custom'));
-      assert.equal(customContractDetails._dataLink, 'dataLink');
-      assert.equal(customContractDetails._abiIpfsHash, hex('Qm1'));
+      const customContractDetails = await this.fundStorageX.whitelistedContracts(customContract);
+      assert.equal(customContractDetails.contractType, hex('custom'));
+      assert.equal(customContractDetails.dataLink, 'dataLink');
+      assert.equal(customContractDetails.abiIpfsHash, hex('Qm1'));
     });
   });
 });

@@ -6,7 +6,6 @@ const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelp
 const { ether, assertRevert, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
-const bytes32 = web3.utils.utf8ToHex;
 
 initHelperWeb3(web3);
 
@@ -65,7 +64,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
     this.beneficiaries = [alice, bob, charlie];
     this.benefeciarSpaceTokens = ['1', '2', '3'];
 
-    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   it('should limit sending ERC20 tokens', async function() {
@@ -96,7 +95,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
     await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
-    const limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
+    const limit = await this.fundStorageX.periodLimits(this.galtToken.address);
     assert.equal(limit.active, true);
     assert.equal(limit.amount, ether(4000));
 
@@ -154,7 +153,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
     await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
-    const limit = await this.fundStorageX.getPeriodLimit(ETH_CONTRACT);
+    const limit = await this.fundStorageX.periodLimits(ETH_CONTRACT);
     assert.equal(limit.active, true);
     assert.equal(limit.amount, ether(4000));
 
@@ -186,9 +185,9 @@ contract('MultiSig Withdrawal Limits', accounts => {
         from: alice
       });
 
-      await this.fundStorageX.setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')], { from: eve });
-      await this.fundStorageX.setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')], { from: eve });
-      await this.fundStorageX.setMultiSigManager(true, george, 'George', [bytes32('asdf')], { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, alice, 'Alice', 'asdf', { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, frank, 'Frank', 'asdf', { from: eve });
+      await this.fundStorageX.setMultiSigManager(true, george, 'George', 'asdf', { from: eve });
 
       await assertRevert(this.fundMultiSigX.setOwners([alice, frank, george], 4), { from: eve });
       await assertRevert(this.fundMultiSigX.setOwners([alice, frank, george], 0), { from: eve });
