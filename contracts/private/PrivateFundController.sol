@@ -52,7 +52,6 @@ contract PrivateFundController {
     uint256 expectedPayment = _fundStorage().getFineAmount(_registry, _tokenId, erc20Contract);
 
     require(expectedPayment > 0, "Fine amount is 0");
-    // TODO: check we need this
     require(expectedPayment >= amount, "Amount for transfer exceeds fine value");
 
     if (_currency == Currency.ERC20) {

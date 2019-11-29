@@ -58,6 +58,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = bytes32("THRESHOLD_MANAGER");
   bytes32 public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = bytes32("DEFAULT_THRESHOLD_MANAGER");
   bytes32 public constant ROLE_DECREMENT_TOKEN_REPUTATION = bytes32("DECREMENT_TOKEN_REPUTATION_ROLE");
+  bytes32 public constant ROLE_MULTISIG = bytes32("MULTISIG");
 
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
 
@@ -107,6 +108,12 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 amount;
   }
 
+  struct VotingConfig {
+    uint256 support;
+    uint256 minAcceptQuorum;
+    uint256 timeout;
+  }
+
   IFundRegistry public fundRegistry;
   VotingConfig public defaultVotingConfig;
 
@@ -141,12 +148,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
 
-  struct VotingConfig {
-    uint256 support;
-    uint256 minAcceptQuorum;
-    uint256 timeout;
-  }
-
   // marker => customVotingConfigs
   mapping(bytes32 => VotingConfig) public customVotingConfigs;
 
@@ -156,9 +157,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     _;
   }
 
-  // TODO: use role instead of this
   modifier onlyMultiSig() {
-//    require(msg.sender == _coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
+    require(fundRegistry.getACL().hasRole(msg.sender, ROLE_MULTISIG), "Invalid role");
 
     _;
   }
@@ -172,7 +172,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   constructor() public {
   }
 
-  function initializeInternal(
+  function initialize(
     IFundRegistry _fundRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
@@ -180,7 +180,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
-    internal
+    external
     isInitializer
   {
     config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
@@ -193,8 +193,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     defaultVotingConfig.support = _defaultProposalSupport;
     defaultVotingConfig.minAcceptQuorum = _defaultProposalMinAcceptQuorum;
     defaultVotingConfig.timeout = _defaultProposalTimeout;
-
-//    _addRoleTo(msg.sender, ROLE_PROPOSAL_THRESHOLD_MANAGER);
 
     fundRegistry = _fundRegistry;
   }
@@ -486,19 +484,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   function getActiveFundRulesCount() external view returns (uint256) {
     return _activeFundRules.size();
   }
-
-//  function getMultiSig() public view returns (FundMultiSig) {
-//    address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
-//    return FundMultiSig(ms);
-//  }
-
-//  function getRA() public view returns (IFundRA) {
-//    return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
-//  }
-//
-//  function getProposalManager() public view returns (FundProposalManager) {
-//    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
-//  }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
     uint256 len = _members.length;

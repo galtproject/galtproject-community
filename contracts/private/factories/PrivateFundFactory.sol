@@ -11,6 +11,7 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "@galtproject/private-property-registry/contracts/traits/ChargesFee.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
 
 import "../PrivateFundStorage.sol";
 import "../PrivateFundController.sol";
@@ -25,7 +26,6 @@ import "../../common/factories/FundMultiSigFactory.sol";
 import "../../common/factories/FundProposalManagerFactory.sol";
 import "../../common/factories/FundACLFactory.sol";
 import "../../common/factories/FundRegistryFactory.sol";
-import "../../IOwnedUpgradeabilityProxy.sol";
 import "../../common/factories/FundUpgraderFactory.sol";
 
 
@@ -95,14 +95,14 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
   IPPGlobalRegistry internal globalRegistry;
 
-  PrivateFundRAFactory fundRAFactory;
-  PrivateFundStorageFactory fundStorageFactory;
-  FundMultiSigFactory fundMultiSigFactory;
-  PrivateFundControllerFactory fundControllerFactory;
-  FundProposalManagerFactory fundProposalManagerFactory;
+  PrivateFundRAFactory internal fundRAFactory;
+  PrivateFundStorageFactory internal fundStorageFactory;
+  FundMultiSigFactory internal fundMultiSigFactory;
+  PrivateFundControllerFactory internal fundControllerFactory;
+  FundProposalManagerFactory internal fundProposalManagerFactory;
   FundACLFactory internal fundACLFactory;
-  FundRegistryFactory public fundRegistryFactory;
-  FundUpgraderFactory public fundUpgraderFactory;
+  FundRegistryFactory internal fundRegistryFactory;
+  FundUpgraderFactory internal fundUpgraderFactory;
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
@@ -268,6 +268,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), address(c.fundController), true);
     _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), address(c.fundRA), true);
+    _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), address(c.fundMultiSig), true);
     _fundACL.setRole(c.fundMultiSig.ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
     _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), address(this), true);
