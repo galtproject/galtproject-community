@@ -31,14 +31,14 @@ interface IAbstractFundStorage {
   )
     external;
 
-  function addWhiteListedContract(
+  function addCommunityApp(
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
     string calldata _dataLink
   )
     external;
-  function removeWhiteListedContract(address _contract) external;
+  function removeCommunityApp(address _contract) external;
 
   function addProposalMarker(
     bytes4 _methodSignature,
@@ -97,7 +97,7 @@ interface IAbstractFundStorage {
 
   function getConfigValue(bytes32 _key) external view returns (bytes32);
 
-  function getWhitelistedContracts() external view returns (address[] memory);
+  function getCommunityApps() external view returns (address[] memory);
 
   function getActiveFundRules() external view returns (uint256[] memory);
 
@@ -106,13 +106,13 @@ interface IAbstractFundStorage {
   function getMultiSig() external view returns (FundMultiSig);
   function getRA() external view returns (IFundRA);
 
-  function getWhiteListedContract(
+  function getCommunityAppInfo(
     address _contract
   )
     external
     view
     returns (
-      bytes32 _contractType,
+      bytes32 _appType,
       bytes32 _abiIpfsHash,
       string memory _dataLink
     );

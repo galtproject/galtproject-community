@@ -245,7 +245,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     c.fundMultiSig.addRoleTo(_fundProposalManager, c.fundMultiSig.ROLE_OWNER_MANAGER());
 
     _fundStorage.addRoleTo(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
-    _fundStorage.addWhiteListedContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
+    _fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
     _fundStorage.removeRoleFrom(address(this), _fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER());
 
     c.currentStep = Step.FOURTH;

@@ -9,7 +9,7 @@ const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
-contract('Whitelisted Contracts Proposals', accounts => {
+contract('Community Apps Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, customContract] = accounts;
 
   before(async function() {
@@ -49,15 +49,15 @@ contract('Whitelisted Contracts Proposals', accounts => {
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
   });
 
-  describe('Create Member Identifier Proposal', () => {
+  describe('Create Community App Proposal', () => {
     it('should correctly set and get', async function() {
       await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      let whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
-      const prevLength = whitelistedContracts.length;
+      let communityApps = await this.fundStorageX.getCommunityApps();
+      const prevLength = communityApps.length;
 
       const calldata = this.fundStorageX.contract.methods
-        .addWhiteListedContract(customContract, hex('custom'), hex('Qm1'), 'dataLink')
+        .addCommunityApp(customContract, hex('custom'), hex('Qm1'), 'dataLink')
         .encodeABI();
       const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
         from: bob
@@ -72,12 +72,12 @@ contract('Whitelisted Contracts Proposals', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
-      whitelistedContracts = await this.fundStorageX.getWhitelistedContracts();
-      assert.equal(whitelistedContracts.length, prevLength + 1);
-      assert.equal(whitelistedContracts[whitelistedContracts.length - 1], customContract);
+      communityApps = await this.fundStorageX.getCommunityApps();
+      assert.equal(communityApps.length, prevLength + 1);
+      assert.equal(communityApps[communityApps.length - 1], customContract);
 
-      const customContractDetails = await this.fundStorageX.getWhiteListedContract(customContract);
-      assert.equal(customContractDetails._contractType, hex('custom'));
+      const customContractDetails = await this.fundStorageX.getCommunityAppInfo(customContract);
+      assert.equal(customContractDetails._appType, hex('custom'));
       assert.equal(customContractDetails._dataLink, 'dataLink');
       assert.equal(customContractDetails._abiIpfsHash, hex('Qm1'));
     });
