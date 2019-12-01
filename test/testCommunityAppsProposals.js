@@ -9,7 +9,7 @@ const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
-contract('Community Apps Proposals', accounts => {
+contract.only('Community Apps Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, customContract] = accounts;
 
   before(async function() {
@@ -76,10 +76,10 @@ contract('Community Apps Proposals', accounts => {
       assert.equal(communityApps.length, prevLength + 1);
       assert.equal(communityApps[communityApps.length - 1], customContract);
 
-      const customContractDetails = await this.fundStorageX.getCommunityAppInfo(customContract);
-      assert.equal(customContractDetails._appType, hex('custom'));
-      assert.equal(customContractDetails._dataLink, 'dataLink');
-      assert.equal(customContractDetails._abiIpfsHash, hex('Qm1'));
+      const customContractDetails = await this.fundStorageX.communityAppsInfo(customContract);
+      assert.equal(customContractDetails.appType, hex('custom'));
+      assert.equal(customContractDetails.dataLink, 'dataLink');
+      assert.equal(customContractDetails.abiIpfsHash, hex('Qm1'));
     });
   });
 });

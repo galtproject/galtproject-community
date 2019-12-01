@@ -12,7 +12,7 @@ const { ether, hex, assertRevert } = require('@galtproject/solidity-test-chest')
 
 initHelperWeb3(web3);
 
-contract('Proposal Markers Proposals', accounts => {
+contract.only('Proposal Markers Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, proposalManager] = accounts;
 
   before(async function() {
@@ -80,11 +80,11 @@ contract('Proposal Markers Proposals', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
-      let markerDetails = await this.fundStorageX.getProposalMarker(marker);
-      assert.equal(markerDetails._proposalManager, proposalManager);
-      assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
-      assert.equal(markerDetails._dataLink, 'dataLink');
-      assert.equal(markerDetails._destination, this.galtToken.address);
+      let markerDetails = await this.fundStorageX.proposalMarkers(marker);
+      assert.equal(markerDetails.proposalManager, proposalManager);
+      assert.equal(web3.utils.hexToUtf8(markerDetails.name), 'name');
+      assert.equal(markerDetails.dataLink, 'dataLink');
+      assert.equal(markerDetails.destination, this.galtToken.address);
 
       const newSignature = getMethodSignature(this.spaceToken.abi, 'transferFrom');
       const newMarker = getDestinationMarker(this.spaceToken, 'transferFrom');
@@ -105,11 +105,11 @@ contract('Proposal Markers Proposals', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
-      markerDetails = await this.fundStorageX.getProposalMarker(newMarker);
-      assert.equal(markerDetails._proposalManager, proposalManager);
-      assert.equal(web3.utils.hexToUtf8(markerDetails._name), 'name');
-      assert.equal(markerDetails._dataLink, 'dataLink');
-      assert.equal(markerDetails._destination, this.spaceToken.address);
+      markerDetails = await this.fundStorageX.proposalMarkers(newMarker);
+      assert.equal(markerDetails.proposalManager, proposalManager);
+      assert.equal(web3.utils.hexToUtf8(markerDetails.name), 'name');
+      assert.equal(markerDetails.dataLink, 'dataLink');
+      assert.equal(markerDetails.destination, this.spaceToken.address);
     });
   });
 });

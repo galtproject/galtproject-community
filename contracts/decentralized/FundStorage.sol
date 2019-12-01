@@ -156,7 +156,7 @@ contract FundStorage is AbstractFundStorage {
       return false;
     }
 
-    if (uint256(_config[IS_PRIVATE]) == uint256(1)) {
+    if (uint256(config[IS_PRIVATE]) == uint256(1)) {
       return _mintApprovals[_spaceTokenId];
     } else {
       return true;

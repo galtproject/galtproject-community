@@ -94,7 +94,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
     await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
-    const limit = await this.fundStorageX.getPeriodLimit(this.galtToken.address);
+    const limit = await this.fundStorageX.periodLimits(this.galtToken.address);
     assert.equal(limit.active, true);
     assert.equal(limit.amount, ether(4000));
 
@@ -152,7 +152,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
     await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
-    const limit = await this.fundStorageX.getPeriodLimit(ETH_CONTRACT);
+    const limit = await this.fundStorageX.periodLimits(ETH_CONTRACT);
     assert.equal(limit.active, true);
     assert.equal(limit.amount, ether(4000));
 

@@ -67,7 +67,7 @@ contract('Identification Proposals', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
 
-      const aliceId = await this.fundStorageX.getMemberIdentification(alice);
+      const aliceId = await this.fundStorageX.membersIdentification(alice);
       assert.equal(fullHex(aliceId), hex('alice_id'));
     });
   });

@@ -71,11 +71,11 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   event AddFeeContract(address indexed contractAddress);
   event RemoveFeeContract(address indexed contractAddress);
 
-  event SetMemberIdentification(address indexed member, bytes32 identificationHash);
-  event SetNameAndDataLink(string name, string dataLink);
+//  event SetMemberIdentification(address indexed member, bytes32 identificationHash);
+//  event SetNameAndDataLink(string name, string dataLink);
   event SetMultiSigManager(address indexed manager);
-  event SetPeriodLimit(address indexed erc20Contract, uint256 amount, bool active);
-  event HandleMultiSigTransaction(address indexed erc20Contract, uint256 amount);
+//  event SetPeriodLimit(address indexed erc20Contract, uint256 amount, bool active);
+//  event HandleMultiSigTransaction(address indexed erc20Contract, uint256 amount);
 
   event SetConfig(bytes32 indexed key, bytes32 value);
 
@@ -139,21 +139,21 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   ArraySet.AddressSet internal _activeMultisigManagers;
   ArraySet.AddressSet internal _activePeriodLimitsContracts;
 
-  mapping(bytes32 => bytes32) internal _config;
+  mapping(bytes32 => bytes32) public config;
   // contractAddress => details
-  mapping(address => CommunityApp) internal _communityAppsInfo;
+  mapping(address => CommunityApp) public communityAppsInfo;
   // marker => details
-  mapping(bytes32 => ProposalMarker) internal _proposalMarkers;
+  mapping(bytes32 => ProposalMarker) public proposalMarkers;
   // role => address
-  mapping(bytes32 => address) internal _coreContracts;
+  mapping(bytes32 => address) public coreContracts;
   // manager => details
   mapping(address => MultiSigManager) internal _multiSigManagers;
   // erc20Contract => details
-  mapping(address => PeriodLimit) internal _periodLimits;
+  mapping(address => PeriodLimit) public periodLimits;
   // periodId => (erc20Contract => runningTotal)
   mapping(uint256 => mapping(address => uint256)) internal _periodRunningTotals;
   // member => identification hash
-  mapping(address => bytes32) internal _membersIdentification;
+  mapping(address => bytes32) public membersIdentification;
 
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
@@ -175,7 +175,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   modifier onlyMultiSig() {
-    require(msg.sender == _coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
+    require(msg.sender == coreContracts[CONTRACT_CORE_MULTISIG], "Not a fee contract");
 
     _;
   }
@@ -187,7 +187,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     uint256 _defaultProposalTimeout,
     uint256 _periodLength
   ) public {
-    _config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
+    config[IS_PRIVATE] = _isPrivate ? bytes32(uint256(1)) : bytes32(uint256(0));
 
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
@@ -210,10 +210,10 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     external
     isInitializer
   {
-    _coreContracts[CONTRACT_CORE_MULTISIG] = _fundMultiSig;
-    _coreContracts[CONTRACT_CORE_CONTROLLER] = _fundController;
-    _coreContracts[CONTRACT_CORE_RA] = _fundRA;
-    _coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
+    coreContracts[CONTRACT_CORE_MULTISIG] = _fundMultiSig;
+    coreContracts[CONTRACT_CORE_CONTROLLER] = _fundController;
+    coreContracts[CONTRACT_CORE_RA] = _fundRA;
+    coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER] = _fundProposalManager;
   }
 
   function setDefaultProposalConfig(
@@ -254,7 +254,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
-    _config[_key] = _value;
+    config[_key] = _value;
 
     emit SetConfig(_key, _value);
   }
@@ -268,7 +268,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     external
     onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
   {
-    CommunityApp storage c = _communityAppsInfo[_contract];
+    CommunityApp storage c = communityAppsInfo[_contract];
 
     _communityApps.addSilent(_contract);
 
@@ -297,7 +297,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   {
     bytes32 _marker = keccak256(abi.encode(_destination, _methodSignature));
 
-    ProposalMarker storage m = _proposalMarkers[_marker];
+    ProposalMarker storage m = proposalMarkers[_marker];
 
     m.active = true;
     m.proposalManager = _proposalManager;
@@ -309,9 +309,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
-    _proposalMarkers[_marker].active = false;
+    proposalMarkers[_marker].active = false;
 
-    emit RemoveProposalMarker(_marker, _proposalMarkers[_marker].proposalManager);
+    emit RemoveProposalMarker(_marker, proposalMarkers[_marker].proposalManager);
   }
 
   function replaceProposalMarker(
@@ -324,11 +324,11 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   {
     bytes32 _newMarker = keccak256(abi.encode(_newDestination, _newMethodSignature));
 
-    _proposalMarkers[_newMarker] = _proposalMarkers[_oldMarker];
-    _proposalMarkers[_newMarker].destination = _newDestination;
-    _proposalMarkers[_oldMarker].active = false;
+    proposalMarkers[_newMarker] = proposalMarkers[_oldMarker];
+    proposalMarkers[_newMarker].destination = _newDestination;
+    proposalMarkers[_oldMarker].active = false;
 
-    emit ReplaceProposalMarker(_oldMarker, _newMarker, _proposalMarkers[_newMarker].proposalManager);
+    emit ReplaceProposalMarker(_oldMarker, _newMarker, proposalMarkers[_newMarker].proposalManager);
   }
 
   function addFundRule(
@@ -369,19 +369,19 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   function addFeeContract(address _feeContract) external onlyRole(ROLE_FEE_MANAGER) {
     _feeContracts.add(_feeContract);
 
-    emit AddFeeContract(_feeContract);
+//    emit AddFeeContract(_feeContract);
   }
 
   function removeFeeContract(address _feeContract) external onlyRole(ROLE_FEE_MANAGER) {
     _feeContracts.remove(_feeContract);
 
-    emit RemoveFeeContract(_feeContract);
+//    emit RemoveFeeContract(_feeContract);
   }
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external onlyRole(ROLE_MEMBER_IDENTIFICATION_MANAGER) {
-    _membersIdentification[_member] = _identificationHash;
+    membersIdentification[_member] = _identificationHash;
 
-    emit SetMemberIdentification(_member, _identificationHash);
+//    emit SetMemberIdentification(_member, _identificationHash);
   }
 
   function setNameAndDataLink(
@@ -394,7 +394,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     name = _name;
     dataLink = _dataLink;
 
-    emit SetNameAndDataLink(_name, _dataLink);
+//    emit SetNameAndDataLink(_name, _dataLink);
   }
 
   function setMultiSigManager(
@@ -429,8 +429,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     external
     onlyRole(ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER)
   {
-    _periodLimits[_erc20Contract].active = _active;
-    _periodLimits[_erc20Contract].amount = _amount;
+    periodLimits[_erc20Contract].active = _active;
+    periodLimits[_erc20Contract].amount = _amount;
 
     if (_active) {
       _activePeriodLimitsContracts.addSilent(_erc20Contract);
@@ -438,7 +438,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
       _activePeriodLimitsContracts.removeSilent(_erc20Contract);
     }
 
-    emit SetPeriodLimit(_erc20Contract, _amount, _active);
+//    emit SetPeriodLimit(_erc20Contract, _amount, _active);
   }
 
   function handleMultiSigTransaction(
@@ -448,7 +448,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     external
     onlyMultiSig
   {
-    PeriodLimit storage limit = _periodLimits[_erc20Contract];
+    PeriodLimit storage limit = periodLimits[_erc20Contract];
     if (limit.active == false) {
       return;
     }
@@ -457,10 +457,10 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     // uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract] + _amount;
     uint256 runningTotalAfter = _periodRunningTotals[currentPeriod][_erc20Contract].add(_amount);
 
-    require(runningTotalAfter <= _periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
+    require(runningTotalAfter <= periodLimits[_erc20Contract].amount, "Running total for the current period exceeds the limit");
     _periodRunningTotals[currentPeriod][_erc20Contract] = runningTotalAfter;
 
-    emit HandleMultiSigTransaction(_erc20Contract, _amount);
+//    emit HandleMultiSigTransaction(_erc20Contract, _amount);
   }
 
   // INTERNAL
@@ -478,10 +478,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   // GETTERS
-
-  function getMemberIdentification(address _member) external view returns(bytes32) {
-    return _membersIdentification[_member];
-  }
 
   function getThresholdMarker(address _destination, bytes memory _data) public pure returns(bytes32 marker) {
     bytes32 methodName;
@@ -517,10 +513,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
     }
   }
 
-  function getConfigValue(bytes32 _key) external view returns (bytes32) {
-    return _config[_key];
-  }
-
   function getCommunityApps() external view returns (address[] memory) {
     return _communityApps.elements();
   }
@@ -534,54 +526,16 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
   }
 
   function getMultiSig() public view returns (FundMultiSig) {
-    address payable ms = address(uint160(_coreContracts[CONTRACT_CORE_MULTISIG]));
+    address payable ms = address(uint160(coreContracts[CONTRACT_CORE_MULTISIG]));
     return FundMultiSig(ms);
   }
 
   function getRA() public view returns (IFundRA) {
-    return IFundRA(_coreContracts[CONTRACT_CORE_RA]);
+    return IFundRA(coreContracts[CONTRACT_CORE_RA]);
   }
 
   function getProposalManager() public view returns (FundProposalManager) {
-    return FundProposalManager(_coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
-  }
-
-  function getCommunityAppInfo(
-    address _contract
-  )
-    external
-    view
-    returns (
-      bytes32 _appType,
-      bytes32 _abiIpfsHash,
-      string memory _dataLink
-    )
-  {
-    CommunityApp storage c = _communityAppsInfo[_contract];
-
-    _appType = c.appType;
-    _abiIpfsHash = c.abiIpfsHash;
-    _dataLink = c.dataLink;
-  }
-
-  function getProposalMarker(
-    bytes32 _marker
-  )
-    external
-    view
-    returns (
-      address _proposalManager,
-      address _destination,
-      bytes32 _name,
-      string memory _dataLink
-    )
-  {
-    ProposalMarker storage m = _proposalMarkers[_marker];
-
-    _proposalManager = m.proposalManager;
-    _destination = m.destination;
-    _name = m.name;
-    _dataLink = m.dataLink;
+    return FundProposalManager(coreContracts[CONTRACT_CORE_PROPOSAL_MANAGER]);
   }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
@@ -631,11 +585,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Permissionable, Initializa
       _multiSigManagers[_manager].name,
       _multiSigManagers[_manager].documents
     );
-  }
-
-  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount) {
-    PeriodLimit storage p = _periodLimits[_erc20Contract];
-    return (p.active, p.amount);
   }
 
   function getCurrentPeriod() public view returns (uint256) {
