@@ -55,7 +55,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   uint256 public constant ONE_HUNDRED_PCT = 100 ether;
 
   bytes32 public constant ROLE_CONFIG_MANAGER = bytes32("CONFIG_MANAGER");
-  bytes32 public constant ROLE_WHITELIST_CONTRACTS_MANAGER = bytes32("WL_MANAGER");
+  bytes32 public constant ROLE_COMMUNITY_APPS_MANAGER = bytes32("CA_MANAGER");
   bytes32 public constant ROLE_PROPOSAL_MARKERS_MANAGER = bytes32("MARKER_MANAGER");
   bytes32 public constant ROLE_NEW_MEMBER_MANAGER = bytes32("NEW_MEMBER_MANAGER");
   bytes32 public constant ROLE_EXPEL_MEMBER_MANAGER = bytes32("EXPEL_MEMBER_MANAGER");
@@ -262,7 +262,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     string calldata _dataLink
   )
     external
-    onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER)
+    onlyRole(ROLE_COMMUNITY_APPS_MANAGER)
   {
     CommunityApp storage c = communityAppsInfo[_contract];
 
@@ -275,7 +275,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     emit AddCommunityApp(_contract);
   }
 
-  function removeCommunityApp(address _contract) external onlyRole(ROLE_WHITELIST_CONTRACTS_MANAGER) {
+  function removeCommunityApp(address _contract) external onlyRole(ROLE_COMMUNITY_APPS_MANAGER) {
     _communityApps.remove(_contract);
 
     emit RemoveCommunityApp(_contract);
