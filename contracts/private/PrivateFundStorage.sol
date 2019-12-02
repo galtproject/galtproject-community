@@ -22,9 +22,6 @@ contract PrivateFundStorage is AbstractFundStorage {
   // TODO: use SafeMath
   IPPGlobalRegistry public globalRegistry;
 
-  mapping(address => ArraySet.Uint256Set) private _tokenFines;
-  // registry => (tokenId => fineContracts[]))
-  mapping(address => mapping(uint256 => ArraySet.AddressSet)) private _fineContractsByToken;
   // registry => (tokenId => details)
   mapping(address => mapping(uint256 => MemberFines)) private _fines;
   // registry => (tokenId => isMintApproved)
@@ -35,6 +32,13 @@ contract PrivateFundStorage is AbstractFundStorage {
   mapping(address => mapping(uint256 => uint256)) private _expelledTokenReputation;
   // registry => (tokenId => isLocked)
   mapping(address => mapping(uint256 => bool)) private _lockedTokens;
+
+  event Expel(address indexed registry, uint256 indexed tokenId);
+  event DecrementExpel(address indexed registry, uint256 indexed tokenId);
+
+  event ChangeFine(bool indexed isIncrement, address indexed registry, uint256 indexed tokenId, address contractAddress);
+
+  event LockChange(bool indexed isLock, address indexed registry, uint256 indexed tokenId);
 
   constructor (
     IPPGlobalRegistry _globalRegistry,
@@ -82,6 +86,8 @@ contract PrivateFundStorage is AbstractFundStorage {
 
     _expelledTokens[_registry][_tokenId] = true;
     _expelledTokenReputation[_registry][_tokenId] = amount;
+
+    emit Expel(_registry, _tokenId);
   }
 
   function decrementExpelledTokenReputation(
@@ -99,6 +105,8 @@ contract PrivateFundStorage is AbstractFundStorage {
     _expelledTokenReputation[_registry][_tokenId] = _expelledTokenReputation[_registry][_tokenId] - _amount;
 
     completelyBurned = (_expelledTokenReputation[_registry][_tokenId] == 0);
+
+    emit DecrementExpel(_registry, _tokenId);
   }
 
   function incrementFine(
@@ -117,8 +125,7 @@ contract PrivateFundStorage is AbstractFundStorage {
     // _fines[_registry][_tokenId].total += _amount;
     _fines[_registry][_tokenId].total = _fines[_registry][_tokenId].total.add(_amount);
 
-    _tokenFines[_registry].addSilent(_tokenId);
-    _fineContractsByToken[_registry][_tokenId].addSilent(_contract);
+    emit ChangeFine(true, _registry, _tokenId, _contract);
   }
 
   function decrementFine(
@@ -137,13 +144,7 @@ contract PrivateFundStorage is AbstractFundStorage {
     // _fines[_registry][_tokenId].total -= _amount;
     _fines[_registry][_tokenId].total -= _fines[_registry][_tokenId].total.sub(_amount);
 
-    if (_fines[_registry][_tokenId].tokenFines[_contract].amount == 0) {
-      _fineContractsByToken[_registry][_tokenId].remove(_contract);
-    }
-
-    if (_fines[_registry][_tokenId].total == 0) {
-      _tokenFines[_registry].remove(_tokenId);
-    }
+    emit ChangeFine(false, _registry, _tokenId, _contract);
   }
 
   function lockSpaceToken(
@@ -155,6 +156,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     _lockedTokens[_registry][_tokenId] = true;
+
+    emit LockChange(true, _registry, _tokenId);
   }
 
   // TODO: possibility to unlock from removed contracts
@@ -167,6 +170,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     _lockedTokens[_registry][_tokenId] = false;
+
+    emit LockChange(false, _registry, _tokenId);
   }
 
   // GETTERS
@@ -205,36 +210,6 @@ contract PrivateFundStorage is AbstractFundStorage {
       _expelledTokens[_registry][_tokenId],
       _expelledTokenReputation[_registry][_tokenId]
     );
-  }
-
-  function getFineTokens(address _registry) external view returns (uint256[] memory) {
-    return _tokenFines[_registry].elements();
-  }
-
-  function getFineSpaceTokensCount(address _registry) external view returns (uint256) {
-    return _tokenFines[_registry].size();
-  }
-
-  function getFineContractsByToken(
-    address _registry,
-    uint256 _tokenId
-  )
-    external
-    view
-    returns (address[] memory)
-  {
-    return _fineContractsByToken[_registry][_tokenId].elements();
-  }
-
-  function getFineContractsByTokenCount(
-    address _registry,
-    uint256 _tokenId
-  )
-    external
-    view
-    returns (uint256)
-  {
-    return _fineContractsByToken[_registry][_tokenId].size();
   }
 
   function isMintApproved(
