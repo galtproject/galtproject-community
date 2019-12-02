@@ -22,18 +22,13 @@ contract FundStorage is AbstractFundStorage {
 
   event ApproveMint(uint256 indexed tokenId);
 
-  event ExpelTokenReputation(uint256 indexed tokenId, uint amount);
-  event DecrementExpelTokenReputation(uint256 indexed tokenId, uint amount);
+  event Expel(uint256 indexed tokenId);
+  event DecrementExpel(uint256 indexed tokenId);
 
-  event IncrementFine(uint256 indexed tokenId, address indexed fineContract, uint amount);
-  event DecrementFine(uint256 indexed tokenId, address indexed fineContract, uint amount);
+  event ChangeFine(bool indexed isIncrement, uint256 indexed tokenId, address indexed contractAddress);
 
-  event LockToken(uint256 indexed tokenId);
-  event UnlockToken(uint256 indexed tokenId);
+  event LockChange(bool indexed isLock, uint256 indexed tokenId);
 
-  ArraySet.Uint256Set private _finesSpaceTokens;
-
-  mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
   // spaceTokenId => isMintApproved
@@ -65,7 +60,7 @@ contract FundStorage is AbstractFundStorage {
     _expelledTokens[_spaceTokenId] = true;
     _expelledTokenReputation[_spaceTokenId] = amount;
 
-    emit ExpelTokenReputation(_spaceTokenId, amount);
+    emit Expel(_spaceTokenId);
   }
 
   function decrementExpelledTokenReputation(
@@ -83,7 +78,7 @@ contract FundStorage is AbstractFundStorage {
 
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
 
-    emit DecrementExpelTokenReputation(_spaceTokenId, _amount);
+    emit DecrementExpel(_spaceTokenId);
   }
 
   function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_INCREMENT_MANAGER) {
@@ -93,10 +88,7 @@ contract FundStorage is AbstractFundStorage {
     // _fines[_spaceTokenId].total += _amount;
     _fines[_spaceTokenId].total = _fines[_spaceTokenId].total.add(_amount);
 
-    _finesSpaceTokens.addSilent(_spaceTokenId);
-    _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
-
-    emit IncrementFine(_spaceTokenId, _contract, _amount);
+    emit ChangeFine(true, _spaceTokenId, _contract);
   }
 
   function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_DECREMENT_MANAGER) {
@@ -105,28 +97,20 @@ contract FundStorage is AbstractFundStorage {
     // _fines[_spaceTokenId].total -= _amount;
     _fines[_spaceTokenId].total = _fines[_spaceTokenId].total.sub(_amount);
 
-    if (_fines[_spaceTokenId].tokenFines[_contract].amount == 0) {
-      _finesContractsBySpaceToken[_spaceTokenId].remove(_contract);
-    }
-
-    if (_fines[_spaceTokenId].total == 0) {
-      _finesSpaceTokens.remove(_spaceTokenId);
-    }
-
-    emit DecrementFine(_spaceTokenId, _contract, _amount);
+    emit ChangeFine(false, _spaceTokenId, _contract);
   }
 
   function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = true;
 
-    emit LockToken(_spaceTokenId);
+    emit LockChange(true, _spaceTokenId);
   }
 
   // TODO: possibility to unlock from removed contracts
   function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = false;
 
-    emit UnlockToken(_spaceTokenId);
+    emit LockChange(false, _spaceTokenId);
   }
 
   // GETTERS
@@ -140,22 +124,6 @@ contract FundStorage is AbstractFundStorage {
 
   function getExpelledToken(uint256 _spaceTokenId) external view returns (bool isExpelled, uint256 amount) {
     return (_expelledTokens[_spaceTokenId], _expelledTokenReputation[_spaceTokenId]);
-  }
-
-  function getFineSpaceTokens() external view returns (uint256[] memory) {
-    return _finesSpaceTokens.elements();
-  }
-
-  function getFineSpaceTokensCount() external view returns (uint256) {
-    return _finesSpaceTokens.size();
-  }
-
-  function getFineContractsBySpaceToken(uint256 _spaceTokenId) external view returns (address[] memory) {
-    return _finesContractsBySpaceToken[_spaceTokenId].elements();
-  }
-
-  function getFineContractsBySpaceTokenCount(uint256 _spaceTokenId) external view returns (uint256) {
-    return _finesContractsBySpaceToken[_spaceTokenId].size();
   }
 
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {

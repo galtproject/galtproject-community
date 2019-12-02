@@ -14,6 +14,7 @@ import "../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "./ExtraMockFundRA.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
 
 contract ExtraMockFundRAFactory is Ownable {
@@ -23,9 +24,18 @@ contract ExtraMockFundRAFactory is Ownable {
     external
     returns (ExtraMockFundRA)
   {
+    OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
+
     ExtraMockFundRA fundRA = new ExtraMockFundRA();
     fundRA.initialize2(_fundRegistry);
 
-    return fundRA;
+    proxy.upgradeToAndCall(
+      address(fundRA),
+      abi.encodeWithSignature("initialize2(address)", _fundRegistry)
+    );
+
+    proxy.transferProxyOwnership(msg.sender);
+
+    return ExtraMockFundRA(address(proxy));
   }
 }

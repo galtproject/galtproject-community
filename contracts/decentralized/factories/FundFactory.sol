@@ -282,16 +282,16 @@ contract FundFactory is Ownable {
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), address(c.fundController), true);
     _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), address(c.fundRA), true);
     _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), address(c.fundMultiSig), true);
     _fundACL.setRole(c.fundMultiSig.ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
-    _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), address(this), true);
-    _fundStorage.addWhiteListedContract(_fundProposalManager, bytes32(""), bytes32(""), "Default");
-    _fundACL.setRole(_fundStorage.ROLE_WHITELIST_CONTRACTS_MANAGER(), address(this), false);
+    _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
+    _fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
+    _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
 
     c.currentStep = Step.FOURTH;
 

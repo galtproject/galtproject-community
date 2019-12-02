@@ -10,30 +10,26 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-
-// This contract will be included into the current one
-import "./MockFundProposalManager.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
+// This contract will be included into the current one
+import "./MockFundACL.sol";
 
-contract MockFundProposalManagerFactory is Ownable {
-  function build(
-    IFundRegistry _fundRegistry
-  )
+
+contract MockFundACLFactory is Ownable {
+  function build()
     external
-    returns (FundProposalManager)
+    returns (FundACL)
   {
     OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
 
-    MockFundProposalManager fundProposalManager = new MockFundProposalManager();
+    MockFundACL fundACL = new MockFundACL();
 
-    proxy.upgradeToAndCall(
-      address(fundProposalManager),
-      abi.encodeWithSignature("initialize(address)", _fundRegistry)
-    );
+    proxy.upgradeToAndCall(address(fundACL), abi.encodeWithSignature("initialize(address)", address(this)));
 
+    Ownable(address(proxy)).transferOwnership(msg.sender);
     proxy.transferProxyOwnership(msg.sender);
 
-    return FundProposalManager(address(proxy));
+    return FundACL(address(proxy));
   }
 }

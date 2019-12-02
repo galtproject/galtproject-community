@@ -31,14 +31,14 @@ interface IAbstractFundStorage {
   )
     external;
 
-  function addWhiteListedContract(
+  function addCommunityApp(
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
     string calldata _dataLink
   )
     external;
-  function removeWhiteListedContract(address _contract) external;
+  function removeCommunityApp(address _contract) external;
 
   function addProposalMarker(
     bytes4 _methodSignature,
@@ -63,6 +63,8 @@ interface IAbstractFundStorage {
   function removeFeeContract(address _feeContract) external;
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external;
+
+  function membersIdentification(address _member) external view returns(bytes32);
 
   function disableFundRule(uint256 _id) external;
 
@@ -95,11 +97,34 @@ interface IAbstractFundStorage {
 
   function config(bytes32 _key) external view returns (bytes32);
 
-  function getWhitelistedContracts() external view returns (address[] memory);
+  function getCommunityApps() external view returns (address[] memory);
 
   function getActiveFundRules() external view returns (uint256[] memory);
 
   function getActiveFundRulesCount() external view returns (uint256);
+
+  function communityAppsInfo(
+    address _contract
+  )
+    external
+    view
+    returns (
+      bytes32 appType,
+      bytes32 abiIpfsHash,
+      string memory dataLink
+    );
+
+  function proposalMarkers(
+    bytes32 _marker
+  )
+    external
+    view
+    returns (
+      address proposalManager,
+      address destination,
+      bytes32 name,
+      string memory dataLink
+    );
 
   function areMembersValid(address[] calldata _members) external view returns (bool);
 
