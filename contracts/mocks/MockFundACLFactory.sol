@@ -11,8 +11,6 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
-import "../interfaces/IFundRegistry.sol";
-import "../../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "./MockFundACL.sol";
