@@ -10,32 +10,35 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 import "../../abstract/fees/AbstractRegularFee.sol";
 import "../PrivateFundStorage.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 
 // TODO: extract payment specific functions in order to make this contract abstract from a payment method
 contract AbstractPrivateRegularFee is AbstractRegularFee {
   using SafeMath for uint256;
 
-  PrivateFundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
 
   // registry => (tokenId => timestamp)
   mapping(address => mapping(uint256 => uint256)) public paidUntil;
   // registry => (tokenId => amount)
   mapping(address => mapping(uint256 => uint256)) public totalPaid;
 
-  constructor(PrivateFundStorage _fundStorage) public {
-    fundStorage = _fundStorage;
+  constructor(IFundRegistry _fundRegistry) public {
+    fundRegistry = _fundRegistry;
   }
 
   function _onlyValidToken(address _token) internal view {
-    IPPTokenRegistry(fundStorage.globalRegistry().getPPTokenRegistryAddress()).requireValidToken(_token);
+    IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
+    IPPTokenRegistry(ppgr.getPPTokenRegistryAddress()).requireValidToken(_token);
   }
 
   function lockToken(address _registry, uint256 _tokenId) public {
     require(paidUntil[_registry][_tokenId] < getNextPeriodTimestamp(), "paidUntil too small");
-    fundStorage.lockSpaceToken(_registry, _tokenId);
+    _fundStorage().lockSpaceToken(_registry, _tokenId);
   }
 
   function lockTokenArray(address _registry, uint256[] calldata _tokenIds) external {
@@ -46,13 +49,17 @@ contract AbstractPrivateRegularFee is AbstractRegularFee {
 
   function unlockToken(address _registry, uint256 _tokenId) public {
     require(paidUntil[_registry][_tokenId] >= getNextPeriodTimestamp(), "paidUntil too big");
-    fundStorage.unlockSpaceToken(_registry, _tokenId);
+    _fundStorage().unlockSpaceToken(_registry, _tokenId);
   }
 
   function unlockTokenArray(address _registry, uint256[] calldata _tokenIds) external {
     for (uint i = 0; i < _tokenIds.length; i++) {
       unlockToken(_registry, _tokenIds[i]);
     }
+  }
+
+  function _fundStorage() internal view returns (PrivateFundStorage) {
+    return PrivateFundStorage(fundRegistry.getStorageAddress());
   }
 
   function _pay(address _registry, uint256 _tokenIds, uint256 _amount) internal {

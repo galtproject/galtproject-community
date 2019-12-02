@@ -7,10 +7,14 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-pragma solidity 0.5.10;
+pragma solidity ^0.5.10;
 
-interface IFundRA {
-  function balanceOf(address _owner) external view returns (uint256);
-  function balanceOfAt(address _owner, uint256 _blockNumber) external view returns (uint256);
-  function totalSupplyAt(uint256 _blockNumber) external view returns (uint256);
+import "../common/FundACL.sol";
+
+
+contract MockFundACL is FundACL {
+  function hackRole(bytes32 _role, address _candidate, bool _allow) external {
+    _roles[_role][_candidate] = _allow;
+    emit SetRole(_role, _candidate, _allow);
+  }
 }

@@ -268,6 +268,17 @@ const Helpers = {
     for (let i = 0; i < results.length; i++) {
       console.log(`slot #${i}`, results[i]);
     }
+  },
+  getEventArg(res, eventName, argName) {
+    for (let i = 0; i < res.logs.length; i++) {
+      const current = res.logs[i];
+
+      if (eventName === current.event) {
+        return current.args[argName];
+      }
+    }
+
+    throw new Error(`Event ${eventName} not found`);
   }
 };
 

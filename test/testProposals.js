@@ -5,7 +5,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { initHelperWeb3, fullHex, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
+const { initHelperWeb3, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const bytes32 = web3.utils.utf8ToHex;
@@ -65,7 +65,7 @@ contract('FundProposalManager', accounts => {
   describe('FundProposalManager', () => {
     describe('proposal creation', () => {
       it('should allow user who has reputation creating a new proposal', async function() {
-        await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+        await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const proposalData = this.fundStorageX.contract.methods
           .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
@@ -84,7 +84,7 @@ contract('FundProposalManager', accounts => {
 
     describe('(Proposal contracts queries FundRA for addresses locked reputation share)', () => {
       it('should allow approving proposal if positive votes threshold is reached', async function() {
-        await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+        await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const marker = getDestinationMarker(this.fundStorageX, 'setProposalConfig');
 
@@ -206,7 +206,7 @@ contract('FundProposalManager', accounts => {
 
   describe('SetAddFundRuleProposalManager', () => {
     it('should add/deactivate a rule', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const addFundRuleMarker = getDestinationMarker(this.fundStorageX, 'addFundRule');
 
@@ -341,11 +341,11 @@ contract('FundProposalManager', accounts => {
 
   describe('ChangeMultiSigOwnersProposalManager && ModifyMultiSigManagerDetailsProposalManager', () => {
     it('should be able to change the list of MultiSig owners', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       // approve Alice
       let proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, alice, 'Alice', [bytes32('asdf')])
+        .setMultiSigManager(true, alice, 'Alice', 'asdf')
         .encodeABI();
 
       let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
@@ -362,9 +362,7 @@ contract('FundProposalManager', accounts => {
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve George
-      proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, george, 'George', [bytes32('asdf')])
-        .encodeABI();
+      proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, george, 'George', 'asdf').encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
@@ -378,11 +376,8 @@ contract('FundProposalManager', accounts => {
 
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
-      res = await this.fundStorageX.getMultisigManager(george);
-      assert.deepEqual(
-        res.documents.map(doc => doc.toString(10)),
-        [fullHex(bytes32('asdf'))]
-      );
+      res = await this.fundStorageX.multiSigManagers(george);
+      assert.equal(res.dataLink, 'asdf');
       res = await this.fundStorageX.getActiveMultisigManagers();
       assert.deepEqual(res, [alice, george]);
 
@@ -433,9 +428,7 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.status, ProposalStatus.APPROVED);
 
       // approve Dan
-      proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, dan, 'Dan', [bytes32('asdf')])
-        .encodeABI();
+      proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, dan, 'Dan', 'asdf').encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
@@ -448,9 +441,7 @@ contract('FundProposalManager', accounts => {
       await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
 
       // approve Frank
-      proposalData = this.fundStorageX.contract.methods
-        .setMultiSigManager(true, frank, 'Frank', [bytes32('asdf')])
-        .encodeABI();
+      proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, frank, 'Frank', 'asdf').encodeABI();
 
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
         from: bob
@@ -482,7 +473,7 @@ contract('FundProposalManager', accounts => {
 
   describe('ChangeMultiSigWithdrawalLimitsProposalManager', () => {
     it('should be able to change limit the for each erc20 contract', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let limit = await this.fundStorageX.periodLimits(this.galtToken.address);
       assert.equal(limit.active, false);

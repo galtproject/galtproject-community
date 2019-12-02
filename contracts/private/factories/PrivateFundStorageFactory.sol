@@ -10,15 +10,24 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxy.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "../PrivateFundStorage.sol";
 
 
 contract PrivateFundStorageFactory is Ownable {
+  IOwnedUpgradeabilityProxyFactory internal ownedUpgradeabilityProxyFactory;
+
+  constructor(IOwnedUpgradeabilityProxyFactory _factory) public {
+    ownedUpgradeabilityProxyFactory = _factory;
+  }
+
   function build(
-    IPPGlobalRegistry _globalRegistry,
+    IFundRegistry _globalRegistry,
     bool _isPrivate,
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalQuorum,
@@ -28,18 +37,25 @@ contract PrivateFundStorageFactory is Ownable {
     external
     returns (PrivateFundStorage)
   {
-    PrivateFundStorage fundStorage = new PrivateFundStorage(
-      _globalRegistry,
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
+    IOwnedUpgradeabilityProxy proxy = ownedUpgradeabilityProxyFactory.build();
+
+    PrivateFundStorage fundStorage = new PrivateFundStorage();
+
+    proxy.upgradeToAndCall(
+      address(fundStorage),
+      abi.encodeWithSignature(
+        "initialize(address,bool,uint256,uint256,uint256,uint256)",
+        _globalRegistry,
+        _isPrivate,
+        _defaultProposalSupport,
+        _defaultProposalQuorum,
+        _defaultProposalTimeout,
+        _periodLength
+      )
     );
 
-    fundStorage.addRoleTo(msg.sender, "role_manager");
-    fundStorage.removeRoleFrom(address(this), "role_manager");
+    proxy.transferProxyOwnership(msg.sender);
 
-    return fundStorage;
+    return PrivateFundStorage(address(proxy));
   }
 }

@@ -51,7 +51,7 @@ contract('Identification Proposals', accounts => {
 
   describe('Create Member Identifier Proposal', () => {
     it('should correctly set and get', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const calldata = this.fundStorageX.contract.methods.setMemberIdentification(alice, hex('alice_id')).encodeABI();
       const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {

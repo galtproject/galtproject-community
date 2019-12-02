@@ -78,7 +78,7 @@ interface IAbstractFundStorage {
     bool _active,
     address _manager,
     string calldata _name,
-    bytes32[] calldata _documents
+    string calldata _dataLink
   )
     external;
 
@@ -102,9 +102,6 @@ interface IAbstractFundStorage {
   function getActiveFundRules() external view returns (uint256[] memory);
 
   function getActiveFundRulesCount() external view returns (uint256);
-
-  function getMultiSig() external view returns (FundMultiSig);
-  function getRA() external view returns (IFundRA);
 
   function communityAppsInfo(
     address _contract
@@ -143,13 +140,13 @@ interface IAbstractFundStorage {
 
   function getFeeContractCount() external view returns (uint256);
 
-  function getMultisigManager(address _manager)
+  function multiSigManagers(address _manager)
     external
     view
     returns (
       bool active,
       string memory managerName,
-      bytes32[] memory documents
+      string memory dataLink
     );
 
   function periodLimits(address _erc20Contract) external view returns (bool active, uint256 amount);

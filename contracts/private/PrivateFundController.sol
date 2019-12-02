@@ -12,6 +12,7 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "./PrivateFundStorage.sol";
+import "../common/interfaces/IFundRegistry.sol";
 
 
 contract PrivateFundController {
@@ -24,12 +25,12 @@ contract PrivateFundController {
 
   address public constant ETH_CONTRACT = address(1);
 
-  PrivateFundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
 
   constructor (
-    PrivateFundStorage _fundStorage
+    IFundRegistry _fundRegistry
   ) public {
-    fundStorage = _fundStorage;
+    fundRegistry = _fundRegistry;
   }
 
   function payFine(address _registry, uint256 _tokenId, Currency _currency, uint256 _erc20Amount, address _erc20Contract) external payable {
@@ -48,18 +49,21 @@ contract PrivateFundController {
       erc20Contract = ETH_CONTRACT;
     }
 
-    uint256 expectedPayment = fundStorage.getFineAmount(_registry, _tokenId, erc20Contract);
+    uint256 expectedPayment = _fundStorage().getFineAmount(_registry, _tokenId, erc20Contract);
 
     require(expectedPayment > 0, "Fine amount is 0");
-    // TODO: check we need this
     require(expectedPayment >= amount, "Amount for transfer exceeds fine value");
 
     if (_currency == Currency.ERC20) {
-      IERC20(erc20Contract).transferFrom(msg.sender, address(fundStorage.getMultiSig()), amount);
+      IERC20(erc20Contract).transferFrom(msg.sender, address(fundRegistry.getMultiSigAddress()), amount);
     } else {
-      address(fundStorage.getMultiSig()).transfer(amount);
+      address(fundRegistry.getMultiSigAddress()).transfer(amount);
     }
 
-    fundStorage.decrementFine(_registry, _tokenId, erc20Contract, amount);
+    _fundStorage().decrementFine(_registry, _tokenId, erc20Contract, amount);
+  }
+
+  function _fundStorage() internal view returns (PrivateFundStorage) {
+    return PrivateFundStorage(fundRegistry.getStorageAddress());
   }
 }

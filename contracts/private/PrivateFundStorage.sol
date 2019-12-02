@@ -19,8 +19,15 @@ import "../abstract/AbstractFundStorage.sol";
 
 
 contract PrivateFundStorage is AbstractFundStorage {
-  // TODO: use SafeMath
-  IPPGlobalRegistry public globalRegistry;
+
+  event ApproveMint(address indexed registry, uint256 indexed tokenId);
+
+  event Expel(address indexed registry, uint256 indexed tokenId);
+  event DecrementExpel(address indexed registry, uint256 indexed tokenId);
+
+  event ChangeFine(bool indexed isIncrement, address indexed registry, uint256 indexed tokenId, address contractAddress);
+
+  event LockChange(bool indexed isLock, address indexed registry, uint256 indexed tokenId);
 
   // registry => (tokenId => details)
   mapping(address => mapping(uint256 => MemberFines)) private _fines;
@@ -33,35 +40,14 @@ contract PrivateFundStorage is AbstractFundStorage {
   // registry => (tokenId => isLocked)
   mapping(address => mapping(uint256 => bool)) private _lockedTokens;
 
-  event Expel(address indexed registry, uint256 indexed tokenId);
-  event DecrementExpel(address indexed registry, uint256 indexed tokenId);
-
-  event ChangeFine(bool indexed isIncrement, address indexed registry, uint256 indexed tokenId, address contractAddress);
-
-  event LockChange(bool indexed isLock, address indexed registry, uint256 indexed tokenId);
-
-  constructor (
-    IPPGlobalRegistry _globalRegistry,
-    bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength
-  )
-    public
-    AbstractFundStorage(
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
-    )
-  {
-    globalRegistry = _globalRegistry;
+  constructor() public {
   }
 
   function _onlyValidToken(address _token) internal view {
-    IPPTokenRegistry(globalRegistry.getPPTokenRegistryAddress()).requireValidToken(_token);
+    IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
+
+    IPPTokenRegistry(ppgr.getPPTokenRegistryAddress())
+      .requireValidToken(_token);
   }
 
   function approveMint(address _registry, uint256 _tokenId)
@@ -70,6 +56,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     _onlyValidToken(_registry);
     _mintApprovals[_registry][_tokenId] = true;
+
+    emit ApproveMint(_registry, _tokenId);
   }
 
   function expel(address _registry, uint256 _tokenId)

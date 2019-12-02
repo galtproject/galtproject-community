@@ -9,7 +9,7 @@ const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
-contract.only('Community Apps Proposals', accounts => {
+contract('Community Apps Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, customContract] = accounts;
 
   before(async function() {
@@ -51,7 +51,7 @@ contract.only('Community Apps Proposals', accounts => {
 
   describe('Create Community App Proposal', () => {
     it('should correctly set and get', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       let communityApps = await this.fundStorageX.getCommunityApps();
       const prevLength = communityApps.length;

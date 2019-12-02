@@ -14,23 +14,13 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "../abstract/AbstractFundStorage.sol";
+import "../common/interfaces/IFundRegistry.sol";
 
 
 contract FundStorage is AbstractFundStorage {
   using SafeMath for uint256;
 
-  GaltGlobalRegistry public ggr;
-
-  // spaceTokenId => details
-  mapping(uint256 => MemberFines) private _fines;
-  // spaceTokenId => isMintApproved
-  mapping(uint256 => bool) private _mintApprovals;
-  // spaceTokenId => isExpelled
-  mapping(uint256 => bool) private _expelledTokens;
-  // spaceTokenId => availableAmountToBurn
-  mapping(uint256 => uint256) private _expelledTokenReputation;
-  // spaceTokenId => isLocked
-  mapping(uint256 => bool) private _lockedSpaceTokens;
+  event ApproveMint(uint256 indexed tokenId);
 
   event Expel(uint256 indexed tokenId);
   event DecrementExpel(uint256 indexed tokenId);
@@ -39,34 +29,30 @@ contract FundStorage is AbstractFundStorage {
 
   event LockChange(bool indexed isLock, uint256 indexed tokenId);
 
-  constructor (
-    GaltGlobalRegistry _ggr,
-    bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength
-  )
-    public
-    AbstractFundStorage(
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
-    )
-  {
-    ggr = _ggr;
+  // spaceTokenId => details
+  mapping(uint256 => MemberFines) private _fines;
+  // spaceTokenId => isMintApproved
+  mapping(uint256 => bool) internal _mintApprovals;
+  // spaceTokenId => isExpelled
+  mapping(uint256 => bool) private _expelledTokens;
+  // spaceTokenId => availableAmountToBurn
+  mapping(uint256 => uint256) private _expelledTokenReputation;
+  // spaceTokenId => isLocked
+  mapping(uint256 => bool) private _lockedSpaceTokens;
+
+  constructor() public {
   }
 
   function approveMint(uint256 _spaceTokenId) external onlyRole(ROLE_NEW_MEMBER_MANAGER) {
     _mintApprovals[_spaceTokenId] = true;
+
+    emit ApproveMint(_spaceTokenId);
   }
 
   function expel(uint256 _spaceTokenId) external onlyRole(ROLE_EXPEL_MEMBER_MANAGER) {
     require(_expelledTokens[_spaceTokenId] == false, "Already Expelled");
 
-    address owner = ggr.getSpaceToken().ownerOf(_spaceTokenId);
+    address owner = GaltGlobalRegistry(fundRegistry.getGGRAddress()).getSpaceToken().ownerOf(_spaceTokenId);
     uint256 amount = ISpaceLocker(owner).reputation();
 
     assert(amount > 0);

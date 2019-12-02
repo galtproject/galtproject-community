@@ -6,21 +6,21 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#853cc30",
+    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#219dbc2",
     "@galtproject/eslint-config-galt": "1.1.0",
-    "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#9d3eb6d",
+    "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#e2eae13",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#d788618",
     "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest",
-    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#44d2a57",
+    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#30c6019",
     "@galtproject/utils": "^0.9.1",
     "cli-table": "^0.3.1",
     "ethlint": "1.2.5",
     "ganache-core": "2.8.0",
     "openzeppelin-solidity": "2.3.0",
     "prettier": "1.19.1",
-    "truffle": "5.0.44",
+    "truffle": "5.1.1",
     "typedarray-to-buffer": "^3.1.5",
-    "web3": "1.2.2"
+    "web3": "1.2.4"
   },
   "repository": "https://github.com/galtproject/galtproject-community",
   "scripts": {

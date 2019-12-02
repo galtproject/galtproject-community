@@ -11,7 +11,7 @@ pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../../../abstract/fees/interfaces/IRegularFee.sol";
-import "../../PrivateFundStorage.sol";
+import "../../../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "../../fees/PrivateRegularEthFee.sol";
@@ -21,7 +21,7 @@ contract PrivateRegularEthFeeFactory is Ownable {
   event NewContract(address addr);
 
   function build(
-    PrivateFundStorage _fundStorage,
+    IFundRegistry _fundRegistry,
     uint256 _initialTimestamp,
     uint256 _period,
     uint256 _amount
@@ -30,7 +30,7 @@ contract PrivateRegularEthFeeFactory is Ownable {
     returns (IRegularFee regularFee)
   {
     regularFee = new PrivateRegularEthFee(
-      _fundStorage,
+      _fundRegistry,
       _initialTimestamp,
       _period,
       _amount

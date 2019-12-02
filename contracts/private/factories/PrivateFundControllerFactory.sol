@@ -10,17 +10,17 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../PrivateFundStorage.sol";
+import "../../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "../PrivateFundController.sol";
 
 
 contract PrivateFundControllerFactory is Ownable {
-  function build(PrivateFundStorage _fundStorage)
+  function build(IFundRegistry _fundRegistry)
     external
     returns (PrivateFundController)
   {
-    return new PrivateFundController(_fundStorage);
+    return new PrivateFundController(_fundRegistry);
   }
 }
