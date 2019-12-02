@@ -12,7 +12,7 @@ const { ether, hex, assertRevert } = require('@galtproject/solidity-test-chest')
 
 initHelperWeb3(web3);
 
-contract.only('Proposal Markers Proposals', accounts => {
+contract('Proposal Markers Proposals', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, proposalManager] = accounts;
 
   before(async function() {
