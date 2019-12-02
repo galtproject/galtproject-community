@@ -557,19 +557,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     return _feeContracts.size();
   }
 
-  function getMultisigManager(address _manager) external view returns (
-    bool active,
-    string memory managerName,
-    string memory dataLink
-  )
-  {
-    return (
-      multiSigManagers[_manager].active,
-      multiSigManagers[_manager].name,
-      multiSigManagers[_manager].dataLink
-    );
-  }
-
   function getCurrentPeriod() public view returns (uint256) {
     // return (block.timestamp - initialTimestamp) / periodLength;
     return (block.timestamp.sub(initialTimestamp)) / periodLength;
