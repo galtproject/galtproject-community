@@ -13,6 +13,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 // This contract will be included into the current one
 import "./MockFundProposalManager.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
 
 contract MockFundProposalManagerFactory is Ownable {
@@ -22,9 +23,17 @@ contract MockFundProposalManagerFactory is Ownable {
     external
     returns (FundProposalManager)
   {
-    MockFundProposalManager fundProposalManager = new MockFundProposalManager();
-    fundProposalManager.initialize(_fundRegistry);
+    OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
 
-    return fundProposalManager;
+    MockFundProposalManager fundProposalManager = new MockFundProposalManager();
+
+    proxy.upgradeToAndCall(
+      address(fundProposalManager),
+      abi.encodeWithSignature("initialize(address)", _fundRegistry)
+    );
+
+    proxy.transferProxyOwnership(msg.sender);
+
+    return FundProposalManager(address(proxy));
   }
 }

@@ -48,6 +48,6 @@ contract MockFundStorageFactory is Ownable {
 
     proxy.transferProxyOwnership(msg.sender);
 
-    return fundStorage;
+    return MockFundStorage(address(proxy));
   }
 }
