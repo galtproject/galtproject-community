@@ -19,20 +19,17 @@ interface UpgradeScript {
 
 
 contract FundUpgrader is Initializable {
+  event UpgradeSucceeded();
+  event UpgradeFailed(bytes result);
+
+  bytes32 public constant ROLE_UPGRADE_SCRIPT_MANAGER = bytes32("upgrade_script_manager");
 
   IFundRegistry public fundRegistry;
 
   address public nextUpgradeScript;
 
-  event UpgradeSucceeded();
-  event UpgradeFailed(bytes result);
-
   modifier onlyUpgradeScriptManager() {
-
-    _;
-  }
-
-  modifier onlyAllowedUpgradeScript(address _upgradeScript) {
+    require(fundRegistry.getACL().hasRole(msg.sender, ROLE_UPGRADE_SCRIPT_MANAGER), "Invalid role");
 
     _;
   }
