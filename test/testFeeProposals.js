@@ -59,7 +59,7 @@ contract('Fee Proposals', accounts => {
 
   describe('Create Fee Proposal', () => {
     it('should encode', async function() {
-      await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+      await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const marker = getDestinationMarker(this.fundStorageX, 'addFeeContract');
 

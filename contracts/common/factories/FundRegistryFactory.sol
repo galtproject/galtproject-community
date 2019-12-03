@@ -14,27 +14,27 @@ import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabili
 import "../interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
-import "../FundProposalManager.sol";
+import "../FundRegistry.sol";
 
 
-contract FundProposalManagerFactory is Ownable {
-  function build(
-    IFundRegistry _fundRegistry
-  )
+contract FundRegistryFactory is Ownable {
+  bytes32 public lastValue;
+
+  function build()
     external
-    returns (FundProposalManager)
+    returns (FundRegistry)
   {
     OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
 
-    FundProposalManager fundProposalManager = new FundProposalManager();
+    FundRegistry fundRegistry = new FundRegistry();
 
-    proxy.upgradeToAndCall(
-      address(fundProposalManager),
-      abi.encodeWithSignature("initialize(address)", _fundRegistry)
-    );
+    proxy.upgradeToAndCall(address(fundRegistry), abi.encodeWithSignature("initialize(address)", address(this)));
 
+    Ownable(address(proxy)).transferOwnership(msg.sender);
     proxy.transferProxyOwnership(msg.sender);
 
-    return FundProposalManager(address(proxy));
+    lastValue = FundRegistry(address(proxy)).STORAGE();
+
+    return FundRegistry(address(proxy));
   }
 }

@@ -14,20 +14,25 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 import "@galtproject/core/contracts/interfaces/ISpaceLocker.sol";
 import "../abstract/AbstractFundStorage.sol";
+import "../common/interfaces/IFundRegistry.sol";
 
 
 contract FundStorage is AbstractFundStorage {
   using SafeMath for uint256;
 
-  GaltGlobalRegistry public ggr;
+  event ApproveMint(uint256 indexed tokenId);
 
-  ArraySet.Uint256Set private _finesSpaceTokens;
+  event Expel(uint256 indexed tokenId);
+  event DecrementExpel(uint256 indexed tokenId);
 
-  mapping(uint256 => ArraySet.AddressSet) private _finesContractsBySpaceToken;
+  event ChangeFine(bool indexed isIncrement, uint256 indexed tokenId, address indexed contractAddress);
+
+  event LockChange(bool indexed isLock, uint256 indexed tokenId);
+
   // spaceTokenId => details
   mapping(uint256 => MemberFines) private _fines;
   // spaceTokenId => isMintApproved
-  mapping(uint256 => bool) private _mintApprovals;
+  mapping(uint256 => bool) internal _mintApprovals;
   // spaceTokenId => isExpelled
   mapping(uint256 => bool) private _expelledTokens;
   // spaceTokenId => availableAmountToBurn
@@ -35,40 +40,27 @@ contract FundStorage is AbstractFundStorage {
   // spaceTokenId => isLocked
   mapping(uint256 => bool) private _lockedSpaceTokens;
 
-  constructor (
-    GaltGlobalRegistry _ggr,
-    bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength
-  )
-    public
-    AbstractFundStorage(
-      _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
-      _periodLength
-    )
-  {
-    ggr = _ggr;
+  constructor() public {
   }
 
   function approveMint(uint256 _spaceTokenId) external onlyRole(ROLE_NEW_MEMBER_MANAGER) {
     _mintApprovals[_spaceTokenId] = true;
+
+    emit ApproveMint(_spaceTokenId);
   }
 
   function expel(uint256 _spaceTokenId) external onlyRole(ROLE_EXPEL_MEMBER_MANAGER) {
     require(_expelledTokens[_spaceTokenId] == false, "Already Expelled");
 
-    address owner = ggr.getSpaceToken().ownerOf(_spaceTokenId);
+    address owner = GaltGlobalRegistry(fundRegistry.getGGRAddress()).getSpaceToken().ownerOf(_spaceTokenId);
     uint256 amount = ISpaceLocker(owner).reputation();
 
     assert(amount > 0);
 
     _expelledTokens[_spaceTokenId] = true;
     _expelledTokenReputation[_spaceTokenId] = amount;
+
+    emit Expel(_spaceTokenId);
   }
 
   function decrementExpelledTokenReputation(
@@ -85,6 +77,8 @@ contract FundStorage is AbstractFundStorage {
     _expelledTokenReputation[_spaceTokenId] = _expelledTokenReputation[_spaceTokenId].sub(_amount);
 
     completelyBurned = (_expelledTokenReputation[_spaceTokenId] == 0);
+
+    emit DecrementExpel(_spaceTokenId);
   }
 
   function incrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_INCREMENT_MANAGER) {
@@ -94,8 +88,7 @@ contract FundStorage is AbstractFundStorage {
     // _fines[_spaceTokenId].total += _amount;
     _fines[_spaceTokenId].total = _fines[_spaceTokenId].total.add(_amount);
 
-    _finesSpaceTokens.addSilent(_spaceTokenId);
-    _finesContractsBySpaceToken[_spaceTokenId].addSilent(_contract);
+    emit ChangeFine(true, _spaceTokenId, _contract);
   }
 
   function decrementFine(uint256 _spaceTokenId, address _contract, uint256 _amount) external onlyRole(ROLE_FINE_MEMBER_DECREMENT_MANAGER) {
@@ -104,22 +97,20 @@ contract FundStorage is AbstractFundStorage {
     // _fines[_spaceTokenId].total -= _amount;
     _fines[_spaceTokenId].total = _fines[_spaceTokenId].total.sub(_amount);
 
-    if (_fines[_spaceTokenId].tokenFines[_contract].amount == 0) {
-      _finesContractsBySpaceToken[_spaceTokenId].remove(_contract);
-    }
-
-    if (_fines[_spaceTokenId].total == 0) {
-      _finesSpaceTokens.remove(_spaceTokenId);
-    }
+    emit ChangeFine(false, _spaceTokenId, _contract);
   }
 
   function lockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = true;
+
+    emit LockChange(true, _spaceTokenId);
   }
 
   // TODO: possibility to unlock from removed contracts
   function unlockSpaceToken(uint256 _spaceTokenId) external onlyFeeContract {
     _lockedSpaceTokens[_spaceTokenId] = false;
+
+    emit LockChange(false, _spaceTokenId);
   }
 
   // GETTERS
@@ -135,28 +126,12 @@ contract FundStorage is AbstractFundStorage {
     return (_expelledTokens[_spaceTokenId], _expelledTokenReputation[_spaceTokenId]);
   }
 
-  function getFineSpaceTokens() external view returns (uint256[] memory) {
-    return _finesSpaceTokens.elements();
-  }
-
-  function getFineSpaceTokensCount() external view returns (uint256) {
-    return _finesSpaceTokens.size();
-  }
-
-  function getFineContractsBySpaceToken(uint256 _spaceTokenId) external view returns (address[] memory) {
-    return _finesContractsBySpaceToken[_spaceTokenId].elements();
-  }
-
-  function getFineContractsBySpaceTokenCount(uint256 _spaceTokenId) external view returns (uint256) {
-    return _finesContractsBySpaceToken[_spaceTokenId].size();
-  }
-
   function isMintApproved(uint256 _spaceTokenId) external view returns (bool) {
     if (_expelledTokens[_spaceTokenId] == true) {
       return false;
     }
 
-    if (uint256(_config[IS_PRIVATE]) == uint256(1)) {
+    if (uint256(config[IS_PRIVATE]) == uint256(1)) {
       return _mintApprovals[_spaceTokenId];
     } else {
       return true;

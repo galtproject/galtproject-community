@@ -14,7 +14,7 @@ import "./MockFundRA.sol";
 
 contract ExtraMockFundRA is MockFundRA {
 
-  function mintAllAmounts(address[] calldata _addresses, uint256[] calldata _spaceTokens, uint256[] calldata _amounts) external {
+  function mintAllAmountsHack(address[] calldata _addresses, uint256[] calldata _spaceTokens, uint256[] calldata _amounts) external {
     for (uint256 i = 0; i < _addresses.length; i++) {
       _mint(_addresses[i], _amounts[i]);
       _cacheSpaceTokenOwner(_addresses[i], _spaceTokens[i]);

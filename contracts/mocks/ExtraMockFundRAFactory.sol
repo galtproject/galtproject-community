@@ -10,22 +10,32 @@
 pragma solidity ^0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../decentralized/FundStorage.sol";
+import "../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "./ExtraMockFundRA.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
 
 contract ExtraMockFundRAFactory is Ownable {
   function build(
-    FundStorage fundStorage
+    IFundRegistry _fundRegistry
   )
     external
     returns (ExtraMockFundRA)
   {
-    ExtraMockFundRA fundRA = new ExtraMockFundRA();
-    fundRA.initialize2(fundStorage);
+    OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
 
-    return fundRA;
+    ExtraMockFundRA fundRA = new ExtraMockFundRA();
+    fundRA.initialize2(_fundRegistry);
+
+    proxy.upgradeToAndCall(
+      address(fundRA),
+      abi.encodeWithSignature("initialize2(address)", _fundRegistry)
+    );
+
+    proxy.transferProxyOwnership(msg.sender);
+
+    return ExtraMockFundRA(address(proxy));
   }
 }

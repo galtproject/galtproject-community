@@ -12,10 +12,13 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/drafts/Counters.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
+import "./interfaces/IFundRegistry.sol";
+import "../common/interfaces/IFundRA.sol";
 
 
-contract FundProposalManager {
+contract FundProposalManager is Initializable {
   using SafeMath for uint256;
   using Counters for Counters.Counter;
   using ArraySet for ArraySet.AddressSet;
@@ -55,7 +58,7 @@ contract FundProposalManager {
     bytes response;
   }
 
-  IAbstractFundStorage public fundStorage;
+  IFundRegistry public fundRegistry;
   Counters.Counter internal idCounter;
 
   mapping(uint256 => Proposal) public proposals;
@@ -84,13 +87,16 @@ contract FundProposalManager {
   }
 
   modifier onlyMember() {
-    require(fundStorage.getRA().balanceOf(msg.sender) > 0, "Not valid member");
+    require(_fundRA().balanceOf(msg.sender) > 0, "Not valid member");
 
     _;
   }
 
-  constructor(IAbstractFundStorage _fundStorage) public {
-    fundStorage = _fundStorage;
+  constructor() public {
+  }
+
+  function initialize(IFundRegistry _fundRegistry) external isInitializer {
+    fundRegistry = _fundRegistry;
   }
 
   function propose(
@@ -111,7 +117,7 @@ contract FundProposalManager {
     p.value = _value;
     p.data = _data;
     p.dataLink = _dataLink;
-    p.marker = fundStorage.getThresholdMarker(_destination, _data);
+    p.marker = _fundStorage().getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;
     _onNewProposal(id);
@@ -162,7 +168,27 @@ contract FundProposalManager {
     execute(_proposalId);
   }
 
+  function execute(uint256 _proposalId) public {
+    Proposal storage p = proposals[_proposalId];
+
+    require(p.status == ProposalStatus.APPROVED, "Proposal isn't APPROVED");
+
+    p.status = ProposalStatus.EXECUTED;
+
+    (bool ok, bytes memory response) = address(p.destination)
+    .call
+    .value(p.value)
+    .gas(gasleft().sub(50000))(p.data);
+
+    if (ok == false) {
+      p.status = ProposalStatus.APPROVED;
+    }
+
+    p.response = response;
+  }
+
   // INTERNAL
+
   function _aye(uint256 _proposalId, address _voter) internal {
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
@@ -203,7 +229,7 @@ contract FundProposalManager {
     _proposalToSender[_proposalId] = msg.sender;
 
     uint256 blockNumber = block.number.sub(1);
-    uint256 totalSupply = fundStorage.getRA().totalSupplyAt(blockNumber);
+    uint256 totalSupply = _fundRA().totalSupplyAt(blockNumber);
     require(totalSupply > 0, "Total reputation is 0");
 
     ProposalVoting storage pv = _proposalVotings[_proposalId];
@@ -211,7 +237,7 @@ contract FundProposalManager {
     pv.creationBlock = blockNumber;
     pv.creationTotalSupply = totalSupply;
 
-    (uint256 support, uint256 quorum, uint256 timeout) = fundStorage.getProposalVotingConfig(marker);
+    (uint256 support, uint256 quorum, uint256 timeout) = _fundStorage().getProposalVotingConfig(marker);
     pv.createdAt = block.timestamp;
     // pv.timeoutAt = block.timestamp + timeout;
     pv.timeoutAt = block.timestamp.add(timeout);
@@ -220,23 +246,12 @@ contract FundProposalManager {
     pv.minAcceptQuorum = quorum;
   }
 
-  function execute(uint256 _proposalId) public {
-    Proposal storage p = proposals[_proposalId];
+  function _fundStorage() internal view returns (IAbstractFundStorage) {
+    return IAbstractFundStorage(fundRegistry.getStorageAddress());
+  }
 
-    require(p.status == ProposalStatus.APPROVED, "Proposal isn't APPROVED");
-
-    p.status = ProposalStatus.EXECUTED;
-
-    (bool ok, bytes memory response) = address(p.destination)
-      .call
-      .value(p.value)
-      .gas(gasleft().sub(50000))(p.data);
-
-    if (ok == false) {
-      p.status = ProposalStatus.APPROVED;
-    }
-
-    p.response = response;
+  function _fundRA() internal view returns (IFundRA) {
+    return IFundRA(fundRegistry.getRAAddress());
   }
 
   // GETTERS
@@ -338,7 +353,7 @@ contract FundProposalManager {
   }
 
   function reputationOf(address _address, uint256 _blockNumber) public view returns (uint256) {
-    return fundStorage.getRA().balanceOfAt(_address, _blockNumber);
+    return _fundRA().balanceOfAt(_address, _blockNumber);
   }
 
   function getCurrentSupport(uint256 _proposalId) public view returns (uint256) {

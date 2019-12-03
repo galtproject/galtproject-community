@@ -12,7 +12,7 @@ pragma solidity 0.5.10;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "../../../abstract/fees/interfaces/IRegularFee.sol";
-import "../../FundStorage.sol";
+import "../../../common/interfaces/IFundRegistry.sol";
 
 // This contract will be included into the current one
 import "../../fees/RegularErc20Fee.sol";
@@ -23,7 +23,7 @@ contract RegularErc20FeeFactory is Ownable {
 
   function build(
     IERC20 _erc20Token,
-    FundStorage _fundStorage,
+    IFundRegistry _fundRegistry,
     uint256 _initialTimestamp,
     uint256 _period,
     uint256 _amount
@@ -33,7 +33,7 @@ contract RegularErc20FeeFactory is Ownable {
   {
     regularFee = new RegularErc20Fee(
       _erc20Token,
-      _fundStorage,
+      _fundRegistry,
       _initialTimestamp,
       _period,
       _amount

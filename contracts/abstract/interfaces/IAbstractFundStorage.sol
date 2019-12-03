@@ -31,14 +31,14 @@ interface IAbstractFundStorage {
   )
     external;
 
-  function addWhiteListedContract(
+  function addCommunityApp(
     address _contract,
     bytes32 _type,
     bytes32 _abiIpfsHash,
     string calldata _dataLink
   )
     external;
-  function removeWhiteListedContract(address _contract) external;
+  function removeCommunityApp(address _contract) external;
 
   function addProposalMarker(
     bytes4 _methodSignature,
@@ -64,7 +64,7 @@ interface IAbstractFundStorage {
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external;
 
-  function getMemberIdentification(address _member) external view returns(bytes32);
+  function membersIdentification(address _member) external view returns(bytes32);
 
   function disableFundRule(uint256 _id) external;
 
@@ -78,7 +78,7 @@ interface IAbstractFundStorage {
     bool _active,
     address _manager,
     string calldata _name,
-    bytes32[] calldata _documents
+    string calldata _dataLink
   )
     external;
 
@@ -95,43 +95,40 @@ interface IAbstractFundStorage {
 
   function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
 
-  function getConfigValue(bytes32 _key) external view returns (bytes32);
+  function config(bytes32 _key) external view returns (bytes32);
 
-  function getWhitelistedContracts() external view returns (address[] memory);
+  function getCommunityApps() external view returns (address[] memory);
 
   function getActiveFundRules() external view returns (uint256[] memory);
 
   function getActiveFundRulesCount() external view returns (uint256);
 
-  function getMultiSig() external view returns (FundMultiSig);
-  function getRA() external view returns (IFundRA);
-
-  function getWhiteListedContract(
+  function communityAppsInfo(
     address _contract
   )
     external
     view
     returns (
-      bytes32 _contractType,
-      bytes32 _abiIpfsHash,
-      string memory _dataLink
+      bytes32 appType,
+      bytes32 abiIpfsHash,
+      string memory dataLink
     );
 
-  function getProposalMarker(
+  function proposalMarkers(
     bytes32 _marker
   )
     external
     view
     returns (
-      address _proposalManager,
-      address _destination,
-      bytes32 _name,
-      string memory _dataLink
+      address proposalManager,
+      address destination,
+      bytes32 name,
+      string memory dataLink
     );
 
   function areMembersValid(address[] calldata _members) external view returns (bool);
 
- function getActiveMultisigManagers() external view returns (address[] memory);
+  function getActiveMultisigManagers() external view returns (address[] memory);
 
   function getActiveMultisigManagersCount() external view returns (uint256);
 
@@ -143,15 +140,15 @@ interface IAbstractFundStorage {
 
   function getFeeContractCount() external view returns (uint256);
 
-  function getMultisigManager(address _manager)
+  function multiSigManagers(address _manager)
     external
     view
     returns (
       bool active,
       string memory managerName,
-      bytes32[] memory documents
+      string memory dataLink
     );
 
-  function getPeriodLimit(address _erc20Contract) external view returns (bool active, uint256 amount);
+  function periodLimits(address _erc20Contract) external view returns (bool active, uint256 amount);
   function getCurrentPeriod() external view returns (uint256);
 }

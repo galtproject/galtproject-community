@@ -97,7 +97,7 @@ contract('FineFundMemberProposal', accounts => {
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     // NOTICE: hardcoded token IDs, increment when new tests added
     this.benefeciarSpaceTokens = ['4', '5', '6', '7', '8'];
-    await this.fundRAX.mintAll(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal pipeline', () => {
@@ -183,15 +183,6 @@ contract('FineFundMemberProposal', accounts => {
       assert.equal(res, 350);
       res = await this.fundStorageX.getTotalFineAmount(this.token1);
       assert.equal(res, 350);
-
-      res = await this.fundStorageX.getFineSpaceTokens();
-      assert.deepEqual(
-        res.map(tokenId => tokenId.toString(10)),
-        [this.token1.toString(10)]
-      );
-
-      res = await this.fundStorageX.getFineContractsBySpaceToken(this.token1);
-      assert.deepEqual(res, [this.galtToken.address]);
 
       // Pay fee partially
       await this.galtToken.approve(this.fundControllerX.address, 300, { from: alice });

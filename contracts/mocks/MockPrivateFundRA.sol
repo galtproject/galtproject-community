@@ -29,7 +29,14 @@ contract MockPrivateFundRA is PrivateFundRA {
     _transfer(_to, _from, _owner, _amount);
   }
 
-  function mintAll(address[] calldata _addresses, address[] calldata _registries, uint256[] calldata _tokenIds, uint256 _amount) external {
+  function mintAllHack(
+    address[] calldata _addresses,
+    address[] calldata _registries,
+    uint256[] calldata _tokenIds,
+    uint256 _amount
+  )
+  external
+  {
     for (uint256 i = 0; i < _addresses.length; i++) {
       _mint(_addresses[i], _amount);
       _cacheTokenOwner(_addresses[i], _registries[i], _tokenIds[i]);

@@ -7,10 +7,14 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-pragma solidity 0.5.10;
+pragma solidity ^0.5.10;
 
-interface IFundRA {
-  function balanceOf(address _owner) external view returns (uint256);
-  function balanceOfAt(address _owner, uint256 _blockNumber) external view returns (uint256);
-  function totalSupplyAt(uint256 _blockNumber) external view returns (uint256);
+import "@galtproject/core/contracts/ACL.sol";
+
+
+contract FundACL is ACL {
+  // ಠ_ಠ
+  function initialize(address _owner) external initializeWithOwner(_owner) {
+  }
+
 }

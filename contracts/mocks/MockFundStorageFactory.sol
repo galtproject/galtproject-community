@@ -10,30 +10,44 @@
 pragma solidity 0.5.10;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "@galtproject/core/contracts/registries/GaltGlobalRegistry.sol";
 
 // This contract will be included into the current one
-import "./MockFundProposalManager.sol";
+import "./MockFundStorage.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
 
-contract MockFundProposalManagerFactory is Ownable {
+contract MockFundStorageFactory is Ownable {
   function build(
-    IFundRegistry _fundRegistry
+    IFundRegistry _fundRegistry,
+    bool _isPrivate,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout,
+    uint256 _periodLength
   )
     external
-    returns (FundProposalManager)
+    returns (MockFundStorage)
   {
     OwnedUpgradeabilityProxy proxy = new OwnedUpgradeabilityProxy();
 
-    MockFundProposalManager fundProposalManager = new MockFundProposalManager();
+    MockFundStorage fundStorage = new MockFundStorage();
 
     proxy.upgradeToAndCall(
-      address(fundProposalManager),
-      abi.encodeWithSignature("initialize(address)", _fundRegistry)
+      address(fundStorage),
+      abi.encodeWithSignature(
+        "initialize(address,bool,uint256,uint256,uint256,uint256)",
+        _fundRegistry,
+        _isPrivate,
+        _defaultProposalSupport,
+        _defaultProposalQuorum,
+        _defaultProposalTimeout,
+        _periodLength
+      )
     );
 
     proxy.transferProxyOwnership(msg.sender);
 
-    return FundProposalManager(address(proxy));
+    return MockFundStorage(address(proxy));
   }
 }

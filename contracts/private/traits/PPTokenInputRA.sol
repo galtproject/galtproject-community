@@ -18,9 +18,6 @@ import "@galtproject/private-property-registry/contracts/interfaces/IPPLockerReg
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
 
-// LiquidRA - base class
-// FundRA - LiquidRA + SpaceInputRA + SharableRA
-
 
 contract PPTokenInputRA is LiquidRA, Initializable {
   IPPGlobalRegistry public globalRegistry;
