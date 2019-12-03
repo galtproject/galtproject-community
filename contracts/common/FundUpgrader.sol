@@ -13,11 +13,19 @@ import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "./interfaces/IFundRegistry.sol";
 
 
+interface UpgradeScript {
+  function argsWithSignature() external view returns (bytes memory);
+}
+
+
 contract FundUpgrader is Initializable {
 
   IFundRegistry public fundRegistry;
 
   address public nextUpgradeScript;
+
+  event UpgradeSucceeded();
+  event UpgradeFailed(bytes result);
 
   modifier onlyUpgradeScriptManager() {
 
@@ -43,8 +51,16 @@ contract FundUpgrader is Initializable {
   function upgrade() external {
     require(nextUpgradeScript != address(0), "Upgrade script not set");
 
-    nextUpgradeScript.delegatecall(abi.encodeWithSignature("run()"));
+    // solium-disable-next-line security/no-low-level-calls
+    (bool ok, bytes memory res) = nextUpgradeScript.delegatecall(
+      UpgradeScript(nextUpgradeScript).argsWithSignature()
+    );
 
-    nextUpgradeScript = address(0);
+    if (ok == true) {
+      nextUpgradeScript = address(0);
+      emit UpgradeSucceeded();
+    } else {
+      emit UpgradeFailed(res);
+    }
   }
 }
