@@ -269,6 +269,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), address(c.fundController), true);
     _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), address(c.fundRA), true);
     _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), address(c.fundMultiSig), true);
+    _fundACL.setRole(c.fundUpgrader.ROLE_UPGRADE_SCRIPT_MANAGER(), address(c.fundProposalManager), true);
     _fundACL.setRole(c.fundMultiSig.ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);

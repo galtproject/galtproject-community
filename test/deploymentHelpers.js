@@ -23,7 +23,7 @@ const FundMultiSig = artifacts.require('./FundMultiSig.sol');
 const MockFundRA = artifacts.require('./MockFundRA.sol');
 const FundProposalManager = artifacts.require('./FundProposalManager.sol');
 const OwnedUpgradeabilityProxyFactory = artifacts.require('./OwnedUpgradeabilityProxyFactory.sol');
-// const FundUpgrader = artifacts.require('./FundUpgrader.sol');
+const FundUpgrader = artifacts.require('./FundUpgrader.sol');
 
 const { initHelperWeb3, getMethodSignature, hex, getEventArg } = require('./helpers');
 
@@ -33,6 +33,7 @@ MockFundRA.numberFormat = 'String';
 // MockPrivateFundRA.numberFormat = 'String';
 // PrivateFundStorage.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
+FundUpgrader.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
 FundMultiSig.numberFormat = 'String';
 
@@ -181,6 +182,7 @@ async function buildFund(
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
+  const fundUpgrader = await FundUpgrader.at(res.logs[0].args.fundUpgrader);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
@@ -249,6 +251,7 @@ async function buildFund(
     fundMultiSig,
     fundRA,
     fundController,
+    fundUpgrader,
     fundProposalManager
   };
 }
@@ -311,6 +314,7 @@ async function buildPrivateFund(
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await PrivateFundController.at(res.logs[0].args.fundController);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
+  const fundUpgrader = await FundUpgrader.at(res.logs[0].args.fundUpgrader);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
@@ -379,6 +383,7 @@ async function buildPrivateFund(
     fundMultiSig,
     fundRA,
     fundController,
+    fundUpgrader,
     fundProposalManager
   };
 }
