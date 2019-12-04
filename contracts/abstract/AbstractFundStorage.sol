@@ -7,9 +7,9 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-pragma solidity 0.5.10;
+pragma solidity ^0.5.13;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../common/FundMultiSig.sol";
@@ -467,6 +467,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 _timeout
   )
     internal
+    pure
   {
     require(_minAcceptQuorum > 0 && _minAcceptQuorum <= _support, "Invalid min accept quorum value");
     require(_support > 0 && _support <= ONE_HUNDRED_PCT, "Invalid support value");

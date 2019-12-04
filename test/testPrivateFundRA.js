@@ -4,6 +4,8 @@ const PPLockerRegistry = artifacts.require('./PPLockerRegistry.sol');
 const PPTokenRegistry = artifacts.require('./PPTokenRegistry.sol');
 const PPLockerFactory = artifacts.require('./PPLockerFactory.sol');
 const PPTokenFactory = artifacts.require('./PPTokenFactory.sol');
+const PPTokenControllerFactory = artifacts.require('./PPTokenControllerFactory.sol');
+const PPTokenController = artifacts.require('./PPTokenController.sol');
 const PPLocker = artifacts.require('./PPLocker.sol');
 const PrivateRegularEthFee = artifacts.require('./PrivateRegularEthFee.sol');
 const PrivateRegularEthFeeFactory = artifacts.require('./PrivateRegularEthFeeFactory.sol');
@@ -49,7 +51,14 @@ contract('PrivateFundRA', accounts => {
     await this.ppTokenRegistry.initialize(this.ppgr.address);
     await this.ppLockerRegistry.initialize(this.ppgr.address);
 
-    this.ppTokenFactory = await PPTokenFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
+    this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
+    this.ppTokenFactory = await PPTokenFactory.new(
+      this.ppTokenControllerFactory.address,
+      this.ppgr.address,
+      this.galtToken.address,
+      0,
+      0
+    );
     this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
 
     // PPGR setup
@@ -105,27 +114,34 @@ contract('PrivateFundRA', accounts => {
     this.fundProposalManagerX = fund.fundProposalManager;
 
     // CREATE REGISTRIES
-    let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, {
+    let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry1 = await PPToken.at(res.logs[4].args.token);
+    this.registry1 = await PPToken.at(res.logs[5].args.token);
+    this.controller1 = await PPTokenController.at(res.logs[5].args.controller);
 
-    res = await this.ppTokenFactory.build('Land Plots', 'PLT', registryDataLink, {
+    res = await this.ppTokenFactory.build('Land Plots', 'PLT', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry2 = await PPToken.at(res.logs[4].args.token);
+    this.registry2 = await PPToken.at(res.logs[5].args.token);
+    this.controller2 = await PPTokenController.at(res.logs[5].args.controller);
 
-    res = await this.ppTokenFactory.build('Appartments', 'APS', registryDataLink, {
+    res = await this.ppTokenFactory.build('Appartments', 'APS', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry3 = await PPToken.at(res.logs[4].args.token);
+    this.registry3 = await PPToken.at(res.logs[5].args.token);
+    this.controller3 = await PPTokenController.at(res.logs[5].args.controller);
 
     await this.registry1.setMinter(minter);
     await this.registry2.setMinter(minter);
     await this.registry3.setMinter(minter);
+
+    await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));
+    await this.controller2.setFee(bytes32('LOCKER_ETH'), ether(0.1));
+    await this.controller3.setFee(bytes32('LOCKER_ETH'), ether(0.1));
 
     // MINT TOKENS
     res = await this.registry1.mint(alice, { from: minter });
@@ -170,9 +186,9 @@ contract('PrivateFundRA', accounts => {
     await this.registry3.approve(this.charlieLockerAddress, this.token3, { from: charlie });
 
     // DEPOSIT SPACE TOKEN
-    await this.aliceLocker.deposit(this.registry1.address, this.token1, { from: alice });
-    await this.bobLocker.deposit(this.registry2.address, this.token2, { from: bob });
-    await this.charlieLocker.deposit(this.registry3.address, this.token3, { from: charlie });
+    await this.aliceLocker.deposit(this.registry1.address, this.token1, { from: alice, value: ether(0.1) });
+    await this.bobLocker.deposit(this.registry2.address, this.token2, { from: bob, value: ether(0.1) });
+    await this.charlieLocker.deposit(this.registry3.address, this.token3, { from: charlie, value: ether(0.1) });
 
     // APPROVE REPUTATION MINT
     await this.aliceLocker.approveMint(this.fundRAX.address, { from: alice });

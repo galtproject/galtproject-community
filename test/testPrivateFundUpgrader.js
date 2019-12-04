@@ -1,9 +1,5 @@
 const PPToken = artifacts.require('./PPToken.sol');
 const GaltToken = artifacts.require('./GaltToken.sol');
-const PPLockerRegistry = artifacts.require('./PPLockerRegistry.sol');
-const PPTokenRegistry = artifacts.require('./PPTokenRegistry.sol');
-const PPLockerFactory = artifacts.require('./PPLockerFactory.sol');
-const PPTokenFactory = artifacts.require('./PPTokenFactory.sol');
 const PPLocker = artifacts.require('./PPLocker.sol');
 const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
 const PPACL = artifacts.require('./PPACL.sol');
@@ -20,53 +16,21 @@ const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploym
 const { ether, initHelperWeb3, evmIncreaseTime, assertRevert, zeroAddress } = require('./helpers');
 
 const { web3 } = PPToken;
-const { utf8ToHex } = web3.utils;
-const bytes32 = utf8ToHex;
 
 initHelperWeb3(web3);
 
 contract('PrivateFundUpgrader', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, fakeRegistry, lockerFeeManager] = accounts;
-
-  const ethFee = ether(10);
-  const galtFee = ether(20);
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, fakeRegistry] = accounts;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
 
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
-    this.ppTokenRegistry = await PPTokenRegistry.new();
-    this.ppLockerRegistry = await PPLockerRegistry.new();
 
     await this.ppgr.initialize();
-    await this.ppTokenRegistry.initialize(this.ppgr.address);
-    await this.ppLockerRegistry.initialize(this.ppgr.address);
-
-    this.ppTokenFactory = await PPTokenFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
-
-    // PPGR setup
-    await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);
-    await this.ppgr.setContract(await this.ppgr.PPGR_TOKEN_REGISTRY(), this.ppTokenRegistry.address);
-    await this.ppgr.setContract(await this.ppgr.PPGR_LOCKER_REGISTRY(), this.ppLockerRegistry.address);
-
-    // ACL setup
-    await this.acl.setRole(bytes32('TOKEN_REGISTRAR'), this.ppTokenFactory.address, true);
-    await this.acl.setRole(bytes32('LOCKER_REGISTRAR'), this.ppLockerFactory.address, true);
-
-    // Fees setup
-    await this.ppTokenFactory.setFeeManager(lockerFeeManager);
-    await this.ppTokenFactory.setEthFee(ethFee, { from: lockerFeeManager });
-    await this.ppTokenFactory.setGaltFee(galtFee, { from: lockerFeeManager });
-
-    await this.ppLockerFactory.setFeeManager(lockerFeeManager);
-    await this.ppLockerFactory.setEthFee(ethFee, { from: lockerFeeManager });
-    await this.ppLockerFactory.setGaltFee(galtFee, { from: lockerFeeManager });
 
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
-    await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
-    await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
     this.fundFactory = await deployFundFactory(

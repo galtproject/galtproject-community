@@ -7,11 +7,11 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-pragma solidity 0.5.10;
+pragma solidity ^0.5.13;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";

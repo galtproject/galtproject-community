@@ -7,9 +7,9 @@
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
-pragma solidity 0.5.10;
+pragma solidity ^0.5.13;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
@@ -156,7 +156,7 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
     return checkpoints[min].value;
   }
 
-  function _fundStorage() internal returns (PrivateFundStorage) {
+  function _fundStorage() internal view returns (PrivateFundStorage) {
     return PrivateFundStorage(fundRegistry.getStorageAddress());
   }
 
