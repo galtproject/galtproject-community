@@ -9,6 +9,7 @@
 
 pragma solidity 0.5.10;
 
+
 interface IFundRA {
   function balanceOf(address _owner) external view returns (uint256);
   function balanceOfAt(address _owner, uint256 _blockNumber) external view returns (uint256);
