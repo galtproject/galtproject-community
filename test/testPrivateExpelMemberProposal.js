@@ -5,6 +5,8 @@ const PPTokenRegistry = artifacts.require('./PPTokenRegistry.sol');
 const PPLockerFactory = artifacts.require('./PPLockerFactory.sol');
 const PPTokenFactory = artifacts.require('./PPTokenFactory.sol');
 const PPLocker = artifacts.require('./PPLocker.sol');
+const PPTokenControllerFactory = artifacts.require('./PPTokenControllerFactory.sol');
+const PPTokenController = artifacts.require('./PPTokenController.sol');
 const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
 const PPACL = artifacts.require('./PPACL.sol');
 
@@ -28,6 +30,9 @@ const ProposalStatus = {
   EXECUTED: 3,
   REJECTED: 4
 };
+
+// 60 * 60
+const ONE_HOUR = 3600;
 
 contract('ExpelFundMemberProposal', accounts => {
   const [
@@ -61,7 +66,14 @@ contract('ExpelFundMemberProposal', accounts => {
     await this.ppTokenRegistry.initialize(this.ppgr.address);
     await this.ppLockerRegistry.initialize(this.ppgr.address);
 
-    this.ppTokenFactory = await PPTokenFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
+    this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
+    this.ppTokenFactory = await PPTokenFactory.new(
+      this.ppTokenControllerFactory.address,
+      this.ppgr.address,
+      this.galtToken.address,
+      0,
+      0
+    );
     this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
 
     // PPGR setup
@@ -125,12 +137,15 @@ contract('ExpelFundMemberProposal', accounts => {
 
   describe('proposal pipeline', () => {
     it('should allow user who has reputation creating a new proposal', async function() {
-      let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, {
+      let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
         from: coreTeam,
         value: ether(10)
       });
-      this.registry1 = await PPToken.at(res.logs[4].args.token);
+      this.registry1 = await PPToken.at(res.logs[5].args.token);
+      this.controller1 = await PPTokenController.at(res.logs[5].args.controller);
+
       await this.registry1.setMinter(minter);
+      await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));
 
       res = await this.registry1.mint(alice, { from: minter });
       const token1 = res.logs[0].args.privatePropertyId;
@@ -149,7 +164,7 @@ contract('ExpelFundMemberProposal', accounts => {
 
       // DEPOSIT SPACE TOKEN
       await this.registry1.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(this.registry1.address, token1, { from: alice });
+      await locker.deposit(this.registry1.address, token1, { from: alice, value: ether(0.1) });
 
       res = await locker.reputation();
       assert.equal(res, 800);
