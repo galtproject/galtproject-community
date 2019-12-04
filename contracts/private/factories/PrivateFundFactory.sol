@@ -120,13 +120,12 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     FundRegistryFactory _fundRegistryFactory,
     FundACLFactory _fundACLFactory,
     FundUpgraderFactory _fundUpgraderFactory,
-    address _galtToken,
     uint256 _ethFee,
     uint256 _galtFee
   )
     public
     Ownable()
-    ChargesFee(_galtToken, _ethFee, _galtFee)
+    ChargesFee(_ethFee, _galtFee)
   {
     fundControllerFactory = _fundControllerFactory;
     fundStorageFactory = _fundStorageFactory;
@@ -383,5 +382,11 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
   function getCurrentStep(bytes32 _fundId) external view returns (Step) {
     return fundContracts[_fundId].currentStep;
+  }
+
+  // INTERNAL
+
+  function _galtToken() internal view returns (IERC20) {
+    return IERC20(globalRegistry.getGaltTokenAddress());
   }
 }

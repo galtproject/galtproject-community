@@ -67,17 +67,12 @@ contract('ExpelFundMemberProposal', accounts => {
     await this.ppLockerRegistry.initialize(this.ppgr.address);
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
-    this.ppTokenFactory = await PPTokenFactory.new(
-      this.ppTokenControllerFactory.address,
-      this.ppgr.address,
-      this.galtToken.address,
-      0,
-      0
-    );
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, this.galtToken.address, 0, 0);
+    this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
+    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, 0, 0);
 
     // PPGR setup
     await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);
+    await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
     await this.ppgr.setContract(await this.ppgr.PPGR_TOKEN_REGISTRY(), this.ppTokenRegistry.address);
     await this.ppgr.setContract(await this.ppgr.PPGR_LOCKER_REGISTRY(), this.ppLockerRegistry.address);
 
@@ -99,14 +94,7 @@ contract('ExpelFundMemberProposal', accounts => {
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(
-      this.ppgr.address,
-      alice,
-      true,
-      this.galtToken.address,
-      ether(10),
-      ether(20)
-    );
+    this.fundFactory = await deployFundFactory(this.ppgr.address, alice, true, ether(10), ether(20));
   });
 
   beforeEach(async function() {

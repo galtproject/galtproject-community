@@ -30,17 +30,11 @@ contract('PrivateFundUpgrader', accounts => {
 
     await this.ppgr.initialize();
 
+    await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(
-      this.ppgr.address,
-      alice,
-      true,
-      this.galtToken.address,
-      ether(10),
-      ether(20)
-    );
+    this.fundFactory = await deployFundFactory(this.ppgr.address, alice, true, ether(10), ether(20));
   });
 
   beforeEach(async function() {
