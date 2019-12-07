@@ -32,7 +32,7 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 contract('PrivateFundRA', accounts => {
-  const [coreTeam, minter, alice, bob, charlie, unauthorized, lockerFeeManager] = accounts;
+  const [coreTeam, minter, alice, bob, charlie, burner, unauthorized, lockerFeeManager] = accounts;
 
   const ethFee = ether(10);
   const galtFee = ether(20);
@@ -243,6 +243,35 @@ contract('PrivateFundRA', accounts => {
 
       await this.regularEthFee.unlockToken(this.registry1.address, this.token1, { from: unauthorized });
       this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice });
+    });
+  });
+
+  describe('reputation burn when token was burned', () => {
+    beforeEach(async function() {
+      const res = await this.fundRAX.balanceOf(alice);
+      assert.equal(res, 800);
+
+      // burn
+      await this.controller1.setBurner(burner);
+      await this.controller1.initiateTokenBurn(this.token1, { from: burner });
+
+      await evmIncreaseTime(ONE_HOUR + 2);
+
+      await this.controller1.burnTokenByTimeout(this.token1);
+
+      assert.equal(await this.registry1.exists(this.token1), false);
+    });
+
+    it('should burn reputation if the token owner has sufficient balance', async function() {
+      await this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized });
+      await assertRevert(this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized }));
+    });
+
+    it('should burn reputation after others sends the required amount to the token owner', async function() {
+      await this.fundRAX.delegate(bob, alice, 350, { from: alice });
+      await assertRevert(this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized }));
+      await this.fundRAX.delegate(alice, alice, 350, { from: bob });
+      await this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized });
     });
   });
 
