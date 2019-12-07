@@ -16,8 +16,6 @@ import "../private/PrivateFundRA.sol";
 contract MockPrivateFundRA is PrivateFundRA {
   using Counters for Counters.Counter;
 
-  Counters.Counter internal spaceCounter;
-
   function mintHack(address _beneficiary, uint256 _amount, address _registry, uint256 _tokenId) external {
     _mint(_beneficiary, _amount);
     _cacheTokenOwner(_beneficiary, _registry, _tokenId);

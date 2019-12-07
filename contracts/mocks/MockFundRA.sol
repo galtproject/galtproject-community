@@ -16,8 +16,6 @@ import "../decentralized/FundRA.sol";
 contract MockFundRA is FundRA {
   using Counters for Counters.Counter;
 
-  Counters.Counter internal spaceCounter;
-
   function mintHack(address _beneficiary, uint256 _amount, uint256 _spaceTokenId) external {
     _mint(_beneficiary, _amount);
     _cacheSpaceTokenOwner(_beneficiary, _spaceTokenId);

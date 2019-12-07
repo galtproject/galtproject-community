@@ -109,7 +109,6 @@ contract FundFactory is Ownable {
   FundRegistryFactory public fundRegistryFactory;
   FundUpgraderFactory public fundUpgraderFactory;
 
-  mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
 
   bytes4[] internal proposalMarkersSignatures;
