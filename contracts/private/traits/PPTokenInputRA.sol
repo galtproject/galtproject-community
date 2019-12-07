@@ -70,6 +70,30 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     _mint(owner, reputation);
   }
 
+  function revokeBurnedTokenReputation(IPPLocker _tokenLocker) external {
+
+    tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
+
+    IPPToken tokenContract = _tokenLocker.tokenContract();
+    uint256 tokenId = _tokenLocker.tokenId();
+    address tokenContractAddress = address(tokenContract);
+
+    require(tokenContract.exists(tokenId) == false, "Token still exists");
+    require(reputationMinted[tokenContractAddress][tokenId] == true, "Reputation doesn't minted");
+
+    uint256 reputation = _tokenLocker.reputation();
+    address owner = _tokenLocker.owner();
+
+    _burn(owner, reputation);
+
+    _tokenByOwner[owner].remove(tokenId);
+    if (_tokenByOwner[owner].size() == 0) {
+      _tokenOwners.remove(owner);
+    }
+
+    reputationMinted[tokenContractAddress][tokenId] = false;
+  }
+
   // Burn token total reputation
   // Owner should revoke all delegated reputation back to his account before performing this action
   function approveBurn(
