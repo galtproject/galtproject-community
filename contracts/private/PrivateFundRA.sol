@@ -33,9 +33,8 @@ contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
 
   IFundRegistry public fundRegistry;
 
-  mapping(address => Checkpoint[]) _cachedBalances;
-  mapping(uint256 => bool) internal _tokensToExpel;
-  Checkpoint[] _cachedTotalSupply;
+  mapping(address => Checkpoint[]) internal _cachedBalances;
+  Checkpoint[] internal _cachedTotalSupply;
 
   function onlyValidToken(address _token) internal view {
     IPPGlobalRegistry ppgr = IPPGlobalRegistry(fundRegistry.getPPGRAddress());

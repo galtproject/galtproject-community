@@ -129,8 +129,8 @@ contract('ExpelFundMemberProposal', accounts => {
         from: coreTeam,
         value: ether(10)
       });
-      this.registry1 = await PPToken.at(res.logs[5].args.token);
-      this.controller1 = await PPTokenController.at(res.logs[5].args.controller);
+      this.registry1 = await PPToken.at(res.logs[7].args.token);
+      this.controller1 = await PPTokenController.at(res.logs[7].args.controller);
 
       await this.registry1.setMinter(minter);
       await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));

@@ -106,22 +106,22 @@ contract('PrivateFundRA', accounts => {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry1 = await PPToken.at(res.logs[5].args.token);
-    this.controller1 = await PPTokenController.at(res.logs[5].args.controller);
+    this.registry1 = await PPToken.at(res.logs[7].args.token);
+    this.controller1 = await PPTokenController.at(res.logs[7].args.controller);
 
     res = await this.ppTokenFactory.build('Land Plots', 'PLT', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry2 = await PPToken.at(res.logs[5].args.token);
-    this.controller2 = await PPTokenController.at(res.logs[5].args.controller);
+    this.registry2 = await PPToken.at(res.logs[7].args.token);
+    this.controller2 = await PPTokenController.at(res.logs[7].args.controller);
 
     res = await this.ppTokenFactory.build('Appartments', 'APS', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry3 = await PPToken.at(res.logs[5].args.token);
-    this.controller3 = await PPTokenController.at(res.logs[5].args.controller);
+    this.registry3 = await PPToken.at(res.logs[7].args.token);
+    this.controller3 = await PPTokenController.at(res.logs[7].args.controller);
 
     await this.registry1.setMinter(minter);
     await this.registry2.setMinter(minter);
