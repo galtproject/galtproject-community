@@ -257,11 +257,11 @@ contract('FundProposalManager', accounts => {
       assert.equal(res, 1);
 
       res = await this.fundStorageX.getActiveFundRules();
-      assert.sameMembers(res.map(int), [0]);
+      assert.sameMembers(res.map(int), [1]);
 
-      res = await this.fundStorageX.fundRules(0);
+      res = await this.fundStorageX.fundRules(1);
       assert.equal(res.active, true);
-      assert.equal(res.id, 0);
+      assert.equal(res.id, 1);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
       assert.equal(res.dataLink, 'Do that');
 
@@ -333,7 +333,7 @@ contract('FundProposalManager', accounts => {
 
       res = await this.fundStorageX.fundRules(ruleId);
       assert.equal(res.active, false);
-      assert.equal(res.id, 0);
+      assert.equal(res.id, 1);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
       assert.equal(res.dataLink, 'Do that');
     });

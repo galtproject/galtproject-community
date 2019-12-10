@@ -51,20 +51,13 @@ interface IAbstractFundStorage {
   function removeProposalMarker(bytes32 _marker) external;
   function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external;
 
-  function addFundRule(
-    bytes32 _ipfsHash,
-    string calldata _dataLink
-  )
-    external
-    returns (uint256);
+  function addFundRule(bytes32 _ipfsHash, string calldata _dataLink) external;
 
   function addFeeContract(address _feeContract) external;
 
   function removeFeeContract(address _feeContract) external;
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external;
-
-  function membersIdentification(address _member) external view returns(bytes32);
 
   function disableFundRule(uint256 _id) external;
 
@@ -91,6 +84,8 @@ interface IAbstractFundStorage {
     external;
 
   // GETTERS
+  function membersIdentification(address _member) external view returns(bytes32);
+
   function getProposalVotingConfig(bytes32 _key) external view returns (uint256 support, uint256 quorum, uint256 timeout);
 
   function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
