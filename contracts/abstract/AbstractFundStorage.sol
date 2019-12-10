@@ -333,10 +333,9 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   )
     external
     onlyRole(ROLE_ADD_FUND_RULE_MANAGER)
-    returns (uint256)
   {
-    uint256 _id = fundRuleCounter.current();
     fundRuleCounter.increment();
+    uint256 _id = fundRuleCounter.current();
 
     FundRule storage fundRule = fundRules[_id];
 
@@ -350,8 +349,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     _activeFundRules.add(_id);
 
     emit AddFundRule(_id);
-
-    return _id;
   }
 
   function disableFundRule(uint256 _id) external onlyRole(ROLE_DEACTIVATE_FUND_RULE_MANAGER) {
