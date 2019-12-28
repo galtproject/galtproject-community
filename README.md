@@ -1,6 +1,6 @@
 # Galt Project Basic Community Contracts (@galtproject/community)
 
-[![pipeline status](https://gitlab.com/galtproject/galtproject-fund-basic/badges/master/pipeline.svg)](https://gitlab.com/galtproject/galtproject-fund-basic/commits/master)
+<a href="https://gitlab.com/galtproject/galtproject-fund-basic/pipelines" targe="_blank"><img alt="pipeline status" src="https://gitlab.com/galtproject/galtproject-fund-basic/badges/master/pipeline.svg" /></a>
 
 [![Contracts Version](https://img.shields.io/badge/version-0.4.0-orange.svg)](https://github.com/galtspace/galtproject-svg)
 [![Telegram Chat](https://img.shields.io/badge/telegram-chat-blue.svg)](https://t.me/galtproject)
