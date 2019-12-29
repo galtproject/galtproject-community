@@ -1,5 +1,5 @@
 
-<p align="center"> <img src="https://raw.githubusercontent.com/galtproject/galtproject-docs/master/images/Artboard25.png" alt="Communities of Property Owners" width="500"/></p>
+<p align="center"> <img src="https://raw.githubusercontent.com/galtproject/galtproject-docs/master/images/Artboard25.png" alt="Communities of Property Owners" width="600"/></p>
 
 <h3 align="center">Galt•Project Community of Property owners Contracts (@galtproject-community)</h3>
 <div align="center">
