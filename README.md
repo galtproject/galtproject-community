@@ -23,7 +23,7 @@
 </div>
 <br/>
 
-**Galt Project is an international decentralized land and real estate property registry governed by DAO (Decentralized autonomous organization) and self-governance protocol for communities of homeowners built on top of Ethereum blockchain.**
+**Galt Project is an international decentralized land and real estate property registry governed by DAO (Decentralized autonomous organization) and self-governance protocol for communities of homeowners built on Ethereum blockchain.**
 
 [@galtproject-community](https://github.com/galtproject/galtproject-community) repo contains smart contracts of Communities of Property Owners.
 
