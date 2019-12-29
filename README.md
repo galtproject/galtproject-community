@@ -1,7 +1,7 @@
 
 <p align="center"> <img src="https://github.com/galtproject/galtproject-docs/blob/master/images/logo-black-1.png" alt="logo-black-360" width="200"/></p>
 
-<h3 align="center">Galt•Project Community of Homeowners Contracts (@galtproject-community)</h3>
+<h3 align="center">Galt•Project Community of Property owners Contracts (@galtproject-community)</h3>
 <div align="center">
 </div>
 
@@ -34,11 +34,11 @@
 At the moment, **[@galtproject-community](https://github.com/galtproject/galtproject-community)** contracts are deployed on the Ethereum mainnet. Nonetheless
 it is still experimental software that has not yet been publicly audited.
 
-You can find Factory of Private Property Reigstries by address: 
+You can find Factory for Communities of Property Owners here: 
 
 :bomb: **Security review status: Internal audit**
 
-Unfortunately, we do not currently have sufficient resources for a full audit of the smart contracts. 
+Unfortunately, we do not currently have sufficient resources for a full external audit of the smart contracts. 
 
 Our team believes that the Galt Project will enable people to transact land and real estate without borders and third parties. As well as creating self-governing communities without corruption and with transparent governance processes. 
 You can contribute to this by checking the code and creating an issue or PR, or by making a small donation to the address of the team **0x98064493535B22F6EbDf475341F0A6DaaBb7b538**.
