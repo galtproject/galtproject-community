@@ -11,7 +11,7 @@
 <img src="https://img.shields.io/github/issues-closed-raw/galtproject/galtproject-community.svg?color=blue&style=flat-square" alt="Closed issues" />
 <img src="https://img.shields.io/github/issues-pr-closed/galtproject/galtproject-community.svg?color=green&style=flat-square" alt="Closed PR"/>
 <img src="https://img.shields.io/github/issues-pr-raw/galtproject/galtproject-community.svg?color=green&style=flat-square" alt="Opened PR"/>
- <img src="https://img.shields.io/badge/version-0.4.0-orange.svg)](https://github.com/galtproject/galtproject-svg" alt="Contracts Version"/>
+ <img src="https://img.shields.io/badge/version-0.12.0-orange.svg" alt="Contracts Version"/>
 </div>
 <br/>
 <br/>
