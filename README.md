@@ -6,7 +6,7 @@
 </div>
 
 <div align="center">
-<a href="https://gitlab.com/galtproject/galtproject-fund-basic/pipelines" targe="_blank"><img alt="pipeline status" src="https://gitlab.com/galtproject/galtproject-fund-basic/badges/master/pipeline.svg" /></a>
+<a href="https://gitlab.com/galtproject/galtproject-community/pipelines" targe="_blank"><img alt="pipeline status" src="https://gitlab.com/galtproject/galtproject-community/badges/master/pipeline.svg" /></a>
 <img src="https://img.shields.io/github/issues-raw/galtproject/galtproject-community.svg?color=green&style=flat-square" alt="Opened issues"/>
 <img src="https://img.shields.io/github/issues-closed-raw/galtproject/galtproject-community.svg?color=blue&style=flat-square" alt="Closed issues" />
 <img src="https://img.shields.io/github/issues-pr-closed/galtproject/galtproject-community.svg?color=green&style=flat-square" alt="Closed PR"/>
@@ -40,7 +40,7 @@ Communities of Property Owners can be as small as an apartment house, or several
 At the moment, **[@galtproject-community](https://github.com/galtproject/galtproject-community)** contracts are deployed on the Ethereum mainnet. Nonetheless
 it is still experimental software that has not yet been publicly audited.
 
-You can find Factory for Communities of Property Owners here: 
+You can find Factory for Communities of Property Owners here: [0x8BEb212D164538D6e2bf9Ea02AFd121AdC888f57](https://etherscan.io/address/0x8BEb212D164538D6e2bf9Ea02AFd121AdC888f57)
 
 :bomb: **Security review status: Internal audit**
 
