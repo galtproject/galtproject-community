@@ -1,5 +1,5 @@
 
-<p align="center"> <img src="https://raw.githubusercontent.com/galtproject/galtproject-docs/master/images/Artboard25.png" alt="Communities of Property Owners" width="600"/></p>
+<p align="center"> <img src="https://raw.githubusercontent.com/galtproject/galtproject-docs/master/whitepaper/images/Artboard25.png" alt="Communities of Property Owners" width="600"/></p>
 
 <h3 align="center">Galt•Project Community of Property owners Contracts (@galtproject-community)</h3>
 <div align="center">
@@ -33,7 +33,7 @@ In fact, the Community is a decentralized autonomous organization (DAO) of Prope
 
 Communities of Property Owners can be as small as an apartment house, or several neighboring houses, or as big as a whole city or region. Imagine a city where all residents (tenants and homeowners) can use their smartphone to raise funds to the budget in ETH or any ERC20, vote on important issues and choose city managers. All operations are performed on smart contracts and therefore cannot be blocked, restricted, or tampered.
 
-:page_with_curl: **For more information read the [Whitepaper](https://github.com/galtproject/galtproject-docs/blob/master/en/Whitepaper.md)**
+:page_with_curl: **For more information read the [Whitepaper](https://github.com/galtproject/galtproject-docs/blob/master/whitepaper/en/Whitepaper.md)**
 
 :construction: **[@galtproject-community](https://github.com/galtproject/galtproject-community) stage: :tada:Ethereum Mainnet:tada:**
 
