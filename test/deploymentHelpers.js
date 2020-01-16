@@ -171,7 +171,7 @@ async function buildFund(
       value
     }
   );
-  // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = getEventArg(res, 'CreateFundFirstStep', 'fundId');
   const fundStorage = await FundStorage.at(getEventArg(res, 'CreateFundFirstStep', 'fundStorage'));
   const fundRegistry = await FundRegistry.at(getEventArg(res, 'CreateFundFirstStep', 'fundRegistry'));
@@ -179,14 +179,14 @@ async function buildFund(
 
   // >>> Step #2
   res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
-  // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await FundController.at(res.logs[0].args.fundController);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
   const fundUpgrader = await FundUpgrader.at(res.logs[0].args.fundUpgrader);
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
-  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
   const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
@@ -235,14 +235,14 @@ async function buildFund(
 
   // >>> Step #4
   res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
-  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
   res = await factory.buildFourthStepDone(fundId, name, dataLink, { from: creator });
-  // console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
+  console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
 
   // >>> Step #5
   res = await factory.buildFifthStep(fundId, initialSpaceTokens, { from: creator });
-  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
 
   return {
     fundRegistry,
@@ -303,22 +303,21 @@ async function buildPrivateFund(
       value
     }
   );
-  // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = getEventArg(res, 'CreateFundFirstStep', 'fundId');
   const fundStorage = await PrivateFundStorage.at(getEventArg(res, 'CreateFundFirstStep', 'fundStorage'));
   const fundRegistry = await FundRegistry.at(getEventArg(res, 'CreateFundFirstStep', 'fundRegistry'));
   const fundACL = await FundACL.at(getEventArg(res, 'CreateFundFirstStep', 'fundACL'));
 
   // >>> Step #2
-  res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
-  // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, {
+    from: creator,
+    gas: 9500000
+  });
+  console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
   const fundController = await PrivateFundController.at(res.logs[0].args.fundController);
   const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
   const fundUpgrader = await FundUpgrader.at(res.logs[0].args.fundUpgrader);
-
-  // >>> Step #3
-  res = await factory.buildThirdStep(fundId, { from: creator });
-  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRA = await MockPrivateFundRA.at(res.logs[0].args.fundRA);
   const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
@@ -365,16 +364,13 @@ async function buildPrivateFund(
 
   markers = await Promise.all(markers);
 
+  // >>> Step #3
+  res = await factory.buildThirdStep(fundId, markers, supports, quorums, timeouts, { from: creator });
+  console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+
   // >>> Step #4
-  res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
-  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
-
-  res = await factory.buildFourthStepDone(fundId, name, dataLink, { from: creator });
-  // console.log('buildFourthStepDone gasUsed', res.receipt.gasUsed);
-
-  // >>> Step #5
-  res = await factory.buildFifthStep(fundId, initialRegistries, initialTokens, { from: creator });
-  // console.log('buildFifthStep gasUsed', res.receipt.gasUsed);
+  res = await factory.buildFourthStep(fundId, name, dataLink, initialRegistries, initialTokens, { from: creator });
+  console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
   return {
     fundRegistry,

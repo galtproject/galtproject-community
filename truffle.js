@@ -30,10 +30,10 @@ const config = {
         total_accounts: 30,
         vmErrorsOnRPCResponse: true,
         default_balance_ether: 5000000,
-        gasLimit: 9000000
+        gasLimit: 9500000
       }),
       skipDryRun: true,
-      gasLimit: 9000000,
+      gasLimit: 9500000,
       network_id: '*'
     }
   },

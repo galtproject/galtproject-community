@@ -40,6 +40,8 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
   event CreateFundSecondStep(
     bytes32 fundId,
+    address fundRA,
+    address fundProposalManager,
     address fundMultiSig,
     address fundController,
     address fundUpgrader
@@ -47,20 +49,10 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
   event CreateFundThirdStep(
     bytes32 fundId,
-    address fundRA,
-    address fundProposalManager
-  );
-
-  event CreateFundFourthStep(
-    bytes32 fundId,
     uint256 thresholdCount
   );
 
-  event CreateFundFourthStepDone(
-    bytes32 fundId
-  );
-
-  event CreateFundFifthStep(
+  event CreateFundFourthStep(
     bytes32 fundId,
     uint256 initialTokenCount
   );
@@ -206,44 +198,24 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     require(c.currentStep == Step.SECOND, "Requires second step");
 
     FundRegistry _fundRegistry = c.fundRegistry;
-
     FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
       _initialMultiSigOwners,
       _initialMultiSigRequired,
       _fundRegistry
     );
     FundUpgrader _fundUpgrader = fundUpgraderFactory.build(_fundRegistry);
+    PrivateFundStorage _fundStorage = c.fundStorage;
+    FundACL _fundACL = c.fundACL;
 
     c.fundMultiSig = _fundMultiSig;
     c.fundController = fundControllerFactory.build(_fundRegistry);
     c.fundUpgrader = _fundUpgrader;
+    c.fundRA = fundRAFactory.build(_fundRegistry);
+    c.fundProposalManager = fundProposalManagerFactory.build(_fundRegistry);
 
     c.fundRegistry.setContract(c.fundRegistry.MULTISIG(), address(_fundMultiSig));
     c.fundRegistry.setContract(c.fundRegistry.CONTROLLER(), address(c.fundController));
     c.fundRegistry.setContract(c.fundRegistry.UPGRADER(), address(_fundUpgrader));
-
-    c.currentStep = Step.THIRD;
-
-    emit CreateFundSecondStep(
-      _fundId,
-      address(_fundMultiSig),
-      address(c.fundController),
-      address(_fundUpgrader)
-    );
-  }
-
-  function buildThirdStep(bytes32 _fundId) external {
-    FundContracts storage c = fundContracts[_fundId];
-    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
-    require(c.currentStep == Step.THIRD, "Requires third step");
-
-    PrivateFundStorage _fundStorage = c.fundStorage;
-    FundRegistry _fundRegistry = c.fundRegistry;
-    FundACL _fundACL = c.fundACL;
-
-    c.fundRA = fundRAFactory.build(_fundRegistry);
-    c.fundProposalManager = fundProposalManagerFactory.build(_fundRegistry);
-
     c.fundRegistry.setContract(c.fundRegistry.RA(), address(c.fundRA));
     c.fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), address(c.fundProposalManager));
 
@@ -277,14 +249,17 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
     c.currentStep = Step.FOURTH;
 
-    emit CreateFundThirdStep(
+    emit CreateFundSecondStep(
       _fundId,
       address(c.fundRA),
-      _fundProposalManager
+      _fundProposalManager,
+      address(_fundMultiSig),
+      address(c.fundController),
+      address(_fundUpgrader)
     );
   }
 
-  function buildFourthStep(
+  function buildThirdStep(
     bytes32 _fundId,
     bytes32[] calldata _markers,
     uint256[] calldata _supportValues,
@@ -313,27 +288,13 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
     c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
-    emit CreateFundFourthStep(_fundId, len);
-  }
-
-  function buildFourthStepDone(bytes32 _fundId, string calldata _name, string calldata _dataLink) external {
-    FundContracts storage c = fundContracts[_fundId];
-    require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
-    require(c.currentStep == Step.FOURTH, "Requires fourth step");
-
-    PrivateFundStorage _fundStorage = c.fundStorage;
-
-    c.fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), true);
-    _fundStorage.setNameAndDataLink(_name, _dataLink);
-    c.fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), false);
-
     c.currentStep = Step.FIFTH;
-
-    emit CreateFundFourthStepDone(_fundId);
+    emit CreateFundThirdStep(_fundId, len);
   }
 
-  function buildFifthStep(
+  function buildFourthStep(
     bytes32 _fundId,
+    string calldata _name, string calldata _dataLink,
     address[] calldata _initialRegistriesToApprove,
     uint256[] calldata _initialTokensToApprove
   )
@@ -344,6 +305,11 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     require(c.currentStep == Step.FIFTH, "Requires fifth step");
 
     PrivateFundStorage _fundStorage = c.fundStorage;
+
+    c.fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), true);
+    _fundStorage.setNameAndDataLink(_name, _dataLink);
+    c.fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), false);
+
     uint256 len = _initialTokensToApprove.length;
 
     c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);
@@ -377,7 +343,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     c.fundRegistry.transferOwnership(owner);
     c.fundACL.transferOwnership(owner);
 
-    emit CreateFundFifthStep(_fundId, len);
+    emit CreateFundFourthStep(_fundId, len);
   }
 
   function getCurrentStep(bytes32 _fundId) external view returns (Step) {
