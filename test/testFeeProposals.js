@@ -61,7 +61,7 @@ contract('Fee Proposals', accounts => {
 
       const feeContract = alice;
       const calldata = this.fundStorageX.contract.methods.addFeeContract(feeContract).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 

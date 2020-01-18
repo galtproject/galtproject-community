@@ -74,9 +74,17 @@ contract('PrivateFundUpgrader', accounts => {
     assert.equal(await this.fundUpgraderX.nextUpgradeScript(), zeroAddress);
 
     const payload = this.fundUpgraderX.contract.methods.setNextUpgradeScript(u1.address).encodeABI();
-    const res = await this.fundProposalManagerX.propose(this.fundUpgraderX.address, 0, payload, 'some data', {
-      from: bob
-    });
+    const res = await this.fundProposalManagerX.propose(
+      this.fundUpgraderX.address,
+      0,
+      false,
+      false,
+      payload,
+      'some data',
+      {
+        from: bob
+      }
+    );
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
     await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
@@ -109,9 +117,17 @@ contract('PrivateFundUpgrader', accounts => {
     assert.equal(await this.fundUpgraderX.nextUpgradeScript(), zeroAddress);
 
     const payload = this.fundUpgraderX.contract.methods.setNextUpgradeScript(u2.address).encodeABI();
-    let res = await this.fundProposalManagerX.propose(this.fundUpgraderX.address, 0, payload, 'some data', {
-      from: bob
-    });
+    let res = await this.fundProposalManagerX.propose(
+      this.fundUpgraderX.address,
+      0,
+      false,
+      false,
+      payload,
+      'some data',
+      {
+        from: bob
+      }
+    );
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
     await this.fundProposalManagerX.aye(proposalId, true, { from: bob });

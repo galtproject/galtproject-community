@@ -45,14 +45,14 @@ contract MockFundProposalManager is FundProposalManager {
   }
 
   function ayeHack(uint256 _proposalId, address _voter) external {
-    _aye(_proposalId, _voter);
+    _aye(_proposalId, _voter, true);
 
     emit AyeProposal(_proposalId, _voter);
   }
 
   function ayeAllHack(uint256 _proposalId, address[] calldata _voters) external {
     for (uint256 i = 0; i < _voters.length; i++) {
-      _aye(_proposalId, _voters[i]);
+      _aye(_proposalId, _voters[i], true);
 
       emit AyeProposal(_proposalId, _voters[i]);
     }

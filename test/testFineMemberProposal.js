@@ -148,7 +148,7 @@ contract('FineFundMemberProposal', accounts => {
       const proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, this.galtToken.address, 350)
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
 
@@ -213,7 +213,7 @@ contract('FineFundMemberProposal', accounts => {
       const proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, ETH_CONTRACT, ether(350))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
 
@@ -306,7 +306,7 @@ contract('FineFundMemberProposal', accounts => {
       let proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, ETH_CONTRACT, ether(350))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
 
@@ -327,7 +327,7 @@ contract('FineFundMemberProposal', accounts => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, this.galtToken.address, ether(450))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       const galtProposalId = res.logs[0].args.proposalId.toString(10);
@@ -347,7 +347,7 @@ contract('FineFundMemberProposal', accounts => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, this.dai.address, ether(550))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       const daiProposalId = res.logs[0].args.proposalId.toString(10);
@@ -367,7 +367,7 @@ contract('FineFundMemberProposal', accounts => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token2, this.galtToken.address, ether(650))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       const anotherGaltProposalId = res.logs[0].args.proposalId.toString(10);
@@ -461,7 +461,7 @@ contract('FineFundMemberProposal', accounts => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, ETH_CONTRACT, ether(150))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       const ethProposal2Id = res.logs[0].args.proposalId.toString(10);

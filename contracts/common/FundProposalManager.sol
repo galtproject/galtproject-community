@@ -93,6 +93,8 @@ contract FundProposalManager is Initializable {
   function propose(
     address _destination,
     uint256 _value,
+    bool _castVote,
+    bool _executesIfDecided,
     bytes calldata _data,
     string calldata _dataLink
   )
@@ -114,20 +116,16 @@ contract FundProposalManager is Initializable {
     _onNewProposal(id);
 
     emit NewProposal(id, msg.sender, p.marker);
+
+    if (_castVote) {
+      _aye(id, msg.sender, _executesIfDecided);
+    }
   }
 
   function aye(uint256 _proposalId, bool _executeIfDecided) external {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
-    _aye(_proposalId, msg.sender);
-
-    (bool canExecuteThis,) = _canExecute(_proposalId);
-
-    // Fail silently without revert
-    if (_executeIfDecided && canExecuteThis) {
-      // We've already checked if the vote can be executed with `_canExecute()`
-      _unsafeExecuteProposal(_proposalId, 0);
-    }
+    _aye(_proposalId, msg.sender, _executeIfDecided);
   }
 
   function nay(uint256 _proposalId) external {
@@ -147,9 +145,10 @@ contract FundProposalManager is Initializable {
 
   // INTERNAL
 
-  function _aye(uint256 _proposalId, address _voter) internal {
+  function _aye(uint256 _proposalId, address _voter, bool _executeIfDecided) internal {
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
+    require(reputation > 0, "Can't vote with 0 reputation");
 
     if (pV.participants[_voter] == Choice.NAY) {
       pV.nays.remove(_voter);
@@ -161,11 +160,20 @@ contract FundProposalManager is Initializable {
     pV.totalAyes = pV.totalAyes.add(reputation);
 
     emit AyeProposal(_proposalId, _voter);
+
+    (bool canExecuteThis,) = _canExecute(_proposalId);
+
+    // Fail silently without revert
+    if (_executeIfDecided && canExecuteThis) {
+      // We've already checked if the vote can be executed with `_canExecute()`
+      _unsafeExecuteProposal(_proposalId, 0);
+    }
   }
 
   function _nay(uint256 _proposalId, address _voter) internal {
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
+    require(reputation > 0, "Can't vote with 0 reputation");
 
     if (pV.participants[_voter] == Choice.AYE) {
       pV.ayes.remove(_voter);

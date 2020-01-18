@@ -59,9 +59,17 @@ contract('Community Apps Proposals', accounts => {
       const calldata = this.fundStorageX.contract.methods
         .addCommunityApp(customContract, hex('custom'), hex('Qm1'), 'dataLink')
         .encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
-        from: bob
-      });
+      const res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 

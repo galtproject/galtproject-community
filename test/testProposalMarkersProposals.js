@@ -62,7 +62,7 @@ contract('Proposal Markers Proposals', accounts => {
       let calldata = this.fundStorageX.contract.methods
         .addProposalMarker(signature, this.galtToken.address, proposalManager, hex('name'), 'dataLink')
         .encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 
@@ -92,7 +92,7 @@ contract('Proposal Markers Proposals', accounts => {
       calldata = this.fundStorageX.contract.methods
         .replaceProposalMarker(marker, newSignature, this.spaceToken.address)
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 

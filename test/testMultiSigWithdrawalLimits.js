@@ -81,7 +81,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
     const calldata = this.fundStorageX.contract.methods
       .setPeriodLimit(true, this.galtToken.address, ether(4000))
       .encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);
@@ -134,7 +134,7 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
     // Limit ETH payments
     const calldata = this.fundStorageX.contract.methods.setPeriodLimit(true, ETH_CONTRACT, ether(4000)).encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);

@@ -131,7 +131,7 @@ contract('NewFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
 
       const calldata = this.fundStorageX.contract.methods.approveMint(token1).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 

@@ -69,9 +69,17 @@ contract('FundProposalManager', accounts => {
           .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
-        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        let res = await this.fundProposalManagerX.propose(
+          this.fundStorageX.address,
+          0,
+          false,
+          false,
+          proposalData,
+          'blah',
+          {
+            from: bob
+          }
+        );
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -90,9 +98,17 @@ contract('FundProposalManager', accounts => {
           .setProposalConfig(marker, ether(42), ether(40), 555)
           .encodeABI();
 
-        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        let res = await this.fundProposalManagerX.propose(
+          this.fundStorageX.address,
+          0,
+          false,
+          false,
+          proposalData,
+          'blah',
+          {
+            from: bob
+          }
+        );
         let timeoutAt = (await web3.eth.getBlock(res.receipt.blockNumber)).timestamp + VotingConfig.ONE_WEEK;
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
@@ -169,9 +185,17 @@ contract('FundProposalManager', accounts => {
         assert.equal(res.minAcceptQuorum, ether(50));
 
         // but the new one has a different requirements
-        res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        res = await this.fundProposalManagerX.propose(
+          this.fundStorageX.address,
+          0,
+          false,
+          false,
+          proposalData,
+          'blah',
+          {
+            from: bob
+          }
+        );
         timeoutAt = (await web3.eth.getBlock(res.receipt.blockNumber)).timestamp + 555;
 
         const newProposalId = res.logs[0].args.proposalId.toString(10);
@@ -196,9 +220,17 @@ contract('FundProposalManager', accounts => {
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
       let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
 
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'hey', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -253,9 +285,17 @@ contract('FundProposalManager', accounts => {
 
       proposalData = this.fundStorageX.contract.methods.disableFundRule(ruleId).encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'obsolete', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'obsolete',
+        {
+          from: bob
+        }
+      );
 
       const removeProposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -315,9 +355,17 @@ contract('FundProposalManager', accounts => {
         .setMultiSigManager(true, alice, 'Alice', 'asdf')
         .encodeABI();
 
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       let pId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
@@ -331,7 +379,7 @@ contract('FundProposalManager', accounts => {
       // approve George
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, george, 'George', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
@@ -357,7 +405,7 @@ contract('FundProposalManager', accounts => {
       // setOwners
       proposalData = this.fundMultiSigX.contract.methods.setOwners([alice, dan, frank, george], 3).encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundMultiSigX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundMultiSigX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
 
@@ -404,7 +452,7 @@ contract('FundProposalManager', accounts => {
       // approve Dan
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, dan, 'Dan', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
@@ -416,7 +464,7 @@ contract('FundProposalManager', accounts => {
       // approve Frank
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, frank, 'Frank', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
@@ -457,9 +505,17 @@ contract('FundProposalManager', accounts => {
       const proposalData = this.fundStorageX.contract.methods
         .setPeriodLimit(true, this.galtToken.address, ether(3000))
         .encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       const pId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });

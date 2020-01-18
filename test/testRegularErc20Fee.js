@@ -146,7 +146,7 @@ contract('Regular ERC20 Fees', accounts => {
   describe('registered contract', () => {
     it('should od this', async function() {
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: alice
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);

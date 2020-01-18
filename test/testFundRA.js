@@ -173,7 +173,7 @@ contract('FundRA', accounts => {
       this.regularEthFee = await RegularEthFee.at(this.feeAddress);
 
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: alice
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
@@ -182,8 +182,6 @@ contract('FundRA', accounts => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 0);
       assert.equal(await this.fundRAX.balanceOf(alice), 800);
 
-      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
       await this.fundProposalManagerX.aye(proposalId, true, { from: alice });
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);

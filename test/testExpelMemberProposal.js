@@ -143,7 +143,7 @@ contract('ExpelFundMemberProposal', accounts => {
 
       // EXPEL
       const proposalData = this.fundStorageX.contract.methods.expel(token1).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: charlie
       });
 
