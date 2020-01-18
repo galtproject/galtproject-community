@@ -32,6 +32,7 @@ contract FundProposalManager is Initializable {
   event NayProposal(uint256 indexed proposalId, address indexed voter);
 
   event Approved(uint256 ayeShare, uint256 support, uint256 indexed proposalId, bytes32 indexed marker);
+  event Execute(uint256 indexed proposalId, address indexed executer, bytes response);
 
   struct ProposalVoting {
     uint256 creationBlock;
@@ -59,25 +60,16 @@ contract FundProposalManager is Initializable {
   }
 
   IFundRegistry public fundRegistry;
-  Counters.Counter internal idCounter;
+  Counters.Counter public idCounter;
 
   mapping(uint256 => Proposal) public proposals;
-  mapping(uint256 => address) private _proposalToSender;
-
-  mapping(bytes32 => ArraySet.Uint256Set) private _activeProposals;
-  mapping(address => mapping(bytes32 => ArraySet.Uint256Set)) private _activeProposalsBySender;
-
-  mapping(bytes32 => uint256[]) private _approvedProposals;
-  mapping(bytes32 => uint256[]) private _rejectedProposals;
-
   mapping(uint256 => ProposalVoting) internal _proposalVotings;
+  mapping(uint256 => address) private _proposalToSender;
 
   enum ProposalStatus {
     NULL,
     ACTIVE,
-    APPROVED,
-    EXECUTED,
-    REJECTED
+    EXECUTED
   }
 
   enum Choice {
@@ -125,10 +117,18 @@ contract FundProposalManager is Initializable {
     emit NewProposal(id, msg.sender, p.marker);
   }
 
-  function aye(uint256 _proposalId) external {
+  function aye(uint256 _proposalId, bool _executeIfDecided) external {
     require(proposals[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
     _aye(_proposalId, msg.sender);
+
+    (bool canExecuteThis,) = _canExecute(_proposalId);
+
+    // Fail silently without revert
+    if (_executeIfDecided && canExecuteThis) {
+      // We've already checked if the vote can be executed with `_canExecute()`
+      _unsafeExecuteProposal(_proposalId, 0);
+    }
   }
 
   function nay(uint256 _proposalId) external {
@@ -137,54 +137,13 @@ contract FundProposalManager is Initializable {
     _nay(_proposalId, msg.sender);
   }
 
-  // permissionLESS
-  function triggerApprove(uint256 _proposalId) external {
-    Proposal storage p = proposals[_proposalId];
-    ProposalVoting storage pv = _proposalVotings[_proposalId];
+  function executeProposal(uint256 _proposalId, uint256 _gasToKeep) external {
+    require(proposals[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
-    // Voting is not executed yet
-    require(p.status == ProposalStatus.ACTIVE, "Proposal isn't active");
+    (bool canExecuteThis, string memory reason) = _canExecute(_proposalId);
+    require(canExecuteThis, reason);
 
-    // Voting timeout has passed
-    require(pv.timeoutAt < block.timestamp, "Timeout hasn't been passed");
-
-    uint256 support = getCurrentSupport(_proposalId);
-
-    // Has enough support?
-    require(support >= pv.requiredSupport, "Support hasn't been reached");
-
-    uint256 ayeShare = getAyeShare(_proposalId);
-
-    // Has min quorum?
-    require(ayeShare >= pv.minAcceptQuorum, "MIN aye quorum hasn't been reached");
-
-    _activeProposals[p.marker].remove(_proposalId);
-    _activeProposalsBySender[_proposalToSender[_proposalId]][p.marker].remove(_proposalId);
-    _approvedProposals[p.marker].push(_proposalId);
-
-    p.status = ProposalStatus.APPROVED;
-    emit Approved(ayeShare, support, _proposalId, p.marker);
-
-    execute(_proposalId);
-  }
-
-  function execute(uint256 _proposalId) public {
-    Proposal storage p = proposals[_proposalId];
-
-    require(p.status == ProposalStatus.APPROVED, "Proposal isn't APPROVED");
-
-    p.status = ProposalStatus.EXECUTED;
-
-    (bool ok, bytes memory response) = address(p.destination)
-    .call
-    .value(p.value)
-    .gas(gasleft().sub(50000))(p.data);
-
-    if (ok == false) {
-      p.status = ProposalStatus.APPROVED;
-    }
-
-    p.response = response;
+    _unsafeExecuteProposal(_proposalId, _gasToKeep);
   }
 
   // INTERNAL
@@ -224,10 +183,6 @@ contract FundProposalManager is Initializable {
   function _onNewProposal(uint256 _proposalId) internal {
     bytes32 marker = proposals[_proposalId].marker;
 
-    _activeProposals[marker].add(_proposalId);
-    _activeProposalsBySender[msg.sender][marker].add(_proposalId);
-    _proposalToSender[_proposalId] = msg.sender;
-
     uint256 blockNumber = block.number.sub(1);
     uint256 totalSupply = _fundRA().totalSupplyAt(blockNumber);
     require(totalSupply > 0, "Total reputation is 0");
@@ -246,6 +201,77 @@ contract FundProposalManager is Initializable {
     pv.minAcceptQuorum = quorum;
   }
 
+  function _unsafeExecuteProposal(uint256 _proposalId, uint256 _gasToKeep) internal {
+    if (_gasToKeep == 0) {
+      _gasToKeep = 100000;
+    }
+
+    Proposal storage p = proposals[_proposalId];
+
+    p.status = ProposalStatus.EXECUTED;
+
+    (bool ok, bytes memory response) = address(p.destination)
+    .call
+    .value(p.value)
+    .gas(gasleft().sub(_gasToKeep))(p.data);
+
+    if (ok == false) {
+      p.status = ProposalStatus.ACTIVE;
+    }
+
+    emit Execute(_proposalId, msg.sender, response);
+  }
+
+  function _canExecute(uint256 _proposalId) internal view returns (bool canExecute, string memory errorReason) {
+    Proposal storage p = proposals[_proposalId];
+    ProposalVoting storage pv = _proposalVotings[_proposalId];
+
+    // Voting is not executed yet
+    if (p.status != ProposalStatus.ACTIVE) {
+      return (false, "Proposal isn't active");
+    }
+
+    // Voting is already decided
+    if (_isValuePct(pv.totalAyes, pv.creationTotalSupply, pv.requiredSupport)) {
+      return (true, "");
+    }
+
+    // Vote ended?
+    if (_isProposalOpen(_proposalId)) {
+      return (false, "Vote is still active");
+    }
+
+    // Has enough support?
+    uint256 support = getCurrentSupport(_proposalId);
+    if (support <= pv.requiredSupport) {
+      return (false, "Support hasn't been reached");
+    }
+
+    // Has min quorum?
+    uint256 ayeShare = getAyeShare(_proposalId);
+    if (ayeShare <= pv.minAcceptQuorum) {
+      return (false, "MIN aye quorum hasn't been reached");
+    }
+
+    return (true, "");
+  }
+
+  function _isValuePct(uint256 _value, uint256 _total, uint256 _pct) internal pure returns (bool) {
+    if (_total == 0) {
+      return false;
+    }
+
+    uint256 computedPct = _value.mul(ONE_HUNDRED_PCT) / _total;
+    return computedPct > _pct;
+  }
+
+  function _isProposalOpen(uint256 _proposalId) internal view returns (bool) {
+    Proposal storage p = proposals[_proposalId];
+    ProposalVoting storage pv = _proposalVotings[_proposalId];
+
+    return block.timestamp < pv.timeoutAt && p.status == ProposalStatus.ACTIVE;
+  }
+
   function _fundStorage() internal view returns (IAbstractFundStorage) {
     return IAbstractFundStorage(fundRegistry.getStorageAddress());
   }
@@ -255,42 +281,6 @@ contract FundProposalManager is Initializable {
   }
 
   // GETTERS
-
-  function getProposalResponseAsErrorString(uint256 _proposalId) public view returns (string memory) {
-    return string(proposals[_proposalId].response);
-  }
-
-  function getActiveProposals(bytes32 _marker) public view returns (uint256[] memory) {
-    return _activeProposals[_marker].elements();
-  }
-
-  function getActiveProposalsCount(bytes32 _marker) public view returns (uint256) {
-    return _activeProposals[_marker].size();
-  }
-
-  function getActiveProposalsBySender(address _sender, bytes32 _marker) external view returns (uint256[] memory) {
-    return _activeProposalsBySender[_sender][_marker].elements();
-  }
-
-  function getActiveProposalsBySenderCount(address _sender, bytes32 _marker) external view returns (uint256) {
-    return _activeProposalsBySender[_sender][_marker].size();
-  }
-
-  function getApprovedProposals(bytes32 _marker) public view returns (uint256[] memory) {
-    return _approvedProposals[_marker];
-  }
-
-  function getApprovedProposalsCount(bytes32 _marker) public view returns (uint256) {
-    return _approvedProposals[_marker].length;
-  }
-
-  function getRejectedProposals(bytes32 _marker) public view returns (uint256[] memory) {
-    return _rejectedProposals[_marker];
-  }
-
-  function getRejectedProposalsCount(bytes32 _marker) public view returns (uint256) {
-    return _rejectedProposals[_marker].length;
-  }
 
   function getProposalVoting(
     uint256 _proposalId
@@ -346,10 +336,6 @@ contract FundProposalManager is Initializable {
       pV.minAcceptQuorum,
       pV.timeoutAt
     );
-  }
-
-  function getParticipantProposalChoice(uint256 _proposalId, address _participant) external view returns (Choice) {
-    return _proposalVotings[_proposalId].participants[_participant];
   }
 
   function reputationOf(address _address, uint256 _blockNumber) public view returns (uint256) {
