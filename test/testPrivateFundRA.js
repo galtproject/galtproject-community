@@ -219,13 +219,9 @@ contract('PrivateFundRA', accounts => {
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: alice });
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: unauthorized });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: alice });
 
       res = await this.fundStorageX.getFeeContracts();
       assert.sameMembers(res, [this.feeAddress]);

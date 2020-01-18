@@ -20,9 +20,7 @@ initHelperWeb3(web3);
 const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
-  APPROVED: 2,
-  EXECUTED: 3,
-  REJECTED: 4
+  EXECUTED: 2
 };
 
 contract('ExpelFundMemberProposal', accounts => {
@@ -156,10 +154,10 @@ contract('ExpelFundMemberProposal', accounts => {
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.dataLink, 'blah');
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: dan });
-      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, false, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, false, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, false, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, false, { from: eve });
 
       res = await this.fundRAX.totalSupply();
       assert.equal(res, 2300); // 300 * 5 + 800
@@ -183,7 +181,7 @@ contract('ExpelFundMemberProposal', accounts => {
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
       // ACCEPT PROPOSAL
-      await this.fundProposalManagerX.triggerApprove(proposalId);
+      await this.fundProposalManagerX.executeProposal(proposalId, 0);
 
       res = await this.fundStorageX.getExpelledToken(token1);
       assert.equal(res.isExpelled, true);

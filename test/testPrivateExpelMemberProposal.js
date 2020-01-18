@@ -15,7 +15,7 @@ PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, evmIncreaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = PPACL;
 const { utf8ToHex } = web3.utils;
@@ -122,7 +122,7 @@ contract('ExpelFundMemberProposal', accounts => {
   });
 
   describe('proposal pipeline', () => {
-    it.only('should allow user who has reputation creating a new proposal', async function() {
+    it('should allow user who has reputation creating a new proposal', async function() {
       let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
         from: coreTeam,
         value: ether(10)
@@ -211,10 +211,10 @@ contract('ExpelFundMemberProposal', accounts => {
       await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
       await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
-      res = await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
       res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
-      assert.equal(res, 100);
+      assert.equal(res, ether(100));
 
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);

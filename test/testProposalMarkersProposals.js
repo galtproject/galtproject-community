@@ -68,17 +68,17 @@ contract('Proposal Markers Proposals', accounts => {
 
       let proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       await assertRevert(
-        this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
-        "Timeout hasn't been passed"
+        this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan }),
+        'Proposal is still active'
       );
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       let markerDetails = await this.fundStorageX.proposalMarkers(marker);
       assert.equal(markerDetails.proposalManager, proposalManager);
@@ -98,12 +98,12 @@ contract('Proposal Markers Proposals', accounts => {
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       markerDetails = await this.fundStorageX.proposalMarkers(newMarker);
       assert.equal(markerDetails.proposalManager, proposalManager);

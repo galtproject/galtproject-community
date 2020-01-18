@@ -12,9 +12,7 @@ initHelperWeb3(web3);
 const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
-  APPROVED: 2,
-  EXECUTED: 3,
-  REJECTED: 4
+  EXECUTED: 2
 };
 
 contract('Fee Proposals', accounts => {
@@ -61,8 +59,6 @@ contract('Fee Proposals', accounts => {
     it('should encode', async function() {
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      const marker = getDestinationMarker(this.fundStorageX, 'addFeeContract');
-
       const feeContract = alice;
       const calldata = this.fundStorageX.contract.methods.addFeeContract(feeContract).encodeABI();
       let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
@@ -71,7 +67,7 @@ contract('Fee Proposals', accounts => {
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
@@ -81,23 +77,16 @@ contract('Fee Proposals', accounts => {
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.ACTIVE);
 
-      res = await this.fundProposalManagerX.getActiveProposals(marker);
-      assert.sameMembers(res.map(int), [1]);
-      res = await this.fundProposalManagerX.getApprovedProposals(marker);
-      assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getRejectedProposals(marker);
-      assert.sameMembers(res.map(int), []);
-
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.ayesShare, ether(20));
       assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
-      await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.aye(proposalId, true, { from: bob }), 'bar');
+      await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan }), 'foo');
 
-      await this.fundProposalManagerX.aye(proposalId, { from: dan });
-      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.ayesShare, ether(60));

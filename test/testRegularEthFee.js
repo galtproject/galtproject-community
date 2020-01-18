@@ -12,7 +12,6 @@ const {
   initHelperWeb3,
   increaseTime,
   hex,
-  evmIncreaseTime
 } = require('./helpers');
 
 const { web3 } = SpaceToken;
@@ -155,13 +154,8 @@ contract('Regular ETH Fees', accounts => {
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: alice });
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       res = await this.fundStorageX.getFeeContracts();
       assert.include(res, this.feeAddress);
@@ -206,13 +200,8 @@ contract('Regular ETH Fees', accounts => {
     });
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
-    await this.fundProposalManagerX.aye(proposalId, { from: bob });
-    await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-    await this.fundProposalManagerX.aye(proposalId, { from: alice });
-
-    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-    await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+    await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+    await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
     res = await this.fundStorageX.getFeeContracts();
     assert.sameMembers(res, [this.feeAddress]);

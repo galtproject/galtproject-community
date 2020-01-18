@@ -65,12 +65,12 @@ contract('Community Apps Proposals', accounts => {
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       communityApps = await this.fundStorageX.getCommunityApps();
       assert.equal(communityApps.length, prevLength + 1);

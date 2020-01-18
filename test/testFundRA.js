@@ -186,13 +186,19 @@ contract('FundRA', accounts => {
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: alice });
+      assert.equal(await this.fundRAX.balanceOf(bob), 0);
+      assert.equal(await this.fundRAX.balanceOf(charlie), 0);
+      assert.equal(await this.fundRAX.balanceOf(alice), 800);
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: alice });
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: unauthorized });
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.currentSupport, '100000000000000000000');
+      assert.equal(res.ayesShare, '100000000000000000000');
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
 
       res = await this.fundStorageX.getFeeContracts();
       assert.sameMembers(res, [this.feeAddress]);
