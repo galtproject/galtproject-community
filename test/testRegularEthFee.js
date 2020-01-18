@@ -5,14 +5,7 @@ const RegularEthFee = artifacts.require('./RegularEthFee.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const {
-  ether,
-  assertRevert,
-  lastBlockTimestamp,
-  initHelperWeb3,
-  increaseTime,
-  hex,
-} = require('./helpers');
+const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, hex } = require('./helpers');
 
 const { web3 } = SpaceToken;
 

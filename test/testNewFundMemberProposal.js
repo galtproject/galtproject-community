@@ -24,7 +24,7 @@ const ProposalStatus = {
 };
 
 contract('NewFundMemberProposal', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement, unauthorized] = accounts;
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement] = accounts;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

@@ -9,7 +9,7 @@ const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, zeroAddress, paymentMethods, evmIncreaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, zeroAddress, paymentMethods } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;

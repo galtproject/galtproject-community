@@ -201,8 +201,9 @@ contract FundProposalManager is Initializable {
   }
 
   function _unsafeExecuteProposal(uint256 _proposalId, uint256 _gasToKeep) internal {
+    uint256 gasToKeep = 0;
     if (_gasToKeep == 0) {
-      _gasToKeep = 100000;
+      gasToKeep = 100000;
     }
 
     Proposal storage p = proposals[_proposalId];
@@ -212,7 +213,7 @@ contract FundProposalManager is Initializable {
     (bool ok, bytes memory response) = address(p.destination)
       .call
       .value(p.value)
-      .gas(gasleft().sub(_gasToKeep))(p.data);
+      .gas(gasleft().sub(gasToKeep))(p.data);
 
     if (ok == false) {
       p.status = ProposalStatus.ACTIVE;

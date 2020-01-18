@@ -14,15 +14,7 @@ SpaceToken.numberFormat = 'String';
 SpaceLocker.numberFormat = 'String';
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const {
-  ether,
-  assertRevert,
-  initHelperWeb3,
-  lastBlockTimestamp,
-  increaseTime,
-  paymentMethods,
-  evmIncreaseTime
-} = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, paymentMethods } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
