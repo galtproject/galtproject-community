@@ -15,7 +15,7 @@ PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, evmIncreaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
 
 const { web3 } = PPACL;
 const { utf8ToHex } = web3.utils;
@@ -26,9 +26,7 @@ initHelperWeb3(web3);
 const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
-  APPROVED: 2,
-  EXECUTED: 3,
-  REJECTED: 4
+  EXECUTED: 2
 };
 
 // 60 * 60
@@ -191,7 +189,7 @@ contract('ExpelFundMemberProposal', accounts => {
 
       // EXPEL
       const proposalData = this.fundStorageX.contract.methods.expel(this.registry1.address, token1).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: charlie
       });
 
@@ -201,11 +199,7 @@ contract('ExpelFundMemberProposal', accounts => {
 
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.dataLink, 'blah');
-
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: dan });
-      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      assert.equal(res.status, ProposalStatus.ACTIVE);
 
       res = await this.fundRAX.totalSupply();
       assert.equal(res, 2300); // 300 * 5 + 800
@@ -213,6 +207,17 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res, 500);
       res = await this.fundRAX.balanceOfAt(bob, block0);
       assert.equal(res, 500);
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+
+      res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
+      assert.equal(res, ether(100));
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
@@ -225,15 +230,6 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.requiredSupport, ether(60));
       assert.equal(res.minAcceptQuorum, ether(50));
-
-      res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
-      assert.equal(res.isExpelled, false);
-      assert.equal(res.amount, 0);
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      // ACCEPT PROPOSAL
-      await this.fundProposalManagerX.triggerApprove(proposalId);
 
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
       assert.equal(res.isExpelled, true);

@@ -54,18 +54,24 @@ contract('Identification Proposals', accounts => {
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const calldata = this.fundStorageX.contract.methods.setMemberIdentification(alice, hex('alice_id')).encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.currentSupport, ether(100));
+      assert.equal(res.ayesShare, ether(40));
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       const aliceId = await this.fundStorageX.membersIdentification(alice);
       assert.equal(fullHex(aliceId), hex('alice_id'));

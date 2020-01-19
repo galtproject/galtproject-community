@@ -5,15 +5,7 @@ const RegularEthFee = artifacts.require('./RegularEthFee.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const {
-  ether,
-  assertRevert,
-  lastBlockTimestamp,
-  initHelperWeb3,
-  increaseTime,
-  hex,
-  evmIncreaseTime
-} = require('./helpers');
+const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, hex } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -150,18 +142,13 @@ contract('Regular ETH Fees', accounts => {
   describe('registered contract', () => {
     it('should od this', async function() {
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: alice
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: alice });
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       res = await this.fundStorageX.getFeeContracts();
       assert.include(res, this.feeAddress);
@@ -201,18 +188,13 @@ contract('Regular ETH Fees', accounts => {
 
   it('should allow any address locking spaceTokens', async function() {
     const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-    let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+    let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
       from: alice
     });
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
-    await this.fundProposalManagerX.aye(proposalId, { from: bob });
-    await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-    await this.fundProposalManagerX.aye(proposalId, { from: alice });
-
-    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-    await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+    await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+    await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
     res = await this.fundStorageX.getFeeContracts();
     assert.sameMembers(res, [this.feeAddress]);

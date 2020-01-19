@@ -62,23 +62,23 @@ contract('Proposal Markers Proposals', accounts => {
       let calldata = this.fundStorageX.contract.methods
         .addProposalMarker(signature, this.galtToken.address, proposalManager, hex('name'), 'dataLink')
         .encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 
       let proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       await assertRevert(
-        this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
-        "Timeout hasn't been passed"
+        this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan }),
+        'Proposal is still active'
       );
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       let markerDetails = await this.fundStorageX.proposalMarkers(marker);
       assert.equal(markerDetails.proposalManager, proposalManager);
@@ -92,18 +92,18 @@ contract('Proposal Markers Proposals', accounts => {
       calldata = this.fundStorageX.contract.methods
         .replaceProposalMarker(marker, newSignature, this.spaceToken.address)
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       markerDetails = await this.fundStorageX.proposalMarkers(newMarker);
       assert.equal(markerDetails.proposalManager, proposalManager);

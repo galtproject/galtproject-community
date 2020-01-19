@@ -14,15 +14,7 @@ SpaceToken.numberFormat = 'String';
 SpaceLocker.numberFormat = 'String';
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const {
-  ether,
-  assertRevert,
-  initHelperWeb3,
-  lastBlockTimestamp,
-  increaseTime,
-  paymentMethods,
-  evmIncreaseTime
-} = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, paymentMethods } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
@@ -181,18 +173,22 @@ contract('FundRA', accounts => {
       this.regularEthFee = await RegularEthFee.at(this.feeAddress);
 
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: alice
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: alice });
+      assert.equal(await this.fundRAX.balanceOf(bob), 0);
+      assert.equal(await this.fundRAX.balanceOf(charlie), 0);
+      assert.equal(await this.fundRAX.balanceOf(alice), 800);
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+      await this.fundProposalManagerX.aye(proposalId, true, { from: alice });
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: unauthorized });
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.currentSupport, '100000000000000000000');
+      assert.equal(res.ayesShare, '100000000000000000000');
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
 
       res = await this.fundStorageX.getFeeContracts();
       assert.sameMembers(res, [this.feeAddress]);

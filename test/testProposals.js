@@ -18,9 +18,7 @@ initHelperWeb3(web3);
 const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
-  APPROVED: 2,
-  EXECUTED: 3,
-  REJECTED: 4
+  EXECUTED: 2
 };
 
 contract('FundProposalManager', accounts => {
@@ -71,9 +69,17 @@ contract('FundProposalManager', accounts => {
           .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
-        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        let res = await this.fundProposalManagerX.propose(
+          this.fundStorageX.address,
+          0,
+          false,
+          false,
+          proposalData,
+          'blah',
+          {
+            from: bob
+          }
+        );
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -92,21 +98,22 @@ contract('FundProposalManager', accounts => {
           .setProposalConfig(marker, ether(42), ether(40), 555)
           .encodeABI();
 
-        let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        let res = await this.fundProposalManagerX.propose(
+          this.fundStorageX.address,
+          0,
+          false,
+          false,
+          proposalData,
+          'blah',
+          {
+            from: bob
+          }
+        );
         let timeoutAt = (await web3.eth.getBlock(res.receipt.blockNumber)).timestamp + VotingConfig.ONE_WEEK;
 
         const proposalId = res.logs[0].args.proposalId.toString(10);
 
-        res = await this.fundProposalManagerX.getActiveProposals(marker);
-        assert.sameMembers(res.map(int), [1]);
-        res = await this.fundProposalManagerX.getApprovedProposals(marker);
-        assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getRejectedProposals(marker);
-        assert.sameMembers(res.map(int), []);
-
-        await this.fundProposalManagerX.aye(proposalId, { from: bob });
+        await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
         await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
         res = await this.fundProposalManagerX.proposals(proposalId);
@@ -127,25 +134,21 @@ contract('FundProposalManager', accounts => {
         assert.equal(res.timeoutAt, timeoutAt);
 
         // Deny double-vote
-        await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }), 'Element already exists');
+        await assertRevert(this.fundProposalManagerX.aye(proposalId, false, { from: bob }), 'Element already exists');
 
         await assertRevert(
-          this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
-          "Timeout hasn't been passed"
+          this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan }),
+          'Proposal is still active'
         );
 
-        await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+        assert.equal(await this.fundRAX.balanceOf(alice), 0);
+        assert.equal(await this.fundRAX.balanceOf(bob), 300);
+        assert.equal(await this.fundRAX.balanceOf(charlie), 300);
+        assert.equal(await this.fundRAX.balanceOf(dan), 300);
+        assert.equal(await this.fundRAX.balanceOf(eve), 300);
 
-        await assertRevert(
-          this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }),
-          "Support hasn't been reached"
-        );
-
-        res = await this.fundProposalManagerX.proposals(proposalId);
-        assert.equal(res.status, ProposalStatus.ACTIVE);
-
-        await this.fundProposalManagerX.aye(proposalId, { from: dan });
-        await this.fundProposalManagerX.aye(proposalId, { from: eve });
+        await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+        await this.fundProposalManagerX.aye(proposalId, false, { from: eve });
 
         res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
         assert.equal(res.ayesShare, ether(60));
@@ -156,7 +159,12 @@ contract('FundProposalManager', accounts => {
         assert.equal(res.requiredSupport, ether(60));
         assert.equal(res.minAcceptQuorum, ether(50));
 
-        await this.fundProposalManagerX.triggerApprove(proposalId);
+        res = await this.fundProposalManagerX.proposals(proposalId);
+        assert.equal(res.status, ProposalStatus.ACTIVE);
+
+        await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
+        await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: george });
 
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -165,13 +173,6 @@ contract('FundProposalManager', accounts => {
         assert.equal(res.support, ether(42));
         assert.equal(res.minAcceptQuorum, ether(40));
         assert.equal(res.timeout, 555);
-
-        res = await this.fundProposalManagerX.getActiveProposals(marker);
-        assert.sameMembers(res.map(int), []);
-        res = await this.fundProposalManagerX.getApprovedProposals(marker);
-        assert.sameMembers(res.map(int), [1]);
-        res = await this.fundProposalManagerX.getRejectedProposals(marker);
-        assert.sameMembers(res.map(int), []);
 
         // doesn't affect already created proposals
         res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
@@ -184,9 +185,17 @@ contract('FundProposalManager', accounts => {
         assert.equal(res.minAcceptQuorum, ether(50));
 
         // but the new one has a different requirements
-        res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-          from: bob
-        });
+        res = await this.fundProposalManagerX.propose(
+          this.fundStorageX.address,
+          0,
+          false,
+          false,
+          proposalData,
+          'blah',
+          {
+            from: bob
+          }
+        );
         timeoutAt = (await web3.eth.getBlock(res.receipt.blockNumber)).timestamp + 555;
 
         const newProposalId = res.logs[0].args.proposalId.toString(10);
@@ -208,18 +217,24 @@ contract('FundProposalManager', accounts => {
     it('should add/deactivate a rule', async function() {
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-      const addFundRuleMarker = getDestinationMarker(this.fundStorageX, 'addFundRule');
-
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
       let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
 
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'hey', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
@@ -234,12 +249,11 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
-      await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
+      await assertRevert(this.fundProposalManagerX.aye(proposalId, true, { from: bob }));
+      await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan }));
 
-      await assertRevert(this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }));
-
-      await this.fundProposalManagerX.aye(proposalId, { from: dan });
-      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.ayesShare, ether(60));
@@ -247,7 +261,7 @@ contract('FundProposalManager', accounts => {
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -269,17 +283,23 @@ contract('FundProposalManager', accounts => {
 
       // >>> deactivate aforementioned proposal
 
-      const disableFundRuleMarker = getDestinationMarker(this.fundStorageX, 'disableFundRule');
-
       proposalData = this.fundStorageX.contract.methods.disableFundRule(ruleId).encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'obsolete', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'obsolete',
+        {
+          from: bob
+        }
+      );
 
       const removeProposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(removeProposalId, { from: bob });
+      await this.fundProposalManagerX.aye(removeProposalId, true, { from: bob });
       await this.fundProposalManagerX.nay(removeProposalId, { from: charlie });
 
       res = await this.fundProposalManagerX.getProposalVoting(removeProposalId);
@@ -294,11 +314,11 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
-      await assertRevert(this.fundProposalManagerX.aye(removeProposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerApprove(removeProposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.aye(removeProposalId, true, { from: bob }));
+      await assertRevert(this.fundProposalManagerX.executeProposal(removeProposalId, 0, { from: dan }));
 
-      await this.fundProposalManagerX.aye(removeProposalId, { from: dan });
-      await this.fundProposalManagerX.aye(removeProposalId, { from: eve });
+      await this.fundProposalManagerX.aye(removeProposalId, true, { from: dan });
+      await this.fundProposalManagerX.aye(removeProposalId, true, { from: eve });
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(removeProposalId);
       assert.equal(res.ayesShare, ether(60));
@@ -306,23 +326,10 @@ contract('FundProposalManager', accounts => {
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(removeProposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(removeProposalId, 0, { from: dan });
 
       res = await this.fundProposalManagerX.proposals(removeProposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
-
-      res = await this.fundProposalManagerX.getActiveProposals(addFundRuleMarker);
-      assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getActiveProposals(disableFundRuleMarker);
-      assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getApprovedProposals(addFundRuleMarker);
-      assert.sameMembers(res.map(int), [1]);
-      res = await this.fundProposalManagerX.getApprovedProposals(disableFundRuleMarker);
-      assert.sameMembers(res.map(int), [2]);
-      res = await this.fundProposalManagerX.getRejectedProposals(addFundRuleMarker);
-      assert.sameMembers(res.map(int), []);
-      res = await this.fundProposalManagerX.getRejectedProposals(disableFundRuleMarker);
-      assert.sameMembers(res.map(int), []);
 
       // verify value changed
       res = await this.fundStorageX.getActiveFundRulesCount();
@@ -348,33 +355,41 @@ contract('FundProposalManager', accounts => {
         .setMultiSigManager(true, alice, 'Alice', 'asdf')
         .encodeABI();
 
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       let pId = res.logs[0].args.proposalId.toString(10);
-      await this.fundProposalManagerX.aye(pId, { from: bob });
-      await this.fundProposalManagerX.aye(pId, { from: charlie });
-      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: bob });
+      await this.fundProposalManagerX.aye(pId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, true, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+      res = await this.fundProposalManagerX.proposals(pId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // approve George
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, george, 'George', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
-      await this.fundProposalManagerX.aye(pId, { from: bob });
-      await this.fundProposalManagerX.aye(pId, { from: charlie });
-      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: bob });
+      await this.fundProposalManagerX.aye(pId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, true, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+      res = await this.fundProposalManagerX.proposals(pId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       res = await this.fundStorageX.multiSigManagers(george);
       assert.equal(res.dataLink, 'asdf');
@@ -387,15 +402,16 @@ contract('FundProposalManager', accounts => {
       assert.equal(required, 2);
       assert.equal(owners.length, 3);
 
+      // setOwners
       proposalData = this.fundMultiSigX.contract.methods.setOwners([alice, dan, frank, george], 3).encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundMultiSigX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundMultiSigX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       await this.fundProposalManagerX.nay(proposalId, { from: charlie });
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
@@ -410,51 +426,57 @@ contract('FundProposalManager', accounts => {
       assert.equal(res.naysShare, ether(20));
 
       // Deny double-vote
-      await assertRevert(this.fundProposalManagerX.aye(proposalId, { from: bob }));
-      await assertRevert(this.fundProposalManagerX.triggerApprove(proposalId, { from: dan }));
+      await assertRevert(this.fundProposalManagerX.aye(proposalId, true, { from: bob }));
+      await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan }));
 
-      await this.fundProposalManagerX.aye(proposalId, { from: dan });
-      await this.fundProposalManagerX.aye(proposalId, { from: eve });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.ayesShare, ether(60));
       assert.equal(res.naysShare, ether(20));
+      assert.equal(res.currentSupport, ether(75));
+      assert.equal(res.ayesShare, ether(60));
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(50));
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      res = await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
+      assert.equal(res.logs[0].args.success, false);
 
       res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.status, ProposalStatus.APPROVED);
+      // failed to execute
+      assert.equal(res.status, ProposalStatus.ACTIVE);
 
       // approve Dan
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, dan, 'Dan', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
-      await this.fundProposalManagerX.aye(pId, { from: bob });
-      await this.fundProposalManagerX.aye(pId, { from: charlie });
-      await this.fundProposalManagerX.aye(pId, { from: dan });
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: bob });
+      await this.fundProposalManagerX.aye(pId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, true, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
       // approve Frank
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, frank, 'Frank', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: bob
       });
       pId = res.logs[0].args.proposalId.toString(10);
-      await this.fundProposalManagerX.aye(pId, { from: bob });
-      await this.fundProposalManagerX.aye(pId, { from: charlie });
-      await this.fundProposalManagerX.aye(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: bob });
+      await this.fundProposalManagerX.aye(pId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, true, { from: dan });
+
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(pId, 0, { from: dan });
 
       // now it's ok
-      await this.fundProposalManagerX.execute(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -483,17 +505,22 @@ contract('FundProposalManager', accounts => {
       const proposalData = this.fundStorageX.contract.methods
         .setPeriodLimit(true, this.galtToken.address, ether(3000))
         .encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, proposalData, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       const pId = res.logs[0].args.proposalId.toString(10);
-      await this.fundProposalManagerX.aye(pId, { from: bob });
-      await this.fundProposalManagerX.aye(pId, { from: charlie });
-      await this.fundProposalManagerX.aye(pId, { from: dan });
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: bob });
+      await this.fundProposalManagerX.aye(pId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(pId, true, { from: dan });
+      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
       limit = await this.fundStorageX.periodLimits(this.galtToken.address);
       assert.equal(limit.active, true);

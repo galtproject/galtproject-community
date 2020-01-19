@@ -59,18 +59,26 @@ contract('Community Apps Proposals', accounts => {
       const calldata = this.fundStorageX.contract.methods
         .addCommunityApp(customContract, hex('custom'), hex('Qm1'), 'dataLink')
         .encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
-        from: bob
-      });
+      const res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: dan });
+      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
 
       communityApps = await this.fundStorageX.getCommunityApps();
       assert.equal(communityApps.length, prevLength + 1);

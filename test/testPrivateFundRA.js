@@ -214,18 +214,12 @@ contract('PrivateFundRA', accounts => {
       this.regularEthFee = await PrivateRegularEthFee.at(this.feeAddress);
 
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: alice
       });
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
-      await this.fundProposalManagerX.aye(proposalId, { from: alice });
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.triggerApprove(proposalId, { from: unauthorized });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: alice });
 
       res = await this.fundStorageX.getFeeContracts();
       assert.sameMembers(res, [this.feeAddress]);

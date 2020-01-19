@@ -9,14 +9,7 @@ const FeeRegistry = artifacts.require('./FeeRegistry.sol');
 const ACL = artifacts.require('./ACL.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const {
-  ether,
-  assertRevert,
-  initHelperWeb3,
-  paymentMethods,
-  getDestinationMarker,
-  evmIncreaseTime
-} = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, paymentMethods, evmIncreaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
@@ -27,13 +20,11 @@ initHelperWeb3(web3);
 const ProposalStatus = {
   NULL: 0,
   ACTIVE: 1,
-  APPROVED: 2,
-  EXECUTED: 3,
-  REJECTED: 4
+  EXECUTED: 2
 };
 
 contract('NewFundMemberProposal', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement, unauthorized] = accounts;
+  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement] = accounts;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
@@ -139,10 +130,8 @@ contract('NewFundMemberProposal', accounts => {
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
 
-      const marker = getDestinationMarker(this.fundStorageX, 'approveMint');
-
       const calldata = this.fundStorageX.contract.methods.approveMint(token1).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
         from: bob
       });
 
@@ -154,27 +143,23 @@ contract('NewFundMemberProposal', accounts => {
       res = await this.fundStorageX.isMintApproved(token1);
       assert.equal(res, false);
 
-      await this.fundProposalManagerX.aye(proposalId, { from: bob });
-      await this.fundProposalManagerX.aye(proposalId, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+
+      res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
+      assert.equal(res, ether(100));
+      res = await this.fundProposalManagerX.getAyeShare(proposalId);
+      assert.equal(res, ether(40));
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.currentSupport, ether(100));
       assert.equal(res.ayesShare, ether(40));
       assert.equal(res.requiredSupport, ether(90));
       assert.equal(res.minAcceptQuorum, ether(30));
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.triggerApprove(proposalId);
-
-      res = await this.fundProposalManagerX.getActiveProposals(marker);
-      assert.deepEqual(res, []);
-      res = await this.fundProposalManagerX.getActiveProposalsCount(marker);
-      assert.equal(res.toString(10), '0');
-
-      res = await this.fundProposalManagerX.getActiveProposalsBySender(unauthorized, marker);
-      assert.deepEqual(res, []);
-      res = await this.fundProposalManagerX.getActiveProposalsBySenderCount(unauthorized, marker);
-      assert.equal(res.toString(10), '0');
+      await this.fundProposalManagerX.executeProposal(proposalId, 0);
 
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);

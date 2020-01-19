@@ -3,7 +3,7 @@ const GaltToken = artifacts.require('./GaltToken.sol');
 const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
 
 const { web3 } = SpaceToken;
 
@@ -46,7 +46,6 @@ contract('MultiSig Withdrawal Limits', accounts => {
       false,
       new VotingConfig(ether(60), ether(60), VotingConfig.ONE_WEEK),
       {},
-      // [60, 50, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 5],
       [bob, charlie, dan],
       2,
       ONE_MONTH
@@ -60,7 +59,6 @@ contract('MultiSig Withdrawal Limits', accounts => {
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
 
-    // this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.beneficiaries = [alice, bob, charlie];
     this.benefeciarSpaceTokens = ['1', '2', '3'];
 
@@ -83,17 +81,12 @@ contract('MultiSig Withdrawal Limits', accounts => {
     const calldata = this.fundStorageX.contract.methods
       .setPeriodLimit(true, this.galtToken.address, ether(4000))
       .encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);
-    await this.fundProposalManagerX.aye(pId, { from: bob });
-    await this.fundProposalManagerX.aye(pId, { from: charlie });
-    await this.fundProposalManagerX.aye(pId, { from: dan });
-
-    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-    await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+    await this.fundProposalManagerX.aye(pId, true, { from: bob });
+    await this.fundProposalManagerX.aye(pId, true, { from: charlie });
 
     const limit = await this.fundStorageX.periodLimits(this.galtToken.address);
     assert.equal(limit.active, true);
@@ -141,17 +134,24 @@ contract('MultiSig Withdrawal Limits', accounts => {
 
     // Limit ETH payments
     const calldata = this.fundStorageX.contract.methods.setPeriodLimit(true, ETH_CONTRACT, ether(4000)).encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, calldata, 'blah', {
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);
-    await this.fundProposalManagerX.aye(pId, { from: bob });
-    await this.fundProposalManagerX.aye(pId, { from: charlie });
-    await this.fundProposalManagerX.aye(pId, { from: dan });
 
-    await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+    assert.equal(await this.fundRAX.balanceOf(bob), 300);
+    assert.equal(await this.fundRAX.balanceOf(charlie), 300);
+    assert.equal(await this.fundRAX.balanceOf(alice), 300);
 
-    await this.fundProposalManagerX.triggerApprove(pId, { from: dan });
+    await this.fundProposalManagerX.aye(pId, true, { from: bob });
+    await this.fundProposalManagerX.nay(pId, { from: charlie });
+    await this.fundProposalManagerX.aye(pId, true, { from: alice });
+
+    res = await this.fundProposalManagerX.getProposalVotingProgress(pId);
+    assert.equal(res.currentSupport, '66666666666666666666');
+    assert.equal(res.ayesShare, '66666666666666666666');
+    assert.equal(res.requiredSupport, ether(60));
+    assert.equal(res.minAcceptQuorum, ether(60));
 
     const limit = await this.fundStorageX.periodLimits(ETH_CONTRACT);
     assert.equal(limit.active, true);
