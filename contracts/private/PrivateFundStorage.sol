@@ -50,14 +50,20 @@ contract PrivateFundStorage is AbstractFundStorage {
       .requireValidToken(_token);
   }
 
-  function approveMint(address _registry, uint256 _tokenId)
+  function approveMintAll(address[] calldata _registries, uint256[] calldata _tokenIds)
     external
     onlyRole(ROLE_NEW_MEMBER_MANAGER)
   {
-    _onlyValidToken(_registry);
-    _mintApprovals[_registry][_tokenId] = true;
+    require(_registries.length == _tokenIds.length, "Array lengths mismatch");
 
-    emit ApproveMint(_registry, _tokenId);
+    uint256 len = _registries.length;
+
+    for (uint256 i = 0; i < len; i++) {
+      _onlyValidToken(_registries[i]);
+      _mintApprovals[_registries[i]][_tokenIds[i]] = true;
+
+      emit ApproveMint(_registries[i], _tokenIds[i]);
+    }
   }
 
   function expel(address _registry, uint256 _tokenId)
