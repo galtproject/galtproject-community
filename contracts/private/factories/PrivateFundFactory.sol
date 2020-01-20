@@ -314,9 +314,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
     c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);
 
-    for (uint i = 0; i < len; i++) {
-      _fundStorage.approveMint(_initialRegistriesToApprove[i], _initialTokensToApprove[i]);
-    }
+    _fundStorage.approveMintAll(_initialRegistriesToApprove, _initialTokensToApprove);
 
     c.fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), false);
 
