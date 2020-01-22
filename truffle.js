@@ -39,7 +39,7 @@ const config = {
   },
   compilers: {
     solc: {
-      version: '0.5.13',
+      version: 'native',
       settings: {
         optimizer: {
           enabled: true,
