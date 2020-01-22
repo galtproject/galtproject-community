@@ -32,7 +32,7 @@ contract FundProposalManager is Initializable {
   event NayProposal(uint256 indexed proposalId, address indexed voter);
 
   event Approved(uint256 ayeShare, uint256 support, uint256 indexed proposalId, bytes32 indexed marker);
-  event Execute(uint256 indexed proposalId, address indexed executer, bool success, bytes response);
+  event Execute(uint256 indexed proposalId, address indexed executer, bool indexed success, bytes response);
 
   struct ProposalVoting {
     uint256 creationBlock;
@@ -352,6 +352,10 @@ contract FundProposalManager is Initializable {
 
   function canExecute(uint256 _proposalId) external view returns (bool can, string memory errorReason) {
     return _canExecute(_proposalId);
+  }
+
+  function getParticipantProposalChoice(uint256 _proposalId, address _participant) external view returns (Choice) {
+    return _proposalVotings[_proposalId].participants[_participant];
   }
 
   function getCurrentSupport(uint256 _proposalId) public view returns (uint256) {
