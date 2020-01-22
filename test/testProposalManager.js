@@ -177,7 +177,7 @@ contract('Proposal Manager', accounts => {
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [charlie]);
 
-      await this.fundProposalManagerX.aye(proposalId, true, {from: bob});
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [charlie, bob]);
 
