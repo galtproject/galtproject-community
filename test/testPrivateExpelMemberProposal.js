@@ -15,7 +15,7 @@ PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3 } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, getEventArg } = require('./helpers');
 
 const { web3 } = PPACL;
 const { utf8ToHex } = web3.utils;
@@ -127,20 +127,20 @@ contract('ExpelFundMemberProposal', accounts => {
         from: coreTeam,
         value: ether(10)
       });
-      this.registry1 = await PPToken.at(res.logs[7].args.token);
-      this.controller1 = await PPTokenController.at(res.logs[7].args.controller);
+      this.registry1 = await PPToken.at(getEventArg(res, 'Build', 'token'));
+      this.controller1 = await PPTokenController.at(getEventArg(res, 'Build', 'controller'));
 
-      await this.registry1.setMinter(minter);
+      await this.controller1.setMinter(minter);
       await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));
 
-      res = await this.registry1.mint(alice, { from: minter });
-      const token1 = res.logs[0].args.privatePropertyId;
+      res = await this.controller1.mint(alice, { from: minter });
+      const token1 = getEventArg(res, 'Mint', 'tokenId');
 
       res = await this.registry1.ownerOf(token1);
       assert.equal(res, alice);
 
       // HACK
-      await this.registry1.setDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: alice });
       res = await this.ppLockerFactory.build({ from: alice });
@@ -188,7 +188,9 @@ contract('ExpelFundMemberProposal', accounts => {
       );
 
       // EXPEL
-      const proposalData = this.fundStorageX.contract.methods.expel(this.registry1.address, token1).encodeABI();
+      const proposalData = this.fundStorageX.contract.methods
+        .expel(this.registry1.address, parseInt(token1, 10))
+        .encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: charlie
       });

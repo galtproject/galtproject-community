@@ -16,7 +16,15 @@ PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, evmIncreaseTime } = require('./helpers');
+const {
+  ether,
+  assertRevert,
+  initHelperWeb3,
+  lastBlockTimestamp,
+  increaseTime,
+  evmIncreaseTime,
+  getEventArg
+} = require('./helpers');
 
 const { web3 } = PPToken;
 const { utf8ToHex } = web3.utils;
@@ -106,38 +114,38 @@ contract('PrivateFundRA', accounts => {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry1 = await PPToken.at(res.logs[7].args.token);
-    this.controller1 = await PPTokenController.at(res.logs[7].args.controller);
+    this.registry1 = await PPToken.at(getEventArg(res, 'Build', 'token'));
+    this.controller1 = await PPTokenController.at(getEventArg(res, 'Build', 'controller'));
 
     res = await this.ppTokenFactory.build('Land Plots', 'PLT', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry2 = await PPToken.at(res.logs[7].args.token);
-    this.controller2 = await PPTokenController.at(res.logs[7].args.controller);
+    this.registry2 = await PPToken.at(getEventArg(res, 'Build', 'token'));
+    this.controller2 = await PPTokenController.at(getEventArg(res, 'Build', 'controller'));
 
     res = await this.ppTokenFactory.build('Appartments', 'APS', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
       from: coreTeam,
       value: ether(10)
     });
-    this.registry3 = await PPToken.at(res.logs[7].args.token);
-    this.controller3 = await PPTokenController.at(res.logs[7].args.controller);
+    this.registry3 = await PPToken.at(getEventArg(res, 'Build', 'token'));
+    this.controller3 = await PPTokenController.at(getEventArg(res, 'Build', 'controller'));
 
-    await this.registry1.setMinter(minter);
-    await this.registry2.setMinter(minter);
-    await this.registry3.setMinter(minter);
+    await this.controller1.setMinter(minter);
+    await this.controller2.setMinter(minter);
+    await this.controller3.setMinter(minter);
 
     await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));
     await this.controller2.setFee(bytes32('LOCKER_ETH'), ether(0.1));
     await this.controller3.setFee(bytes32('LOCKER_ETH'), ether(0.1));
 
     // MINT TOKENS
-    res = await this.registry1.mint(alice, { from: minter });
-    this.token1 = res.logs[0].args.privatePropertyId;
-    res = await this.registry2.mint(bob, { from: minter });
-    this.token2 = res.logs[0].args.privatePropertyId;
-    res = await this.registry3.mint(charlie, { from: minter });
-    this.token3 = res.logs[0].args.privatePropertyId;
+    res = await this.controller1.mint(alice, { from: minter });
+    this.token1 = getEventArg(res, 'Mint', 'tokenId');
+    res = await this.controller2.mint(bob, { from: minter });
+    this.token2 = getEventArg(res, 'Mint', 'tokenId');
+    res = await this.controller3.mint(charlie, { from: minter });
+    this.token3 = getEventArg(res, 'Mint', 'tokenId');
 
     res = await this.registry1.ownerOf(this.token1);
     assert.equal(res, alice);
@@ -147,9 +155,9 @@ contract('PrivateFundRA', accounts => {
     assert.equal(res, charlie);
 
     // HACK
-    await this.registry1.setDetails(this.token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
-    await this.registry2.setDetails(this.token2, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
-    await this.registry3.setDetails(this.token3, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+    await this.controller1.setInitialDetails(this.token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+    await this.controller2.setInitialDetails(this.token2, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+    await this.controller3.setInitialDetails(this.token3, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
 
     // BUILD LOCKERS
     await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: alice });

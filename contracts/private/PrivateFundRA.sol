@@ -13,12 +13,13 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
+import "@galtproject/private-property-registry/contracts/interfaces/IPPRA.sol";
 import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRA.sol";
 import "./traits/PPTokenInputRA.sol";
 
 
-contract PrivateFundRA is IRA, IFundRA, LiquidRA, PPTokenInputRA {
+contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
