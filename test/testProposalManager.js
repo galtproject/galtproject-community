@@ -154,15 +154,12 @@ contract('Proposal Manager', accounts => {
     });
 
     it('should execute script on aye if execute flags are true with enough support', async function() {
-      assert.equal(await this.fundRAX.balanceOf(charlie), 300);
-      assert.equal(await this.fundRAX.delegatedBalanceOf(charlie, charlie), 300);
-      assert.equal(await this.fundRAX.totalSupply(), 1500);
+      assert.equal(await this.fundRAX.balanceOf(bob), 1200);
 
-      await this.fundRAX.delegate(bob, charlie, 200, { from: charlie });
-      await this.fundRAX.delegate(bob, dan, 300, { from: dan });
-      await this.fundRAX.delegate(bob, eve, 300, { from: eve });
+      await this.fundRAX.delegate(charlie, bob, 100, { from: bob });
 
       assert.equal(await this.fundRAX.balanceOf(bob), 1100);
+      assert.equal(await this.fundRAX.balanceOf(charlie), 100);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
