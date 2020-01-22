@@ -152,5 +152,44 @@ contract('Proposal Manager', accounts => {
 
       assert.equal(await this.bar.number(), 42);
     });
+
+    it('should execute script on aye if execute flags are true with enough support', async function() {
+      assert.equal(await this.fundRAX.balanceOf(bob), 1200);
+
+      await this.fundRAX.delegate(charlie, bob, 100, { from: bob });
+
+      assert.equal(await this.fundRAX.balanceOf(bob), 1100);
+      assert.equal(await this.fundRAX.balanceOf(charlie), 100);
+
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        from: charlie
+      });
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [charlie]);
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [charlie, bob]);
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.totalAyes, 1200);
+      assert.equal(res.currentSupport, ether(100));
+      assert.equal(res.ayesShare, ether(80));
+      assert.equal(res.naysShare, ether(0));
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      assert.equal(await this.bar.number(), 42);
+    });
   });
 });

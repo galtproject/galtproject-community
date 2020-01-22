@@ -12,6 +12,10 @@ validate:
 	npm run ethlint
 	npm run eslint
 
+validate-fix:
+	npm run ethlint
+	npm run eslint-fix
+
 only-skip:
 	./scripts/only-skip.sh
 
