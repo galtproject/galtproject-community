@@ -354,6 +354,10 @@ contract FundProposalManager is Initializable {
     return _canExecute(_proposalId);
   }
 
+  function getParticipantProposalChoice(uint256 _proposalId, address _participant) external view returns (Choice) {
+    return _proposalVotings[_proposalId].participants[_participant];
+  }
+
   function getCurrentSupport(uint256 _proposalId) public view returns (uint256) {
     ProposalVoting storage pv = _proposalVotings[_proposalId];
 
