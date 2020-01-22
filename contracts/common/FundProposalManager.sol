@@ -32,7 +32,7 @@ contract FundProposalManager is Initializable {
   event NayProposal(uint256 indexed proposalId, address indexed voter);
 
   event Approved(uint256 ayeShare, uint256 support, uint256 indexed proposalId, bytes32 indexed marker);
-  event Execute(uint256 indexed proposalId, address indexed executer, bool success, bytes response);
+  event Execute(uint256 indexed proposalId, address indexed executer, bool indexed success, bytes response);
 
   struct ProposalVoting {
     uint256 creationBlock;
