@@ -18,9 +18,9 @@
     "ganache-core": "2.8.0",
     "@openzeppelin/contracts": "2.4.0",
     "prettier": "1.19.1",
-    "truffle": "^5.1.2",
+    "truffle": "^5.1.9",
     "typedarray-to-buffer": "^3.1.5",
-    "web3": "^1.2.4"
+    "web3": "1.2.1"
   },
   "repository": "https://github.com/galtproject/galtproject-community",
   "scripts": {
