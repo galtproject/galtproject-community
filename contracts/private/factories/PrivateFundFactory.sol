@@ -60,7 +60,6 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     SECOND,
     THIRD,
     FOURTH,
-    FIFTH,
     DONE
   }
 
@@ -229,7 +228,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
     _fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
 
-    c.currentStep = Step.FOURTH;
+    c.currentStep = Step.THIRD;
 
     emit CreateFundSecondStep(
       _fundId,
@@ -252,7 +251,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
   {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
-    require(c.currentStep == Step.FOURTH, "Requires fourth step");
+    require(c.currentStep == Step.THIRD, "Requires third step");
 
     uint256 len = _markers.length;
     require(
@@ -271,7 +270,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
 
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
-    c.currentStep = Step.FIFTH;
+    c.currentStep = Step.FOURTH;
     emit CreateFundThirdStep(_fundId, len);
   }
 
@@ -285,7 +284,7 @@ contract PrivateFundFactory is Ownable, ChargesFee {
   {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
-    require(c.currentStep == Step.FIFTH, "Requires fifth step");
+    require(c.currentStep == Step.FOURTH, "Requires fourth step");
 
     PrivateFundStorage _fundStorage = PrivateFundStorage(c.fundRegistry.getStorageAddress());
     IACL _fundACL = c.fundRegistry.getACL();
