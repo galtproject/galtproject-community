@@ -21,8 +21,8 @@ contract MockFundFactory is FundFactory {
     FundStorageFactory _fundStorageFactory,
     FundControllerFactory _fundControllerFactory,
     FundProposalManagerFactory _fundProposalManagerFactory,
-    FundRegistryFactory _fundRegistryFactory,
-    FundACLFactory _fundACLFactory,
+    FundBareFactory _fundRegistryFactory,
+    FundBareFactory _fundACLFactory,
     FundUpgraderFactory _fundUpgraderFactory
   )
     public
@@ -39,10 +39,4 @@ contract MockFundFactory is FundFactory {
     )
   {
   }
-
-//  function hackAddRoleManagerRole(bytes32 _fundId, address _addRoleTo) external {
-//    FundContracts storage c = fundContracts[_fundId];
-//
-//    c.fundStorage.addRoleTo(_addRoleTo, c.fundStorage.ROLE_ROLE_MANAGER());
-//  }
 }

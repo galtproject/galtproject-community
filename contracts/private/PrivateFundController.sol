@@ -15,7 +15,7 @@ import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRegistry.sol";
 
 
-contract PrivateFundController {
+contract PrivateFundController is Initializable {
   using SafeERC20 for IERC20;
 
   enum Currency {
@@ -27,9 +27,10 @@ contract PrivateFundController {
 
   IFundRegistry public fundRegistry;
 
-  constructor (
-    IFundRegistry _fundRegistry
-  ) public {
+  constructor() public {
+  }
+
+  function initialize(IFundRegistry _fundRegistry) external isInitializer {
     fundRegistry = _fundRegistry;
   }
 

@@ -10,16 +10,12 @@
 pragma solidity ^0.5.13;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxy.sol";
-import "../../common/interfaces/IFundRegistry.sol";
-
-// This contract will be included into the current one
-import "../PrivateFundStorage.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
 
-contract PrivateFundStorageFactory {
+contract FundBareFactory {
   address public implementation;
   IOwnedUpgradeabilityProxyFactory internal ownedUpgradeabilityProxyFactory;
 
@@ -28,34 +24,36 @@ contract PrivateFundStorageFactory {
     implementation = _impl;
   }
 
-  function build(
-    IFundRegistry _globalRegistry,
-    bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength
-  )
+  function build()
     external
-    returns (PrivateFundStorage)
+    returns (address)
+  {
+    return _build(address(this), true, true);
+  }
+
+  function build(address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+    external
+    returns (address)
+  {
+    return _build(_addressArgument, _transferOwnership, _transferProxyOwnership);
+  }
+
+  function _build(address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+    internal
+    returns (address)
   {
     IOwnedUpgradeabilityProxy proxy = ownedUpgradeabilityProxyFactory.build();
 
-    proxy.upgradeToAndCall(
-      implementation,
-      abi.encodeWithSignature(
-        "initialize(address,bool,uint256,uint256,uint256,uint256)",
-        _globalRegistry,
-        _isPrivate,
-        _defaultProposalSupport,
-        _defaultProposalQuorum,
-        _defaultProposalTimeout,
-        _periodLength
-      )
-    );
+    proxy.upgradeToAndCall(implementation, abi.encodeWithSignature("initialize(address)", _addressArgument));
 
-    proxy.transferProxyOwnership(msg.sender);
+    if (_transferOwnership == true) {
+      Ownable(address(proxy)).transferOwnership(msg.sender);
+    }
 
-    return PrivateFundStorage(address(proxy));
+    if (_transferProxyOwnership == true) {
+      proxy.transferProxyOwnership(msg.sender);
+    }
+
+    return address(proxy);
   }
 }

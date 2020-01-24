@@ -24,9 +24,8 @@ import "./FundStorageFactory.sol";
 import "./FundControllerFactory.sol";
 import "../../common/factories/FundMultiSigFactory.sol";
 import "../../common/factories/FundProposalManagerFactory.sol";
-import "../../common/factories/FundACLFactory.sol";
-import "../../common/factories/FundRegistryFactory.sol";
 import "../../common/factories/FundUpgraderFactory.sol";
+import "../../common/factories/FundBareFactory.sol";
 
 
 contract FundFactory is Ownable {
@@ -83,7 +82,7 @@ contract FundFactory is Ownable {
     address operator;
     Step currentStep;
     FundRegistry fundRegistry;
-    FundACL fundACL;
+    IACL fundACL;
     FundRA fundRA;
     FundMultiSig fundMultiSig;
     FundStorage fundStorage;
@@ -105,8 +104,8 @@ contract FundFactory is Ownable {
   FundMultiSigFactory internal fundMultiSigFactory;
   FundControllerFactory internal fundControllerFactory;
   FundProposalManagerFactory internal fundProposalManagerFactory;
-  FundACLFactory internal fundACLFactory;
-  FundRegistryFactory public fundRegistryFactory;
+  FundBareFactory internal fundACLFactory;
+  FundBareFactory public fundRegistryFactory;
   FundUpgraderFactory public fundUpgraderFactory;
 
   mapping(bytes32 => FundContracts) public fundContracts;
@@ -129,8 +128,8 @@ contract FundFactory is Ownable {
     FundStorageFactory _fundStorageFactory,
     FundControllerFactory _fundControllerFactory,
     FundProposalManagerFactory _fundProposalManagerFactory,
-    FundRegistryFactory _fundRegistryFactory,
-    FundACLFactory _fundACLFactory,
+    FundBareFactory _fundRegistryFactory,
+    FundBareFactory _fundACLFactory,
     FundUpgraderFactory _fundUpgraderFactory
   ) public {
     fundControllerFactory = _fundControllerFactory;
@@ -189,8 +188,8 @@ contract FundFactory is Ownable {
 
     _acceptPayment();
 
-    FundRegistry fundRegistry = fundRegistryFactory.build();
-    FundACL fundACL = fundACLFactory.build();
+    FundRegistry fundRegistry = FundRegistry(fundRegistryFactory.build());
+    IACL fundACL = IACL(fundACLFactory.build());
 
     FundStorage fundStorage = fundStorageFactory.build(
       fundRegistry,
@@ -257,7 +256,7 @@ contract FundFactory is Ownable {
 
     FundStorage _fundStorage = c.fundStorage;
     FundRegistry _fundRegistry = c.fundRegistry;
-    FundACL _fundACL = c.fundACL;
+    IACL _fundACL = c.fundACL;
 
     c.fundRA = fundRAFactory.build(_fundRegistry);
     c.fundProposalManager = fundProposalManagerFactory.build(_fundRegistry);
@@ -387,7 +386,7 @@ contract FundFactory is Ownable {
     IOwnedUpgradeabilityProxy(address(c.fundRA)).transferProxyOwnership(owner);
 
     c.fundRegistry.transferOwnership(owner);
-    c.fundACL.transferOwnership(owner);
+    Ownable(address(c.fundACL)).transferOwnership(owner);
 
     emit CreateFundFifthStep(_fundId, len);
   }

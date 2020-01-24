@@ -264,7 +264,7 @@ contract('PrivateFundRA', accounts => {
       assert.equal(await this.registry1.exists(this.token1), false);
     });
 
-    it('should burn reputation if the token owner has sufficient balance', async function() {
+    it.only('should burn reputation if the token owner has sufficient balance', async function() {
       await this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized });
       await assertRevert(this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized }));
     });
