@@ -28,23 +28,30 @@ contract FundBareFactory {
     external
     returns (address)
   {
-    return _build(address(this), true, true);
+    return _build("initialize(address)", address(this), true, true);
   }
 
   function build(address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
     external
     returns (address)
   {
-    return _build(_addressArgument, _transferOwnership, _transferProxyOwnership);
+    return _build("initialize(address)", _addressArgument, _transferOwnership, _transferProxyOwnership);
   }
 
-  function _build(address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+  function build(string calldata _signature, address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+    external
+    returns (address)
+  {
+    return _build(_signature, _addressArgument, _transferOwnership, _transferProxyOwnership);
+  }
+
+  function _build(string memory _signature, address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
     internal
     returns (address)
   {
     IOwnedUpgradeabilityProxy proxy = ownedUpgradeabilityProxyFactory.build();
 
-    proxy.upgradeToAndCall(implementation, abi.encodeWithSignature("initialize(address)", _addressArgument));
+    proxy.upgradeToAndCall(implementation, abi.encodeWithSignature(_signature, _addressArgument));
 
     if (_transferOwnership == true) {
       Ownable(address(proxy)).transferOwnership(msg.sender);

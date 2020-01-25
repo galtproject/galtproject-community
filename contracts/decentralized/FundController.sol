@@ -11,12 +11,13 @@ pragma solidity ^0.5.13;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../common/interfaces/IFundRegistry.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 import "./FundStorage.sol";
 
 
-contract FundController {
+contract FundController is Initializable {
   using SafeERC20 for IERC20;
 
   enum Currency {
@@ -28,9 +29,10 @@ contract FundController {
 
   IFundRegistry public fundRegistry;
 
-  constructor (
-    IFundRegistry _fundRegistry
-  ) public {
+  constructor() public {
+  }
+
+  function initialize(IFundRegistry _fundRegistry) external isInitializer {
     fundRegistry = _fundRegistry;
   }
 

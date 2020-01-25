@@ -11,6 +11,7 @@ pragma solidity ^0.5.13;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRegistry.sol";
 

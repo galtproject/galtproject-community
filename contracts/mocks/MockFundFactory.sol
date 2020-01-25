@@ -16,14 +16,14 @@ contract MockFundFactory is FundFactory {
 
   constructor (
     GaltGlobalRegistry _ggr,
-    FundRAFactory _fundRAFactory,
+    FundBareFactory _fundRAFactory,
     FundMultiSigFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
-    FundControllerFactory _fundControllerFactory,
-    FundProposalManagerFactory _fundProposalManagerFactory,
+    FundBareFactory _fundControllerFactory,
+    FundBareFactory _fundProposalManagerFactory,
     FundBareFactory _fundRegistryFactory,
     FundBareFactory _fundACLFactory,
-    FundUpgraderFactory _fundUpgraderFactory
+    FundBareFactory _fundUpgraderFactory
   )
     public
     FundFactory(

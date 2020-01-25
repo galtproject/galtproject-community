@@ -22,7 +22,7 @@ contract MockBar {
   }
 
   function revert() external {
-    revert();
+    revert("ಠ_ಠ");
   }
 
   function revertWithMessage() external {

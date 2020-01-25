@@ -18,13 +18,11 @@ import "../FundController.sol";
 import "../../common/FundRegistry.sol";
 import "../../common/FundACL.sol";
 import "../../common/FundProposalManager.sol";
+import "../FundRA.sol";
+import "../../common/FundUpgrader.sol";
 
-import "./FundRAFactory.sol";
 import "./FundStorageFactory.sol";
-import "./FundControllerFactory.sol";
 import "../../common/factories/FundMultiSigFactory.sol";
-import "../../common/factories/FundProposalManagerFactory.sol";
-import "../../common/factories/FundUpgraderFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 
 
@@ -99,14 +97,14 @@ contract FundFactory is Ownable {
 
   GaltGlobalRegistry internal ggr;
 
-  FundRAFactory internal fundRAFactory;
+  FundBareFactory internal fundRAFactory;
   FundStorageFactory internal fundStorageFactory;
   FundMultiSigFactory internal fundMultiSigFactory;
-  FundControllerFactory internal fundControllerFactory;
-  FundProposalManagerFactory internal fundProposalManagerFactory;
+  FundBareFactory internal fundControllerFactory;
+  FundBareFactory internal fundProposalManagerFactory;
   FundBareFactory internal fundACLFactory;
   FundBareFactory public fundRegistryFactory;
-  FundUpgraderFactory public fundUpgraderFactory;
+  FundBareFactory public fundUpgraderFactory;
 
   mapping(bytes32 => FundContracts) public fundContracts;
 
@@ -123,14 +121,14 @@ contract FundFactory is Ownable {
 
   constructor (
     GaltGlobalRegistry _ggr,
-    FundRAFactory _fundRAFactory,
+    FundBareFactory _fundRAFactory,
     FundMultiSigFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
-    FundControllerFactory _fundControllerFactory,
-    FundProposalManagerFactory _fundProposalManagerFactory,
+    FundBareFactory _fundControllerFactory,
+    FundBareFactory _fundProposalManagerFactory,
     FundBareFactory _fundRegistryFactory,
     FundBareFactory _fundACLFactory,
-    FundUpgraderFactory _fundUpgraderFactory
+    FundBareFactory _fundUpgraderFactory
   ) public {
     fundControllerFactory = _fundControllerFactory;
     fundStorageFactory = _fundStorageFactory;
@@ -189,7 +187,7 @@ contract FundFactory is Ownable {
     _acceptPayment();
 
     FundRegistry fundRegistry = FundRegistry(fundRegistryFactory.build());
-    IACL fundACL = IACL(fundACLFactory.build());
+    FundACL fundACL = FundACL(fundACLFactory.build());
 
     FundStorage fundStorage = fundStorageFactory.build(
       fundRegistry,
@@ -222,30 +220,31 @@ contract FundFactory is Ownable {
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.SECOND, "Requires second step");
 
-    FundRegistry _fundRegistry = c.fundRegistry;
+    FundRegistry fundRegistry = c.fundRegistry;
 
     FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
       _initialMultiSigOwners,
       _initialMultiSigRequired,
-      _fundRegistry
+      fundRegistry
     );
-    FundUpgrader _fundUpgrader = fundUpgraderFactory.build(_fundRegistry);
 
-    c.fundMultiSig = _fundMultiSig;
-    c.fundController = fundControllerFactory.build(_fundRegistry);
-    c.fundUpgrader = _fundUpgrader;
+    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
+    address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
 
-    c.fundRegistry.setContract(c.fundRegistry.MULTISIG(), address(_fundMultiSig));
-    c.fundRegistry.setContract(c.fundRegistry.CONTROLLER(), address(c.fundController));
-    c.fundRegistry.setContract(c.fundRegistry.UPGRADER(), address(_fundUpgrader));
+    fundRegistry.setContract(c.fundRegistry.MULTISIG(), address(_fundMultiSig));
+    fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
+    fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
 
     c.currentStep = Step.THIRD;
+    c.fundMultiSig = _fundMultiSig;
+    c.fundUpgrader = FundUpgrader(_fundUpgrader);
+    c.fundController = FundController(_fundController);
 
     emit CreateFundSecondStep(
       _fundId,
       address(_fundMultiSig),
-      address(c.fundController),
-      address(_fundUpgrader)
+      _fundController,
+      _fundUpgrader
     );
   }
 
@@ -255,16 +254,14 @@ contract FundFactory is Ownable {
     require(c.currentStep == Step.THIRD, "Requires third step");
 
     FundStorage _fundStorage = c.fundStorage;
-    FundRegistry _fundRegistry = c.fundRegistry;
+    FundRegistry fundRegistry = c.fundRegistry;
     IACL _fundACL = c.fundACL;
 
-    c.fundRA = fundRAFactory.build(_fundRegistry);
-    c.fundProposalManager = fundProposalManagerFactory.build(_fundRegistry);
+    address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), false, true);
+    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), false, true);
 
-    c.fundRegistry.setContract(c.fundRegistry.RA(), address(c.fundRA));
-    c.fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), address(c.fundProposalManager));
-
-    address _fundProposalManager = address(c.fundProposalManager);
+    fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
+    fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
 
     _fundACL.setRole(_fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
@@ -283,9 +280,9 @@ contract FundFactory is Ownable {
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), address(c.fundController), true);
-    _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), address(c.fundRA), true);
+    _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), address(c.fundMultiSig), true);
-    _fundACL.setRole(c.fundUpgrader.ROLE_UPGRADE_SCRIPT_MANAGER(), address(c.fundProposalManager), true);
+    _fundACL.setRole(c.fundUpgrader.ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(c.fundMultiSig.ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
@@ -293,10 +290,12 @@ contract FundFactory is Ownable {
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
 
     c.currentStep = Step.FOURTH;
+    c.fundRA = FundRA(_fundRA);
+    c.fundProposalManager = FundProposalManager(_fundProposalManager);
 
     emit CreateFundThirdStep(
       _fundId,
-      address(c.fundRA),
+      _fundRA,
       _fundProposalManager
     );
   }
