@@ -51,6 +51,17 @@ contract PrivateFundFactory is ChargesFee {
   event EthFeeWithdrawal(address indexed collector, uint256 amount);
   event GaltFeeWithdrawal(address indexed collector, uint256 amount);
 
+  event SetSubFactoryAddresses(
+    FundBareFactory fundRAFactory,
+    FundBareFactory fundMultiSigFactory,
+    PrivateFundStorageFactory fundStorageFactory,
+    FundBareFactory fundControllerFactory,
+    FundBareFactory fundProposalManagerFactory,
+    FundBareFactory fundRegistryFactory,
+    FundBareFactory fundACLFactory,
+    FundBareFactory fundUpgraderFactory
+  );
+
   enum Step {
     FIRST,
     SECOND,
@@ -69,14 +80,14 @@ contract PrivateFundFactory is ChargesFee {
 
   IPPGlobalRegistry internal globalRegistry;
 
-  FundBareFactory internal fundRAFactory;
-  PrivateFundStorageFactory internal fundStorageFactory;
-  FundBareFactory internal fundMultiSigFactory;
-  FundBareFactory internal fundControllerFactory;
-  FundBareFactory internal fundProposalManagerFactory;
-  FundBareFactory internal fundACLFactory;
-  FundBareFactory internal fundRegistryFactory;
-  FundBareFactory internal fundUpgraderFactory;
+  FundBareFactory public fundRAFactory;
+  PrivateFundStorageFactory public fundStorageFactory;
+  FundBareFactory public fundMultiSigFactory;
+  FundBareFactory public fundControllerFactory;
+  FundBareFactory public fundProposalManagerFactory;
+  FundBareFactory public fundACLFactory;
+  FundBareFactory public fundRegistryFactory;
+  FundBareFactory public fundUpgraderFactory;
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
@@ -112,6 +123,8 @@ contract PrivateFundFactory is ChargesFee {
     globalRegistry = _globalRegistry;
   }
 
+  // OWNER INTERFACE
+
   // All the arguments don't fit into a stack limit of constructor,
   // so there is one more method for initialization
   function initialize(bytes4[] calldata _proposalMarkersSignatures, bytes32[] calldata _proposalMarkersNames)
@@ -125,6 +138,42 @@ contract PrivateFundFactory is ChargesFee {
     proposalMarkersSignatures = _proposalMarkersSignatures;
     proposalMarkersNames = _proposalMarkersNames;
   }
+
+  function setSubFactoryAddresses (
+    FundBareFactory _fundRAFactory,
+    FundBareFactory _fundMultiSigFactory,
+    PrivateFundStorageFactory _fundStorageFactory,
+    FundBareFactory _fundControllerFactory,
+    FundBareFactory _fundProposalManagerFactory,
+    FundBareFactory _fundRegistryFactory,
+    FundBareFactory _fundACLFactory,
+    FundBareFactory _fundUpgraderFactory
+  )
+    external
+    onlyOwner
+  {
+    fundControllerFactory = _fundControllerFactory;
+    fundStorageFactory = _fundStorageFactory;
+    fundMultiSigFactory = _fundMultiSigFactory;
+    fundRAFactory = _fundRAFactory;
+    fundProposalManagerFactory = _fundProposalManagerFactory;
+    fundRegistryFactory = _fundRegistryFactory;
+    fundACLFactory = _fundACLFactory;
+    fundUpgraderFactory = _fundUpgraderFactory;
+
+    emit SetSubFactoryAddresses(
+      _fundRAFactory,
+      _fundMultiSigFactory,
+      _fundStorageFactory,
+      _fundControllerFactory,
+      _fundProposalManagerFactory,
+      _fundRegistryFactory,
+      _fundACLFactory,
+      _fundUpgraderFactory
+    );
+  }
+
+  // USER INTERFACE
 
   function buildFirstStep(
     address operator,
