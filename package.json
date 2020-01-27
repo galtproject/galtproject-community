@@ -9,7 +9,7 @@
     "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#abdde6d",
     "@galtproject/eslint-config-galt": "1.1.0",
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#8d59d9a",
-    "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#f381a12",
+    "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#41d79b1",
     "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest",
     "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#ab45b1b",
     "@galtproject/utils": "^0.9.1",
