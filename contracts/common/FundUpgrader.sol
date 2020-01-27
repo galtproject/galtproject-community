@@ -9,6 +9,7 @@
 
 pragma solidity ^0.5.13;
 
+import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxy.sol";
 import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "./interfaces/IFundRegistry.sol";
 
@@ -23,6 +24,7 @@ contract FundUpgrader is Initializable {
   event UpgradeFailed(bytes result);
 
   bytes32 public constant ROLE_UPGRADE_SCRIPT_MANAGER = bytes32("upgrade_script_manager");
+  bytes32 public constant ROLE_IMPL_UPGRADE_MANAGER = bytes32("impl_upgrade_manager");
 
   IFundRegistry public fundRegistry;
 
@@ -34,11 +36,32 @@ contract FundUpgrader is Initializable {
     _;
   }
 
+  modifier onlyImplUpgradeManager() {
+    require(fundRegistry.getACL().hasRole(msg.sender, ROLE_UPGRADE_SCRIPT_MANAGER), "Invalid role");
+
+    _;
+  }
+
   constructor() public {
   }
 
   function initialize(IFundRegistry _fundRegistry) external isInitializer {
     fundRegistry = _fundRegistry;
+  }
+
+  function upgradeImplementationTo(address _proxy, address _implementation) external onlyImplUpgradeManager {
+    IOwnedUpgradeabilityProxy(_proxy).upgradeTo(_implementation);
+  }
+
+  function upgradeImplementationToAndCall(
+    address _proxy,
+    address _implementation,
+    bytes calldata _data
+  )
+    external
+    onlyImplUpgradeManager
+  {
+    IOwnedUpgradeabilityProxy(_proxy).upgradeToAndCall(_implementation, _data);
   }
 
   function setNextUpgradeScript(address _nextUpgadeScript) external onlyUpgradeScriptManager {
