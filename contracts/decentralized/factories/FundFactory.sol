@@ -22,7 +22,6 @@ import "../FundRA.sol";
 import "../../common/FundUpgrader.sol";
 
 import "./FundStorageFactory.sol";
-import "../../common/factories/FundMultiSigFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 
 
@@ -99,7 +98,7 @@ contract FundFactory is Ownable {
 
   FundBareFactory internal fundRAFactory;
   FundStorageFactory internal fundStorageFactory;
-  FundMultiSigFactory internal fundMultiSigFactory;
+  FundBareFactory internal fundMultiSigFactory;
   FundBareFactory internal fundControllerFactory;
   FundBareFactory internal fundProposalManagerFactory;
   FundBareFactory internal fundACLFactory;
@@ -122,7 +121,7 @@ contract FundFactory is Ownable {
   constructor (
     GaltGlobalRegistry _ggr,
     FundBareFactory _fundRAFactory,
-    FundMultiSigFactory _fundMultiSigFactory,
+    FundBareFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
     FundBareFactory _fundControllerFactory,
     FundBareFactory _fundProposalManagerFactory,
@@ -222,27 +221,33 @@ contract FundFactory is Ownable {
 
     FundRegistry fundRegistry = c.fundRegistry;
 
-    FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
-      _initialMultiSigOwners,
-      _initialMultiSigRequired,
-      fundRegistry
+    address _fundMultiSigNonPayable = fundMultiSigFactory.build(
+      abi.encodeWithSignature(
+        "initialize(address[],uint256,address)",
+        _initialMultiSigOwners,
+        _initialMultiSigRequired,
+        address(fundRegistry)
+      ),
+      false,
+      true
     );
+    address payable _fundMultiSig = address(uint160(_fundMultiSigNonPayable));
 
     address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
     address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
 
-    fundRegistry.setContract(c.fundRegistry.MULTISIG(), address(_fundMultiSig));
+    fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
     fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
 
     c.currentStep = Step.THIRD;
-    c.fundMultiSig = _fundMultiSig;
+    c.fundMultiSig = FundMultiSig(_fundMultiSig);
     c.fundUpgrader = FundUpgrader(_fundUpgrader);
     c.fundController = FundController(_fundController);
 
     emit CreateFundSecondStep(
       _fundId,
-      address(_fundMultiSig),
+      _fundMultiSig,
       _fundController,
       _fundUpgrader
     );

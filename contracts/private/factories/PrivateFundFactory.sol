@@ -17,7 +17,6 @@ import "../../common/FundRegistry.sol";
 import "../../common/FundUpgrader.sol";
 
 import "./PrivateFundStorageFactory.sol";
-import "../../common/factories/FundMultiSigFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 
 
@@ -72,7 +71,7 @@ contract PrivateFundFactory is ChargesFee {
 
   FundBareFactory internal fundRAFactory;
   PrivateFundStorageFactory internal fundStorageFactory;
-  FundMultiSigFactory internal fundMultiSigFactory;
+  FundBareFactory internal fundMultiSigFactory;
   FundBareFactory internal fundControllerFactory;
   FundBareFactory internal fundProposalManagerFactory;
   FundBareFactory internal fundACLFactory;
@@ -88,7 +87,7 @@ contract PrivateFundFactory is ChargesFee {
   constructor (
     IPPGlobalRegistry _globalRegistry,
     FundBareFactory _fundRAFactory,
-    FundMultiSigFactory _fundMultiSigFactory,
+    FundBareFactory _fundMultiSigFactory,
     PrivateFundStorageFactory _fundStorageFactory,
     FundBareFactory _fundControllerFactory,
     FundBareFactory _fundProposalManagerFactory,
@@ -168,20 +167,27 @@ contract PrivateFundFactory is ChargesFee {
     fundRegistry.setContract(fundRegistry.ACL(), fundACL);
     fundRegistry.setContract(fundRegistry.STORAGE(), address(fundStorage));
 
-    FundMultiSig _fundMultiSig = fundMultiSigFactory.build(
-      _initialMultiSigOwners,
-      _initialMultiSigRequired,
-      fundRegistry
-    );
     PrivateFundStorage _fundStorage = PrivateFundStorage(fundRegistry.getStorageAddress());
     IACL _fundACL = fundRegistry.getACL();
+
+    address _fundMultiSigNonPayable = fundMultiSigFactory.build(
+      abi.encodeWithSignature(
+        "initialize(address[],uint256,address)",
+        _initialMultiSigOwners,
+        _initialMultiSigRequired,
+        address(fundRegistry)
+      ),
+      false,
+      true
+    );
+    address payable _fundMultiSig = address(uint160(_fundMultiSigNonPayable));
 
     address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
     address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
     address _fundRA = fundRAFactory.build(address(fundRegistry), false, true);
     address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), false, true);
 
-    fundRegistry.setContract(c.fundRegistry.MULTISIG(), address(_fundMultiSig));
+    fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
     fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
     fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
@@ -205,7 +211,7 @@ contract PrivateFundFactory is ChargesFee {
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
     _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
-    _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), address(_fundMultiSig), true);
+    _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), _fundMultiSig, true);
     _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
@@ -223,7 +229,7 @@ contract PrivateFundFactory is ChargesFee {
       address(fundStorage),
       _fundRA,
       _fundProposalManager,
-      address(_fundMultiSig),
+      _fundMultiSig,
       _fundController,
       _fundUpgrader
     );

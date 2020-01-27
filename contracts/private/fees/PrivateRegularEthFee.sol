@@ -37,7 +37,7 @@ contract PrivateRegularEthFee is AbstractPrivateRegularFee {
 
     _pay(_registry, _tokenId, value);
 
-    address(fundRegistry.getMultiSigAddress()).transfer(value);
+    fundRegistry.getMultiSigAddress().transfer(value);
   }
 
   function payArray(
@@ -61,6 +61,6 @@ contract PrivateRegularEthFee is AbstractPrivateRegularFee {
 
     require(value == totalAmount, "Amounts sum doesn't match msg.value");
 
-    address(fundRegistry.getMultiSigAddress()).transfer(value);
+    fundRegistry.getMultiSigAddress().transfer(value);
   }
 }

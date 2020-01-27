@@ -12,6 +12,7 @@ const Helpers = {
     web3 = new Web3(_web3.currentProvider);
   },
   zeroAddress: '0x0000000000000000000000000000000000000000',
+  addressOne: '0x0000000000000000000000000000000000000001',
   hex(input) {
     return web3.utils.fromAscii(input).padEnd(66, '0');
   },

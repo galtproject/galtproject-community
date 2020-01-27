@@ -6,7 +6,6 @@ const MockPrivateFundRA = artifacts.require('./MockPrivateFundRA.sol');
 const FundBareFactory = artifacts.require('./FundBareFactory.sol');
 const FundFactory = artifacts.require('./FundFactory.sol');
 const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
-const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
 
 const FundACL = artifacts.require('./FundACL.sol');
 const FundRegistry = artifacts.require('./FundRegistry.sol');
@@ -18,7 +17,7 @@ const FundProposalManager = artifacts.require('./FundProposalManager.sol');
 const OwnedUpgradeabilityProxyFactory = artifacts.require('./OwnedUpgradeabilityProxyFactory.sol');
 const FundUpgrader = artifacts.require('./FundUpgrader.sol');
 
-const { initHelperWeb3, getMethodSignature, hex, getEventArg } = require('./helpers');
+const { initHelperWeb3, getMethodSignature, hex, getEventArg, addressOne } = require('./helpers');
 
 initHelperWeb3(FundProposalManager.web3);
 
@@ -53,10 +52,11 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
     const fundProposalManager = await FundProposalManager.new();
     const fundUpgrader = await FundUpgrader.new();
     const fundStorage = await PrivateFundStorage.new();
+    const fundMultiSig = await FundMultiSig.new([addressOne]);
 
     this.fundRAFactory = await FundBareFactory.new(proxyFactory, fundRA.address);
     this.fundStorageFactory = await PrivateFundStorageFactory.new(proxyFactory, fundStorage.address);
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
+    this.fundMultiSigFactory = await FundBareFactory.new(proxyFactory, fundMultiSig.address);
     this.fundControllerFactory = await FundBareFactory.new(proxyFactory, fundController.address);
     this.fundProposalManagerFactory = await FundBareFactory.new(proxyFactory, fundProposalManager.address);
     this.fundUpgraderFactory = await FundBareFactory.new(proxyFactory, fundUpgrader.address);
@@ -79,10 +79,11 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
     const fundProposalManager = await FundProposalManager.new();
     const fundUpgrader = await FundUpgrader.new();
     const fundStorage = await FundStorage.new();
+    const fundMultiSig = await FundMultiSig.new([addressOne]);
 
     this.fundRAFactory = await FundBareFactory.new(proxyFactory, fundRA.address);
     this.fundStorageFactory = await FundStorageFactory.new(proxyFactory, fundStorage.address);
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
+    this.fundMultiSigFactory = await FundBareFactory.new(proxyFactory, fundMultiSig.address);
     this.fundControllerFactory = await FundBareFactory.new(proxyFactory, fundController.address);
     this.fundProposalManagerFactory = await FundBareFactory.new(proxyFactory, fundProposalManager.address);
     this.fundUpgraderFactory = await FundBareFactory.new(proxyFactory, fundUpgrader.address);
