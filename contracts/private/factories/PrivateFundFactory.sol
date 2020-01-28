@@ -15,6 +15,7 @@ import "@galtproject/private-property-registry/contracts/traits/ChargesFee.sol";
 import "../PrivateFundStorage.sol";
 import "../../common/FundRegistry.sol";
 import "../../common/FundUpgrader.sol";
+import "../../abstract/interfaces/IAbstractFundStorage.sol";
 
 import "./PrivateFundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
@@ -50,6 +51,8 @@ contract PrivateFundFactory is ChargesFee {
 
   event EthFeeWithdrawal(address indexed collector, uint256 amount);
   event GaltFeeWithdrawal(address indexed collector, uint256 amount);
+
+  event SetDefaultConfigValues(uint256 len);
 
   event SetSubFactoryAddresses(
     FundBareFactory fundRAFactory,
@@ -91,6 +94,12 @@ contract PrivateFundFactory is ChargesFee {
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
+
+  address[] public defaultMarkerContracts;
+  bytes32[] public defaultMarkerSignatures;
+  uint256[] public defaultSupportValues;
+  uint256[] public defaultQuorumValues;
+  uint256[] public defaultTimeoutValues;
 
   bytes4[] internal proposalMarkersSignatures;
   bytes32[] internal proposalMarkersNames;
@@ -171,6 +180,31 @@ contract PrivateFundFactory is ChargesFee {
       _fundACLFactory,
       _fundUpgraderFactory
     );
+  }
+
+  function setDefaultConfigValues(
+    address[] calldata _markersContracts,
+    bytes32[] calldata _markersSignatures,
+    uint256[] calldata _supportValues,
+    uint256[] calldata _quorumValues,
+    uint256[] calldata _timeoutValues
+  )
+    external
+    onlyOwner
+  {
+    uint256 len = _markersContracts.length;
+    require(
+      len == _markersSignatures.length && len == _supportValues.length && len == _quorumValues.length && len == _timeoutValues.length,
+      "Thresholds key and value array lengths mismatch"
+    );
+
+    defaultMarkerContracts = _markersContracts;
+    defaultMarkerSignatures = _markersSignatures;
+    defaultSupportValues = _supportValues;
+    defaultQuorumValues = _quorumValues;
+    defaultTimeoutValues = _timeoutValues;
+
+    emit SetDefaultConfigValues(len);
   }
 
   // USER INTERFACE
@@ -339,11 +373,51 @@ contract PrivateFundFactory is ChargesFee {
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
 
     if (_finishFlag == true) {
+      _applyFundDefaultConfigValues(_fundId);
       _finish(_fundId);
     } else {
       c.currentStep = Step.THIRD;
       emit CreateFundSecondStep(_fundId, len);
     }
+  }
+
+  function _applyFundDefaultConfigValues(bytes32 _fundId) internal {
+    _applyMarkers(
+      _fundId,
+      _generateFundDefaultMarkers(_fundId),
+      defaultSupportValues,
+      defaultQuorumValues,
+      defaultTimeoutValues
+    );
+  }
+
+  function _generateFundDefaultMarkers(bytes32 _fundId) internal returns (bytes32[] memory) {
+    FundContracts storage c = fundContracts[_fundId];
+    IAbstractFundStorage fundStorage = IAbstractFundStorage(c.fundRegistry.getStorageAddress());
+    uint256 len = defaultMarkerContracts.length;
+    bytes32[] memory markers = new bytes32[](len);
+    bytes32 marker;
+
+    for (uint256 i = 0; i < len; i++) {
+      address current = defaultMarkerContracts[i];
+      bytes32 signature = defaultMarkerSignatures[i];
+
+      // address code for fundStorage
+      if (current == address(150)) {
+        marker = getThresholdMarker(address(fundStorage), signature);
+      // address code for fundMultiSig
+      } else if (current == address(151)) {
+        marker = getThresholdMarker(c.fundRegistry.getMultiSigAddress(), signature);
+      // address code for fundUpgrader
+      } else if (current == address(152)) {
+        marker = getThresholdMarker(c.fundRegistry.getUpgraderAddress(), signature);
+      } else {
+        marker = getThresholdMarker(current, signature);
+      }
+      markers[i] = marker;
+    }
+
+    return markers;
   }
 
   function buildThirdStep(
@@ -365,8 +439,33 @@ contract PrivateFundFactory is ChargesFee {
       "Thresholds key and value array lengths mismatch"
     );
 
+    _applyMarkers(
+      _fundId,
+      _markers,
+      _supportValues,
+      _quorumValues,
+      _timeoutValues
+    );
+
+    emit CreateFundThirdStep(_fundId, len);
+
+    _finish(_fundId);
+  }
+
+  function _applyMarkers(
+    bytes32 _fundId,
+    bytes32[] memory _markers,
+    uint256[] memory _supportValues,
+    uint256[] memory _quorumValues,
+    uint256[] memory _timeoutValues
+  )
+    internal
+  {
+    FundContracts storage c = fundContracts[_fundId];
+
     PrivateFundStorage _fundStorage = PrivateFundStorage(c.fundRegistry.getStorageAddress());
     IACL _fundACL = c.fundRegistry.getACL();
+    uint256 len = _markers.length;
 
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
@@ -375,10 +474,6 @@ contract PrivateFundFactory is ChargesFee {
     }
 
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
-
-    emit CreateFundThirdStep(_fundId, len);
-
-    _finish(_fundId);
   }
 
   function _finish(bytes32 _fundId) internal {
@@ -406,6 +501,16 @@ contract PrivateFundFactory is ChargesFee {
 
   function _galtToken() internal view returns (IERC20) {
     return IERC20(globalRegistry.getGaltTokenAddress());
+  }
+
+  function getThresholdMarker(address _destination, bytes32 _data) public pure returns(bytes32 marker) {
+    bytes32 methodName;
+
+    assembly {
+      methodName := and(_data, 0xffffffff00000000000000000000000000000000000000000000000000000000)
+    }
+
+    return keccak256(abi.encode(_destination, methodName));
   }
 
   // GETTERS

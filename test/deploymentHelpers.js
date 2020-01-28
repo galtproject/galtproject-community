@@ -25,6 +25,7 @@ MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
 FundUpgrader.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
+PrivateFundStorage.numberFormat = 'String';
 FundMultiSig.numberFormat = 'String';
 
 // 60 * 60 * 24 * 30
@@ -278,7 +279,7 @@ async function buildFund(
  * @param {FundMultiSigFactory} factory
  * @param {boolean} isPrivate
  * @param {VotingConfig} defaultVotingConfig
- * @param {VotingConfig[]} customVotingConfigs
+ * @param {CustomVotingConfig[]} customVotingConfigs
  * @param {Array<string>} initialMultiSigOwners
  * @param {number} initialMultiSigRequired
  * @param {number} periodLength
@@ -323,7 +324,7 @@ async function buildPrivateFund(
       value
     }
   );
-  console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = getEventArg(res, 'CreateFundFirstStep', 'fundId');
   const fundStorage = await PrivateFundStorage.at(getEventArg(res, 'CreateFundFirstStep', 'fundStorage'));
   const fundRegistry = await FundRegistry.at(getEventArg(res, 'CreateFundFirstStep', 'fundRegistry'));
@@ -338,49 +339,47 @@ async function buildPrivateFund(
 
   // >>> Step #2
   res = await factory.buildSecondStep(fundId, finishOn2ndStep, name, dataLink, initialRegistries, initialTokens, {
-    from: creator
+    from: creator,
+    gas: 9500000
   });
-  console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
+  // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
 
   const keys = Object.keys(customVotingConfigs);
   let markers = [];
-  let signatures = [];
   const supports = [];
   const quorums = [];
   const timeouts = [];
 
-  signatures = keys.map(k => fundStorage[`${k}_SIGNATURE`]());
-  signatures = await Promise.all(signatures);
-
+  // We don't know the fund contract addresses in advance to generate a marker,
+  // so a contract name should be used instead
   for (let i = 0; i < keys.length; i++) {
-    const val = customVotingConfigs[keys[i]];
-    const localKeys = Object.keys(val);
-    assert(localKeys.length === 1, 'Invalid threshold keys length');
-    const contract = localKeys[0];
+    const config = customVotingConfigs[keys[i]];
+    assert(config instanceof CustomVotingConfig, 'Invalid threshold keys length');
+    const contract = config.contractAddress;
     let marker;
 
     switch (contract) {
       case 'fundStorage':
-        marker = fundStorage.getThresholdMarker(fundStorage.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundStorage.address, config.methodSignature);
         break;
       case 'fundMultiSig':
-        marker = fundStorage.getThresholdMarker(fundMultiSig.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundMultiSig.address, config.methodSignature);
         break;
       case 'fundController':
-        marker = fundStorage.getThresholdMarker(fundController.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundController.address, config.methodSignature);
         break;
       case 'fundRA':
-        marker = fundStorage.getThresholdMarker(fundRA.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundRA.address, config.methodSignature);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contract, signatures[i]);
+        marker = fundStorage.getThresholdMarker(contract, config.methodSignature);
         break;
     }
 
     markers.push(marker);
-    supports.push(customVotingConfigs[keys[i]][contract].support);
-    quorums.push(customVotingConfigs[keys[i]][contract].quorum);
-    timeouts.push(customVotingConfigs[keys[i]][contract].timeout);
+    supports.push(config.support);
+    quorums.push(config.quorum);
+    timeouts.push(config.timeout);
   }
 
   markers = await Promise.all(markers);
@@ -388,7 +387,7 @@ async function buildPrivateFund(
   if (!finishOn2ndStep) {
     // >>> Step #3
     res = await factory.buildThirdStep(fundId, markers, supports, quorums, timeouts, { from: creator });
-    console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+    // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   }
 
   // assert DONE
@@ -412,6 +411,14 @@ function VotingConfig(support, quorum, timeout) {
   this.timeout = timeout;
 }
 
+function CustomVotingConfig(contractAddress, methodSignature, support, quorum, timeout) {
+  this.contractAddress = contractAddress;
+  this.methodSignature = methodSignature;
+  this.support = support;
+  this.quorum = quorum;
+  this.timeout = timeout;
+}
+
 VotingConfig.ONE_WEEK = 60 * 60 * 24 * 7;
 
 module.exports = {
@@ -419,5 +426,6 @@ module.exports = {
   buildFund,
   buildPrivateFund,
   getBaseFundStorageMarkersNames,
-  VotingConfig
+  VotingConfig,
+  CustomVotingConfig
 };
