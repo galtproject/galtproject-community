@@ -231,7 +231,7 @@ contract PrivateFundFactory is ChargesFee {
     _acceptPayment();
 
     FundRegistry fundRegistry = FundRegistry(fundRegistryFactory.build());
-    address fundACL = fundACLFactory.build();
+    IACL fundACL = IACL(fundACLFactory.build());
 
     PrivateFundStorage fundStorage = fundStorageFactory.build(
       fundRegistry,
@@ -247,11 +247,8 @@ contract PrivateFundFactory is ChargesFee {
     c.fundRegistry = fundRegistry;
 
     fundRegistry.setContract(fundRegistry.PPGR(), address(globalRegistry));
-    fundRegistry.setContract(fundRegistry.ACL(), fundACL);
+    fundRegistry.setContract(fundRegistry.ACL(), address(fundACL));
     fundRegistry.setContract(fundRegistry.STORAGE(), address(fundStorage));
-
-    PrivateFundStorage _fundStorage = PrivateFundStorage(fundRegistry.getStorageAddress());
-    IACL _fundACL = fundRegistry.getACL();
 
     address _fundMultiSigNonPayable = fundMultiSigFactory.build(
       abi.encodeWithSignature(
@@ -276,39 +273,39 @@ contract PrivateFundFactory is ChargesFee {
     fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
     fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
 
-    _fundACL.setRole(_fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
-    _fundACL.setRole(_fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
-    _fundACL.setRole(_fundStorage.ROLE_MULTISIG(), _fundMultiSig, true);
-    _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
+    fundACL.setRole(fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
+    fundACL.setRole(fundStorage.ROLE_MULTISIG(), _fundMultiSig, true);
+    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
-    _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
-    _fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
-    _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
+    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
+    fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
+    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
 
     c.currentStep = Step.SECOND;
 
     emit CreateFundFirstStep(
       fundId,
       address(fundRegistry),
-      address(_fundACL),
+      address(fundACL),
       address(fundStorage),
       _fundRA,
       _fundProposalManager,
