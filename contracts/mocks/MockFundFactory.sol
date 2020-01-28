@@ -16,14 +16,14 @@ contract MockFundFactory is FundFactory {
 
   constructor (
     GaltGlobalRegistry _ggr,
-    FundRAFactory _fundRAFactory,
-    FundMultiSigFactory _fundMultiSigFactory,
+    FundBareFactory _fundRAFactory,
+    FundBareFactory _fundMultiSigFactory,
     FundStorageFactory _fundStorageFactory,
-    FundControllerFactory _fundControllerFactory,
-    FundProposalManagerFactory _fundProposalManagerFactory,
-    FundRegistryFactory _fundRegistryFactory,
-    FundACLFactory _fundACLFactory,
-    FundUpgraderFactory _fundUpgraderFactory
+    FundBareFactory _fundControllerFactory,
+    FundBareFactory _fundProposalManagerFactory,
+    FundBareFactory _fundRegistryFactory,
+    FundBareFactory _fundACLFactory,
+    FundBareFactory _fundUpgraderFactory
   )
     public
     FundFactory(
@@ -39,10 +39,4 @@ contract MockFundFactory is FundFactory {
     )
   {
   }
-
-//  function hackAddRoleManagerRole(bytes32 _fundId, address _addRoleTo) external {
-//    FundContracts storage c = fundContracts[_fundId];
-//
-//    c.fundStorage.addRoleTo(_addRoleTo, c.fundStorage.ROLE_ROLE_MANAGER());
-//  }
 }

@@ -19,11 +19,13 @@ import "../../common/interfaces/IFundRegistry.sol";
 import "../PrivateFundStorage.sol";
 
 
-contract PrivateFundStorageFactory is Ownable {
+contract PrivateFundStorageFactory {
+  address public implementation;
   IOwnedUpgradeabilityProxyFactory internal ownedUpgradeabilityProxyFactory;
 
-  constructor(IOwnedUpgradeabilityProxyFactory _factory) public {
+  constructor(IOwnedUpgradeabilityProxyFactory _factory, address _impl) public {
     ownedUpgradeabilityProxyFactory = _factory;
+    implementation = _impl;
   }
 
   function build(
@@ -39,10 +41,8 @@ contract PrivateFundStorageFactory is Ownable {
   {
     IOwnedUpgradeabilityProxy proxy = ownedUpgradeabilityProxyFactory.build();
 
-    PrivateFundStorage fundStorage = new PrivateFundStorage();
-
     proxy.upgradeToAndCall(
-      address(fundStorage),
+      implementation,
       abi.encodeWithSignature(
         "initialize(address,bool,uint256,uint256,uint256,uint256)",
         _globalRegistry,

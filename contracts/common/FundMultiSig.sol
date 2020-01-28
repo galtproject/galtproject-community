@@ -10,11 +10,12 @@
 pragma solidity ^0.5.13;
 
 import "@galtproject/multisig/contracts/MultiSigWallet.sol";
+import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 import "./interfaces/IFundRegistry.sol";
 
 
-contract FundMultiSig is MultiSigWallet {
+contract FundMultiSig is MultiSigWallet, Initializable {
   event NewOwnerSet(uint256 required, uint256 total);
 
   bytes32 public constant ROLE_OWNER_MANAGER = bytes32("owner_manager");
@@ -23,14 +24,32 @@ contract FundMultiSig is MultiSigWallet {
   IFundRegistry public fundRegistry;
 
   constructor(
-    address[] memory _initialOwners,
-    uint256 _required,
-    IFundRegistry _fundRegistry
+    address[] memory _owners
   )
     public
-    MultiSigWallet(_initialOwners, _required)
+    // WARNING: the implementation won't use this constructor data anyway
+    MultiSigWallet(_owners, 1)
   {
-    fundRegistry = _fundRegistry;
+  }
+
+  function initialize(
+    address[] calldata _owners,
+    uint256 _required,
+    address _fundRegistry
+  )
+    external
+    isInitializer
+    validRequirement(_owners.length, _required)
+  {
+    // solium-disable-next-line operator-whitespace
+    for (uint i=0; i<_owners.length; i++) {
+      // solium-disable-next-line error-reason
+      require(!isOwner[_owners[i]] && _owners[i] != address(0));
+      isOwner[_owners[i]] = true;
+    }
+    owners = _owners;
+    required = _required;
+    fundRegistry = IFundRegistry(_fundRegistry);
   }
 
   modifier forbidden() {

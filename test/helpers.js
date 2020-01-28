@@ -12,6 +12,10 @@ const Helpers = {
     web3 = new Web3(_web3.currentProvider);
   },
   zeroAddress: '0x0000000000000000000000000000000000000000',
+  addressOne: '0x0000000000000000000000000000000000000001',
+  fundStorageAddressCode: '0x0000000000000000000000000000000000000096',
+  fundMultiSigAddressCode: '0x0000000000000000000000000000000000000097',
+  fundUpgraderAddressCode: '0x0000000000000000000000000000000000000098',
   hex(input) {
     return web3.utils.fromAscii(input).padEnd(66, '0');
   },

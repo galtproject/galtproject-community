@@ -19,6 +19,12 @@ const { web3 } = PPToken;
 
 initHelperWeb3(web3);
 
+const ProposalStatus = {
+  NULL: 0,
+  ACTIVE: 1,
+  EXECUTED: 2
+};
+
 contract('PrivateFundUpgrader', accounts => {
   const [coreTeam, alice, bob, charlie, dan, eve, frank, fakeRegistry] = accounts;
 
@@ -108,7 +114,7 @@ contract('PrivateFundUpgrader', accounts => {
     assert.equal(await this.fundRegistryX.getControllerAddress(), dan);
   });
 
-  it('should allow updating proposalManager contract by updating proxy implementation', async function() {
+  it('should allow updating  contract by updating proxy implementation using script', async function() {
     const proposalManagerImplementationV2 = await MockFundProposalManagerV2.new();
     const proposalManagerV2 = await MockFundProposalManagerV2.at(this.fundProposalManagerX.address);
     const u2 = await MockUpgradeScript2.new(proposalManagerImplementationV2.address, 'fooV2');
@@ -144,6 +150,49 @@ contract('PrivateFundUpgrader', accounts => {
 
     // check executed
     assert.equal(await this.fundUpgraderX.nextUpgradeScript(), zeroAddress);
+
+    // after
+    assert.equal(await proxy.implementation(), proposalManagerImplementationV2.address);
+    res = await proposalManagerV2.foo();
+    assert.equal(res.oldValue, this.fundRegistryX.address);
+    assert.equal(res.newValue, 'fooV2');
+  });
+
+  it('should allow updating proposalManager by updating proxy implementation using direct call', async function() {
+    const proposalManagerImplementationV2 = await MockFundProposalManagerV2.new();
+    const proposalManagerV2 = await MockFundProposalManagerV2.at(this.fundProposalManagerX.address);
+    const proxy = await IOwnedUpgradeabilityProxy.at(this.fundProposalManagerX.address);
+
+    assert.equal(await this.fundUpgraderX.nextUpgradeScript(), zeroAddress);
+
+    const initializePayload = proposalManagerImplementationV2.contract.methods.initialize3('fooV2').encodeABI();
+    const payload = this.fundUpgraderX.contract.methods
+      .upgradeImplementationToAndCall(proxy.address, proposalManagerImplementationV2.address, initializePayload)
+      .encodeABI();
+    let res = await this.fundProposalManagerX.propose(
+      this.fundUpgraderX.address,
+      0,
+      false,
+      false,
+      payload,
+      'some data',
+      {
+        from: bob
+      }
+    );
+    const proposalId = res.logs[0].args.proposalId.toString(10);
+
+    // before
+    assert.equal(await this.fundUpgraderX.nextUpgradeScript(), zeroAddress);
+    await assertRevert(proposalManagerV2.foo(), 'blah');
+
+    await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+    await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+    await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+    res = await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+
+    res = await this.fundProposalManagerX.proposals(proposalId);
+    assert.equal(res.status, ProposalStatus.EXECUTED);
 
     // after
     assert.equal(await proxy.implementation(), proposalManagerImplementationV2.address);

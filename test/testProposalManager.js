@@ -45,9 +45,10 @@ contract('Proposal Manager', accounts => {
       2
     );
 
+    this.fundRegistryX = fundX.fundRegistry;
     this.fundStorageX = fundX.fundStorage;
     this.fundControllerX = fundX.fundController;
-    this.fundMultiSigX = fundX.fundMultiSigX;
+    this.fundMultiSigX = fundX.fundMultiSig;
     this.fundRAX = fundX.fundRA;
     this.fundProposalManagerX = fundX.fundProposalManager;
 

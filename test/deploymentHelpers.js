@@ -1,19 +1,11 @@
 const PrivateFundFactory = artifacts.require('./PrivateFundFactory.sol');
 const PrivateFundStorageFactory = artifacts.require('./PrivateFundStorageFactory.sol');
-const MockPrivateFundRAFactory = artifacts.require('./MockPrivateFundRAFactory.sol');
 const PrivateFundStorage = artifacts.require('./PrivateFundStorage.sol');
 const PrivateFundController = artifacts.require('./PrivateFundController.sol');
-const PrivateFundControllerFactory = artifacts.require('./PrivateFundControllerFactory.sol');
 const MockPrivateFundRA = artifacts.require('./MockPrivateFundRA.sol');
-const FundRegistryFactory = artifacts.require('./FundRegistryFactory.sol');
-const FundACLFactory = artifacts.require('./FundACLFactory.sol');
+const FundBareFactory = artifacts.require('./FundBareFactory.sol');
 const FundFactory = artifacts.require('./FundFactory.sol');
 const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
-const FundMultiSigFactory = artifacts.require('./FundMultiSigFactory.sol');
-const FundControllerFactory = artifacts.require('./FundControllerFactory.sol');
-const MockFundRAFactory = artifacts.require('./MockFundRAFactory.sol');
-const FundProposalManagerFactory = artifacts.require('./FundProposalManagerFactory.sol');
-const FundUpgraderFactory = artifacts.require('./FundUpgraderFactory.sol');
 
 const FundACL = artifacts.require('./FundACL.sol');
 const FundRegistry = artifacts.require('./FundRegistry.sol');
@@ -25,7 +17,7 @@ const FundProposalManager = artifacts.require('./FundProposalManager.sol');
 const OwnedUpgradeabilityProxyFactory = artifacts.require('./OwnedUpgradeabilityProxyFactory.sol');
 const FundUpgrader = artifacts.require('./FundUpgrader.sol');
 
-const { initHelperWeb3, getMethodSignature, hex, getEventArg } = require('./helpers');
+const { initHelperWeb3, getMethodSignature, hex, getEventArg, addressOne } = require('./helpers');
 
 initHelperWeb3(FundProposalManager.web3);
 
@@ -33,6 +25,7 @@ MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
 FundUpgrader.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
+PrivateFundStorage.numberFormat = 'String';
 FundMultiSig.numberFormat = 'String';
 
 // 60 * 60 * 24 * 30
@@ -41,17 +34,33 @@ const ONE_MONTH = 2592000;
 async function deployFundFactory(globalRegistry, owner, privateProperty = false, ...ppArguments) {
   let fundFactory;
 
+  // deploy contracts
+  const fundRegistry = await FundRegistry.new();
+  const fundACL = await FundACL.new();
+
+  // TODO: transfer owned contracts ownership to the 0x0 address
+
+  // deploy proxied contract factories
   this.ownedUpgradeabilityProxyFactory = await OwnedUpgradeabilityProxyFactory.new();
-  this.fundRegistryFactory = await FundRegistryFactory.new();
-  this.fundACLFactory = await FundACLFactory.new();
+  const proxyFactory = this.ownedUpgradeabilityProxyFactory.address;
+
+  this.fundRegistryFactory = await FundBareFactory.new(proxyFactory, fundRegistry.address);
+  this.fundACLFactory = await FundBareFactory.new(proxyFactory, fundACL.address);
 
   if (privateProperty) {
-    this.fundRAFactory = await MockPrivateFundRAFactory.new();
-    this.fundStorageFactory = await PrivateFundStorageFactory.new(this.ownedUpgradeabilityProxyFactory.address);
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
-    this.fundControllerFactory = await PrivateFundControllerFactory.new();
-    this.fundProposalManagerFactory = await FundProposalManagerFactory.new();
-    this.fundUpgraderFactory = await FundUpgraderFactory.new();
+    const fundRA = await MockPrivateFundRA.new();
+    const fundController = await PrivateFundController.new();
+    const fundProposalManager = await FundProposalManager.new();
+    const fundUpgrader = await FundUpgrader.new();
+    const fundStorage = await PrivateFundStorage.new();
+    const fundMultiSig = await FundMultiSig.new([addressOne]);
+
+    this.fundRAFactory = await FundBareFactory.new(proxyFactory, fundRA.address);
+    this.fundStorageFactory = await PrivateFundStorageFactory.new(proxyFactory, fundStorage.address);
+    this.fundMultiSigFactory = await FundBareFactory.new(proxyFactory, fundMultiSig.address);
+    this.fundControllerFactory = await FundBareFactory.new(proxyFactory, fundController.address);
+    this.fundProposalManagerFactory = await FundBareFactory.new(proxyFactory, fundProposalManager.address);
+    this.fundUpgraderFactory = await FundBareFactory.new(proxyFactory, fundUpgrader.address);
     fundFactory = await PrivateFundFactory.new(
       globalRegistry,
       this.fundRAFactory.address,
@@ -66,12 +75,20 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
       { from: owner, gas: 9000000 }
     );
   } else {
-    this.fundRAFactory = await MockFundRAFactory.new();
-    this.fundStorageFactory = await FundStorageFactory.new();
-    this.fundMultiSigFactory = await FundMultiSigFactory.new();
-    this.fundControllerFactory = await FundControllerFactory.new();
-    this.fundProposalManagerFactory = await FundProposalManagerFactory.new();
-    this.fundUpgraderFactory = await FundUpgraderFactory.new();
+    const fundRA = await MockFundRA.new();
+    const fundController = await FundController.new();
+    const fundProposalManager = await FundProposalManager.new();
+    const fundUpgrader = await FundUpgrader.new();
+    const fundStorage = await FundStorage.new();
+    const fundMultiSig = await FundMultiSig.new([addressOne]);
+
+    this.fundRAFactory = await FundBareFactory.new(proxyFactory, fundRA.address);
+    this.fundStorageFactory = await FundStorageFactory.new(proxyFactory, fundStorage.address);
+    this.fundMultiSigFactory = await FundBareFactory.new(proxyFactory, fundMultiSig.address);
+    this.fundControllerFactory = await FundBareFactory.new(proxyFactory, fundController.address);
+    this.fundProposalManagerFactory = await FundBareFactory.new(proxyFactory, fundProposalManager.address);
+    this.fundUpgraderFactory = await FundBareFactory.new(proxyFactory, fundUpgrader.address);
+
     fundFactory = await FundFactory.new(
       globalRegistry,
       this.fundRAFactory.address,
@@ -178,15 +195,17 @@ async function buildFund(
   // >>> Step #2
   res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, { from: creator });
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
-  const fundController = await FundController.at(res.logs[0].args.fundController);
-  const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
-  const fundUpgrader = await FundUpgrader.at(res.logs[0].args.fundUpgrader);
+  const fundController = await FundController.at(getEventArg(res, 'CreateFundSecondStep', 'fundController'));
+  const fundMultiSig = await FundMultiSig.at(getEventArg(res, 'CreateFundSecondStep', 'fundMultiSig'));
+  const fundUpgrader = await FundUpgrader.at(getEventArg(res, 'CreateFundSecondStep', 'fundUpgrader'));
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
   // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
-  const fundRA = await MockFundRA.at(res.logs[0].args.fundRA);
-  const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
+  const fundRA = await MockFundRA.at(getEventArg(res, 'CreateFundThirdStep', 'fundRA'));
+  const fundProposalManager = await FundProposalManager.at(
+    getEventArg(res, 'CreateFundThirdStep', 'fundProposalManager')
+  );
 
   const keys = Object.keys(customVotingConfigs);
   let markers = [];
@@ -260,7 +279,7 @@ async function buildFund(
  * @param {FundMultiSigFactory} factory
  * @param {boolean} isPrivate
  * @param {VotingConfig} defaultVotingConfig
- * @param {VotingConfig[]} customVotingConfigs
+ * @param {CustomVotingConfig[]} customVotingConfigs
  * @param {Array<string>} initialMultiSigOwners
  * @param {number} initialMultiSigRequired
  * @param {number} periodLength
@@ -287,6 +306,8 @@ async function buildPrivateFund(
   initialRegistries = [],
   value = 0
 ) {
+  const finishOn2ndStep = Object.keys(customVotingConfigs).length === 0;
+
   // >>> Step #1
   let res = await factory.buildFirstStep(
     creator,
@@ -295,6 +316,8 @@ async function buildPrivateFund(
     defaultVotingConfig.quorum,
     defaultVotingConfig.timeout,
     periodLength,
+    initialMultiSigOwners,
+    initialMultiSigRequired,
     {
       from: creator,
       gas: 9000000,
@@ -306,69 +329,69 @@ async function buildPrivateFund(
   const fundStorage = await PrivateFundStorage.at(getEventArg(res, 'CreateFundFirstStep', 'fundStorage'));
   const fundRegistry = await FundRegistry.at(getEventArg(res, 'CreateFundFirstStep', 'fundRegistry'));
   const fundACL = await FundACL.at(getEventArg(res, 'CreateFundFirstStep', 'fundACL'));
+  const fundController = await PrivateFundController.at(getEventArg(res, 'CreateFundFirstStep', 'fundController'));
+  const fundMultiSig = await FundMultiSig.at(getEventArg(res, 'CreateFundFirstStep', 'fundMultiSig'));
+  const fundUpgrader = await FundUpgrader.at(getEventArg(res, 'CreateFundFirstStep', 'fundUpgrader'));
+  const fundRA = await MockPrivateFundRA.at(getEventArg(res, 'CreateFundFirstStep', 'fundRA'));
+  const fundProposalManager = await FundProposalManager.at(
+    getEventArg(res, 'CreateFundFirstStep', 'fundProposalManager')
+  );
 
   // >>> Step #2
-  res = await factory.buildSecondStep(fundId, initialMultiSigOwners, initialMultiSigRequired, {
+  res = await factory.buildSecondStep(fundId, finishOn2ndStep, name, dataLink, initialRegistries, initialTokens, {
     from: creator,
     gas: 9500000
   });
   // console.log('buildSecondStep gasUsed', res.receipt.gasUsed);
-  const fundController = await PrivateFundController.at(res.logs[0].args.fundController);
-  const fundMultiSig = await FundMultiSig.at(res.logs[0].args.fundMultiSig);
-  const fundUpgrader = await FundUpgrader.at(res.logs[0].args.fundUpgrader);
-  const fundRA = await MockPrivateFundRA.at(res.logs[0].args.fundRA);
-  const fundProposalManager = await FundProposalManager.at(res.logs[0].args.fundProposalManager);
 
   const keys = Object.keys(customVotingConfigs);
   let markers = [];
-  let signatures = [];
   const supports = [];
   const quorums = [];
   const timeouts = [];
 
-  signatures = keys.map(k => fundStorage[`${k}_SIGNATURE`]());
-  signatures = await Promise.all(signatures);
-
+  // We don't know the fund contract addresses in advance to generate a marker,
+  // so a contract name should be used instead
   for (let i = 0; i < keys.length; i++) {
-    const val = customVotingConfigs[keys[i]];
-    const localKeys = Object.keys(val);
-    assert(localKeys.length === 1, 'Invalid threshold keys length');
-    const contract = localKeys[0];
+    const config = customVotingConfigs[keys[i]];
+    assert(config instanceof CustomVotingConfig, 'Invalid threshold keys length');
+    const contract = config.contractAddress;
     let marker;
 
     switch (contract) {
       case 'fundStorage':
-        marker = fundStorage.getThresholdMarker(fundStorage.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundStorage.address, config.methodSignature);
         break;
       case 'fundMultiSig':
-        marker = fundStorage.getThresholdMarker(fundMultiSig.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundMultiSig.address, config.methodSignature);
         break;
       case 'fundController':
-        marker = fundStorage.getThresholdMarker(fundController.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundController.address, config.methodSignature);
         break;
       case 'fundRA':
-        marker = fundStorage.getThresholdMarker(fundRA.address, signatures[i]);
+        marker = fundStorage.getThresholdMarker(fundRA.address, config.methodSignature);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contract, signatures[i]);
+        marker = fundStorage.getThresholdMarker(contract, config.methodSignature);
         break;
     }
 
     markers.push(marker);
-    supports.push(customVotingConfigs[keys[i]][contract].support);
-    quorums.push(customVotingConfigs[keys[i]][contract].quorum);
-    timeouts.push(customVotingConfigs[keys[i]][contract].timeout);
+    supports.push(config.support);
+    quorums.push(config.quorum);
+    timeouts.push(config.timeout);
   }
 
   markers = await Promise.all(markers);
 
-  // >>> Step #3
-  res = await factory.buildThirdStep(fundId, markers, supports, quorums, timeouts, { from: creator });
-  // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  if (!finishOn2ndStep) {
+    // >>> Step #3
+    res = await factory.buildThirdStep(fundId, markers, supports, quorums, timeouts, { from: creator });
+    // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
+  }
 
-  // >>> Step #4
-  res = await factory.buildFourthStep(fundId, name, dataLink, initialRegistries, initialTokens, { from: creator });
-  // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
+  // assert DONE
+  assert.equal(await factory.getCurrentStep(fundId), 3);
 
   return {
     fundRegistry,
@@ -388,6 +411,14 @@ function VotingConfig(support, quorum, timeout) {
   this.timeout = timeout;
 }
 
+function CustomVotingConfig(contractAddress, methodSignature, support, quorum, timeout) {
+  this.contractAddress = contractAddress;
+  this.methodSignature = methodSignature;
+  this.support = support;
+  this.quorum = quorum;
+  this.timeout = timeout;
+}
+
 VotingConfig.ONE_WEEK = 60 * 60 * 24 * 7;
 
 module.exports = {
@@ -395,5 +426,6 @@ module.exports = {
   buildFund,
   buildPrivateFund,
   getBaseFundStorageMarkersNames,
-  VotingConfig
+  VotingConfig,
+  CustomVotingConfig
 };
