@@ -367,7 +367,7 @@ contract PrivateFundFactory is ChargesFee {
         );
       }
     }
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
+    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), false);
 
     if (_finishFlag == true) {
       _applyFundDefaultConfigValues(_fundId);
