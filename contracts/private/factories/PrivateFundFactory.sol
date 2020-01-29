@@ -95,11 +95,11 @@ contract PrivateFundFactory is ChargesFee {
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
 
-  address[] public defaultMarkerContracts;
-  bytes32[] public defaultMarkerSignatures;
-  uint256[] public defaultSupportValues;
-  uint256[] public defaultQuorumValues;
-  uint256[] public defaultTimeoutValues;
+  address[] internal defaultMarkerContracts;
+  bytes32[] internal defaultMarkerSignatures;
+  uint256[] internal defaultSupportValues;
+  uint256[] internal defaultQuorumValues;
+  uint256[] internal defaultTimeoutValues;
 
   bytes4[] internal proposalMarkersSignatures;
   bytes32[] internal proposalMarkersNames;
@@ -514,5 +514,25 @@ contract PrivateFundFactory is ChargesFee {
 
   function getCurrentStep(bytes32 _fundId) external view returns (Step) {
     return fundContracts[_fundId].currentStep;
+  }
+
+  function getDefaultMarkerContracts() external view returns (address[] memory) {
+    return defaultMarkerContracts;
+  }
+
+  function getDefaultMarkerSignatures() external view returns (bytes32[] memory) {
+    return defaultMarkerSignatures;
+  }
+
+  function getDefaultSupportValues() external view returns (uint256[] memory) {
+    return defaultSupportValues;
+  }
+
+  function getDefaultQuorumValues() external view returns (uint256[] memory) {
+    return defaultQuorumValues;
+  }
+
+  function getDefaultTimeoutValues() external view returns (uint256[] memory) {
+    return defaultTimeoutValues;
   }
 }
