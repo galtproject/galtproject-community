@@ -6,7 +6,7 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#abdde6d",
+    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#0491d0f",
     "@galtproject/eslint-config-galt": "1.1.0",
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#8d59d9a",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#41d79b1",
@@ -34,5 +34,8 @@
     "node": ">=10.15.3"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "yaeti": "^1.0.2"
+  }
 }
