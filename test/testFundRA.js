@@ -272,7 +272,7 @@ contract('FundRA', accounts => {
 
       // UNSUCCESSFUL WITHDRAW SPACE TOKEN
       await assertRevert(this.aliceLocker.burn(this.fundRAX.address, { from: alice }));
-      await assertRevert(this.aliceLocker.withdraw(this.token1, { from: alice }));
+      await assertRevert(this.aliceLocker.withdraw({ from: alice }));
 
       // REVOKE REPUTATION
       await this.fundRAX.revoke(bob, 50, { from: alice });
@@ -294,7 +294,7 @@ contract('FundRA', accounts => {
       const block6 = (await web3.eth.getBlock('latest')).number;
 
       await this.aliceLocker.burn(this.fundRAX.address, { from: alice });
-      await this.aliceLocker.withdraw(this.token1, { from: alice });
+      await this.aliceLocker.withdraw({ from: alice });
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 0);
