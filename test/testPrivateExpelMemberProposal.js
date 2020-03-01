@@ -115,7 +115,7 @@ contract('ExpelFundMemberProposal', accounts => {
 
     this.registries = [fakeRegistry, fakeRegistry, fakeRegistry, fakeRegistry, fakeRegistry];
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
+    this.benefeciarSpaceTokens = ['4', '5', '6', '7', '8'];
     await this.fundRAX.mintAllHack(this.beneficiaries, this.registries, this.benefeciarSpaceTokens, 300, {
       from: alice
     });
@@ -272,6 +272,32 @@ contract('ExpelFundMemberProposal', accounts => {
       // MINT REPUTATION REJECTED AFTER BURN
       await locker.approveMint(this.fundRAX.address, { from: alice });
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
+
+      const proposalData2 = this.fundStorageX.contract.methods
+        .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData2, 'blah', {
+        from: charlie
+      });
+      const proposalId2 = res.logs[0].args.proposalId.toString(10);
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: eve });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
+      await this.fundProposalManagerX.executeProposal(proposalId2, 0, { from: dan });
+
+      res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
+      assert.equal(res, ether(100));
+      res = await this.fundProposalManagerX.proposals(proposalId2);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      // MINT REPUTATION AGAIN
+      assert.equal(await this.fundRAX.balanceOf(alice), 0);
+      await this.fundRAX.mint(lockerAddress, { from: alice });
+      assert.equal(await this.fundRAX.balanceOf(alice), 800);
     });
   });
 });

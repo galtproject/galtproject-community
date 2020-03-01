@@ -89,6 +89,7 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
     _debitAccount(_delegate, _owner, _amount);
 
     if (completelyBurned) {
+      _cacheTokenDecrement(_owner);
       reputationMinted[_registry][_tokenId] = false;
     }
   }

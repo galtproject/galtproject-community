@@ -61,6 +61,7 @@ contract PrivateFundStorage is AbstractFundStorage {
     for (uint256 i = 0; i < len; i++) {
       _onlyValidToken(_registries[i]);
       _mintApprovals[_registries[i]][_tokenIds[i]] = true;
+      _expelledTokens[_registries[i]][_tokenIds[i]] = false;
 
       emit ApproveMint(_registries[i], _tokenIds[i]);
     }
