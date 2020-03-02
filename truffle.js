@@ -46,7 +46,7 @@ const config = {
           runs: 200
         }
       },
-      evmVersion: 'istanbul'
+      evmVersion: 'petersburg'
     }
   }
 };
