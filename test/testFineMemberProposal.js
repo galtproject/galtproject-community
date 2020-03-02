@@ -1,17 +1,19 @@
-const SpaceToken = artifacts.require('./SpaceToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const LockerRegistry = artifacts.require('./LockerRegistry.sol');
-const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
-const SpaceLocker = artifacts.require('./SpaceLocker.sol');
-const MockSpaceGeoDataRegistry = artifacts.require('./MockSpaceGeoDataRegistry.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
-const FeeRegistry = artifacts.require('./FeeRegistry.sol');
-const ACL = artifacts.require('./ACL.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const SpaceToken = contract.fromArtifact('SpaceToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const LockerRegistry = contract.fromArtifact('LockerRegistry');
+const SpaceLockerFactory = contract.fromArtifact('SpaceLockerFactory');
+const SpaceLocker = contract.fromArtifact('SpaceLocker');
+const MockSpaceGeoDataRegistry = contract.fromArtifact('MockSpaceGeoDataRegistry');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const FeeRegistry = contract.fromArtifact('FeeRegistry');
+const ACL = contract.fromArtifact('ACL');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, zeroAddress, paymentMethods } = require('./helpers');
 
-const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -30,8 +32,9 @@ const Currency = {
 
 const ETH_CONTRACT = '0x0000000000000000000000000000000000000001';
 
-contract('FineFundMemberProposal', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, minter, geoDateManagement] = accounts;
+describe('FineFundMemberProposal', () => {
+  const [alice, bob, charlie, dan, eve, frank, minter, geoDateManagement] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

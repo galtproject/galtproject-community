@@ -10,15 +10,18 @@
     "@galtproject/eslint-config-galt": "1.1.0",
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#8d59d9a",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#41d79b1",
-    "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest",
-    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#ab45b1b",
+    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#10d637d",
+    "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest#605d332",
     "@galtproject/utils": "^0.9.1",
+    "@openzeppelin/contracts": "2.4.0",
+    "@openzeppelin/test-environment": "^0.1.3",
+    "chai": "^4.2.0",
     "cli-table": "^0.3.1",
     "ethlint": "1.2.5",
-    "ganache-core": "2.8.0",
-    "@openzeppelin/contracts": "2.4.0",
+    "ganache-core": "2.10.2",
+    "mocha": "^7.1.0",
     "prettier": "1.19.1",
-    "truffle": "^5.1.9",
+    "truffle": "^5.1.15",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "1.2.1"
   },
@@ -28,7 +31,7 @@
     "eslint": "eslint .",
     "eslint-fix": "eslint . --fix",
     "ethlint": "solium --dir .",
-    "test": "truffle test --network test"
+    "test": "npx mocha --exit --timeout 10000 --recursive test"
   },
   "engines": {
     "node": ">=10.15.3"

@@ -1,25 +1,28 @@
-const PrivateFundFactory = artifacts.require('./PrivateFundFactory.sol');
-const PrivateFundStorageFactory = artifacts.require('./PrivateFundStorageFactory.sol');
-const PrivateFundStorage = artifacts.require('./PrivateFundStorage.sol');
-const PrivateFundController = artifacts.require('./PrivateFundController.sol');
-const MockPrivateFundRA = artifacts.require('./MockPrivateFundRA.sol');
-const FundBareFactory = artifacts.require('./FundBareFactory.sol');
-const FundFactory = artifacts.require('./FundFactory.sol');
-const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
+const { contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
 
-const FundACL = artifacts.require('./FundACL.sol');
-const FundRegistry = artifacts.require('./FundRegistry.sol');
-const FundStorage = artifacts.require('./FundStorage.sol');
-const FundController = artifacts.require('./FundController.sol');
-const FundMultiSig = artifacts.require('./FundMultiSig.sol');
-const MockFundRA = artifacts.require('./MockFundRA.sol');
-const FundProposalManager = artifacts.require('./FundProposalManager.sol');
-const OwnedUpgradeabilityProxyFactory = artifacts.require('./OwnedUpgradeabilityProxyFactory.sol');
-const FundUpgrader = artifacts.require('./FundUpgrader.sol');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const PrivateFundStorageFactory = contract.fromArtifact('PrivateFundStorageFactory');
+const PrivateFundStorage = contract.fromArtifact('PrivateFundStorage');
+const PrivateFundController = contract.fromArtifact('PrivateFundController');
+const MockPrivateFundRA = contract.fromArtifact('MockPrivateFundRA');
+const FundBareFactory = contract.fromArtifact('FundBareFactory');
+const FundFactory = contract.fromArtifact('FundFactory');
+const FundStorageFactory = contract.fromArtifact('FundStorageFactory');
+
+const FundACL = contract.fromArtifact('FundACL');
+const FundRegistry = contract.fromArtifact('FundRegistry');
+const FundStorage = contract.fromArtifact('FundStorage');
+const FundController = contract.fromArtifact('FundController');
+const FundMultiSig = contract.fromArtifact('FundMultiSig');
+const MockFundRA = contract.fromArtifact('MockFundRA');
+const FundProposalManager = contract.fromArtifact('FundProposalManager');
+const OwnedUpgradeabilityProxyFactory = contract.fromArtifact('OwnedUpgradeabilityProxyFactory');
+const FundUpgrader = contract.fromArtifact('FundUpgrader');
 
 const { initHelperWeb3, getMethodSignature, hex, getEventArg, addressOne } = require('./helpers');
 
-initHelperWeb3(FundProposalManager.web3);
+initHelperWeb3(web3);
 
 MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';
@@ -106,16 +109,18 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
   const markersSignatures = [];
   const markersNames = [];
   getBaseFundStorageMarkersNames().forEach(fullMethodName => {
+    // noinspection TypeScriptValidateTypes
     const contractName = fullMethodName.split('.')[0];
+    // noinspection TypeScriptValidateTypes
     const methodName = fullMethodName.split('.')[1];
-    let contract;
+    let chosenContract;
     if (contractName === 'storage') {
-      contract = FundStorage;
+      chosenContract = FundStorage;
     } else if (contractName === 'multiSig') {
-      contract = FundMultiSig;
+      chosenContract = FundMultiSig;
     }
     markersNames.push(hex(`${fullMethodName}`));
-    markersSignatures.push(getMethodSignature(contract._json.abi, methodName));
+    markersSignatures.push(getMethodSignature(chosenContract._json.abi, methodName));
   });
 
   await fundFactory.initialize(markersSignatures, markersNames, { from: owner });
@@ -221,10 +226,10 @@ async function buildFund(
     const val = customVotingConfigs[keys[i]];
     const localKeys = Object.keys(val);
     assert(localKeys.length === 1, 'Invalid threshold keys length');
-    const contract = localKeys[0];
+    const contractName = localKeys[0];
     let marker;
 
-    switch (contract) {
+    switch (contractName) {
       case 'fundStorage':
         marker = fundStorage.getThresholdMarker(fundStorage.address, signatures[i]);
         break;
@@ -238,14 +243,14 @@ async function buildFund(
         marker = fundStorage.getThresholdMarker(fundRA.address, signatures[i]);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contract, signatures[i]);
+        marker = fundStorage.getThresholdMarker(contractName, signatures[i]);
         break;
     }
 
     markers.push(marker);
-    supports.push(customVotingConfigs[keys[i]][contract].support);
-    quorums.push(customVotingConfigs[keys[i]][contract].quorum);
-    timeouts.push(customVotingConfigs[keys[i]][contract].timeout);
+    supports.push(customVotingConfigs[keys[i]][contractName].support);
+    quorums.push(customVotingConfigs[keys[i]][contractName].quorum);
+    timeouts.push(customVotingConfigs[keys[i]][contractName].timeout);
   }
 
   markers = await Promise.all(markers);
@@ -355,10 +360,10 @@ async function buildPrivateFund(
   for (let i = 0; i < keys.length; i++) {
     const config = customVotingConfigs[keys[i]];
     assert(config instanceof CustomVotingConfig, 'Invalid threshold keys length');
-    const contract = config.contractAddress;
+    const contractName = config.contractAddress;
     let marker;
 
-    switch (contract) {
+    switch (contractName) {
       case 'fundStorage':
         marker = fundStorage.getThresholdMarker(fundStorage.address, config.methodSignature);
         break;
@@ -372,7 +377,7 @@ async function buildPrivateFund(
         marker = fundStorage.getThresholdMarker(fundRA.address, config.methodSignature);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contract, config.methodSignature);
+        marker = fundStorage.getThresholdMarker(contractName, config.methodSignature);
         break;
     }
 

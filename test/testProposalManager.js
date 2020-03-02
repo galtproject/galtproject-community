@@ -1,11 +1,12 @@
-const GaltToken = artifacts.require('./GaltToken.sol');
-const MockBar = artifacts.require('./MockBar.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const GaltToken = contract.fromArtifact('GaltToken');
+const MockBar = contract.fromArtifact('MockBar');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, assertRevert } = require('./helpers');
-
-const { web3 } = MockBar;
 
 initHelperWeb3(web3);
 
@@ -17,8 +18,9 @@ const ProposalStatus = {
   EXECUTED: 2
 };
 
-contract('Proposal Manager', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank] = accounts;
+describe('Proposal Manager', () => {
+  const [alice, bob, charlie, dan, eve, frank] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

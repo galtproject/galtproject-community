@@ -1,20 +1,20 @@
-const GaltToken = artifacts.require('./GaltToken.sol');
-const MockBar = artifacts.require('./MockBar.sol');
-const PrivateFundFactory = artifacts.require('./PrivateFundFactory.sol');
-const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const GaltToken = contract.fromArtifact('GaltToken');
+const MockBar = contract.fromArtifact('MockBar');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, fundStorageAddressCode, fundUpgraderAddressCode } = require('./helpers');
-
-const { web3 } = MockBar;
 
 initHelperWeb3(web3);
 
 MockBar.numberFormat = 'String';
 
-contract('Private Fund Factory', accounts => {
+describe('Private Fund Factory', () => {
   const [
-    coreTeam,
     alice,
     bob,
     charlie,
@@ -36,6 +36,7 @@ contract('Private Fund Factory', accounts => {
     aclFactory2,
     upgraderFactory2
   ] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

@@ -1,23 +1,25 @@
-const PPToken = artifacts.require('./PPToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const PPLockerRegistry = artifacts.require('./PPLockerRegistry.sol');
-const PPTokenRegistry = artifacts.require('./PPTokenRegistry.sol');
-const PPLockerFactory = artifacts.require('./PPLockerFactory.sol');
-const PPTokenFactory = artifacts.require('./PPTokenFactory.sol');
-const PPLocker = artifacts.require('./PPLocker.sol');
-const PPTokenControllerFactory = artifacts.require('./PPTokenControllerFactory.sol');
-const PPTokenController = artifacts.require('./PPTokenController.sol');
-const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
-const PPACL = artifacts.require('./PPACL.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const PPToken = contract.fromArtifact('PPToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
+const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
+const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
+const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
+const PPLocker = contract.fromArtifact('PPLocker');
+const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
+const PPTokenController = contract.fromArtifact('PPTokenController');
+const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
+const PPACL = contract.fromArtifact('PPACL');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, getEventArg } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime } = require('./helpers');
 
-const { web3 } = PPACL;
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -32,20 +34,10 @@ const ProposalStatus = {
 // 60 * 60
 const ONE_HOUR = 3600;
 
-contract('ExpelFundMemberProposal', accounts => {
-  const [
-    coreTeam,
-    alice,
-    bob,
-    charlie,
-    dan,
-    eve,
-    frank,
-    minter,
-    fakeRegistry,
-    unauthorized,
-    lockerFeeManager
-  ] = accounts;
+describe('PrivateExpelFundMemberProposal', () => {
+  const [alice, bob, charlie, dan, eve, frank, minter, fakeRegistry, unauthorized, lockerFeeManager] = accounts;
+
+  const coreTeam = defaultSender;
 
   const ethFee = ether(10);
   const galtFee = ether(20);
@@ -115,7 +107,7 @@ contract('ExpelFundMemberProposal', accounts => {
 
     this.registries = [fakeRegistry, fakeRegistry, fakeRegistry, fakeRegistry, fakeRegistry];
     this.beneficiaries = [bob, charlie, dan, eve, frank];
-    this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
+    this.benefeciarSpaceTokens = ['4', '5', '6', '7', '8'];
     await this.fundRAX.mintAllHack(this.beneficiaries, this.registries, this.benefeciarSpaceTokens, 300, {
       from: alice
     });
@@ -140,7 +132,9 @@ contract('ExpelFundMemberProposal', accounts => {
       assert.equal(res, alice);
 
       // HACK
-      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: alice });
       res = await this.ppLockerFactory.build({ from: alice });
@@ -272,6 +266,32 @@ contract('ExpelFundMemberProposal', accounts => {
       // MINT REPUTATION REJECTED AFTER BURN
       await locker.approveMint(this.fundRAX.address, { from: alice });
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
+
+      const proposalData2 = this.fundStorageX.contract.methods
+        .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData2, 'blah', {
+        from: charlie
+      });
+      const proposalId2 = res.logs[0].args.proposalId.toString(10);
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId2, true, { from: eve });
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
+
+      await this.fundProposalManagerX.executeProposal(proposalId2, 0, { from: dan });
+
+      res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
+      assert.equal(res, ether(100));
+      res = await this.fundProposalManagerX.proposals(proposalId2);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      // MINT REPUTATION AGAIN
+      assert.equal(await this.fundRAX.balanceOf(alice), 0);
+      await this.fundRAX.mint(lockerAddress, { from: alice });
+      assert.equal(await this.fundRAX.balanceOf(alice), 800);
     });
   });
 });

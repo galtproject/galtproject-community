@@ -1,14 +1,17 @@
-const SpaceToken = artifacts.require('./SpaceToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const LockerRegistry = artifacts.require('./LockerRegistry.sol');
-const SpaceLockerFactory = artifacts.require('./SpaceLockerFactory.sol');
-const SpaceLocker = artifacts.require('./SpaceLocker.sol');
-const MockSpaceGeoDataRegistry = artifacts.require('./MockSpaceGeoDataRegistry.sol');
-const RegularEthFee = artifacts.require('./RegularEthFee.sol');
-const RegularEthFeeFactory = artifacts.require('./RegularEthFeeFactory.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
-const FeeRegistry = artifacts.require('./FeeRegistry.sol');
-const ACL = artifacts.require('./ACL.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const SpaceToken = contract.fromArtifact('SpaceToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const LockerRegistry = contract.fromArtifact('LockerRegistry');
+const SpaceLockerFactory = contract.fromArtifact('SpaceLockerFactory');
+const SpaceLocker = contract.fromArtifact('SpaceLocker');
+const MockSpaceGeoDataRegistry = contract.fromArtifact('MockSpaceGeoDataRegistry');
+const RegularEthFee = contract.fromArtifact('RegularEthFee');
+const RegularEthFeeFactory = contract.fromArtifact('RegularEthFeeFactory');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const FeeRegistry = contract.fromArtifact('FeeRegistry');
+const ACL = contract.fromArtifact('ACL');
 
 SpaceToken.numberFormat = 'String';
 SpaceLocker.numberFormat = 'String';
@@ -16,7 +19,6 @@ SpaceLocker.numberFormat = 'String';
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, paymentMethods } = require('./helpers');
 
-const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -29,8 +31,9 @@ const ONE_DAY = 86400;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-contract('FundRA', accounts => {
-  const [coreTeam, minter, alice, bob, charlie, unauthorized, geoDateManagement] = accounts;
+describe('FundRA', () => {
+  const [minter, alice, bob, charlie, unauthorized, geoDateManagement] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

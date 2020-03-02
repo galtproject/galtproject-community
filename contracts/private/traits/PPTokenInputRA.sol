@@ -20,11 +20,13 @@ import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.so
 
 
 contract PPTokenInputRA is LiquidRA, Initializable {
+  using SafeMath for uint256;
   IPPGlobalRegistry public globalRegistry;
 
   ArraySet.AddressSet internal _tokenOwners;
 
-  mapping(address => ArraySet.Uint256Set) internal _tokenByOwner;
+  // owner => tokenCount
+  mapping(address => uint256) public ownerTokenCount;
 
   // registry => (tokenId => isMinted)
   mapping(address => mapping(uint256 => bool)) public reputationMinted;
@@ -85,11 +87,7 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     address owner = _tokenLocker.owner();
 
     _burn(owner, reputation);
-
-    _tokenByOwner[owner].remove(tokenId);
-    if (_tokenByOwner[owner].size() == 0) {
-      _tokenOwners.remove(owner);
-    }
+    _cacheTokenDecrement(owner);
 
     reputationMinted[tokenContractAddress][tokenId] = false;
   }
@@ -114,19 +112,22 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     require(reputationMinted[registry][tokenId] == true, "Reputation doesn't minted");
 
     _burn(owner, reputation);
-
-    _tokenByOwner[owner].remove(tokenId);
-    if (_tokenByOwner[owner].size() == 0) {
-      _tokenOwners.remove(owner);
-    }
+    _cacheTokenDecrement(owner);
 
     reputationMinted[registry][tokenId] = false;
   }
 
   function _cacheTokenOwner(address _owner, address _registry, uint256 _tokenId) internal {
-    _tokenByOwner[_owner].add(_tokenId);
     _tokenOwners.addSilent(_owner);
+    ownerTokenCount[_owner] = ownerTokenCount[_owner].add(1);
     reputationMinted[_registry][_tokenId] = true;
+  }
+
+  function _cacheTokenDecrement(address _owner) internal {
+    ownerTokenCount[_owner] = ownerTokenCount[_owner].sub(1);
+    if (ownerTokenCount[_owner] == 0) {
+      _tokenOwners.remove(_owner);
+    }
   }
 
   function tokenLockerRegistry() internal view returns(IPPLockerRegistry) {
@@ -143,17 +144,5 @@ contract PPTokenInputRA is LiquidRA, Initializable {
 
   function isMember(address _owner) public view returns (bool) {
     return _tokenOwners.has(_owner);
-  }
-
-  function ownerHasToken(address _owner, uint256 _tokenId) public view returns (bool) {
-    return _tokenByOwner[_owner].has(_tokenId);
-  }
-
-  function tokensByOwner(address _owner) public view returns (uint256[] memory) {
-    return _tokenByOwner[_owner].elements();
-  }
-
-  function tokensByOwnerCount(address _owner) public view returns (uint256) {
-    return _tokenByOwner[_owner].size();
   }
 }

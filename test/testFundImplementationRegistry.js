@@ -1,8 +1,9 @@
-const FundImplementationRegistry = artifacts.require('./FundImplementationRegistry.sol');
+const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const FundImplementationRegistry = contract.fromArtifact('FundImplementationRegistry');
 
 const { initHelperWeb3, zeroAddress } = require('./helpers');
-
-const { web3 } = FundImplementationRegistry;
 
 initHelperWeb3(web3);
 
@@ -11,7 +12,7 @@ FundImplementationRegistry.numberFormat = 'String';
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
-contract('Fund Implementation Registry', accounts => {
+describe('Fund Implementation Registry', () => {
   const [alice, bob, charlie, dan] = accounts;
 
   const code1 = bytes32('code1');
