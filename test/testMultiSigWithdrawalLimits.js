@@ -1,11 +1,12 @@
-const SpaceToken = artifacts.require('./SpaceToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const SpaceToken = contract.fromArtifact('SpaceToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
-
-const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
@@ -20,8 +21,9 @@ const ONE_MONTH = 2592000;
 
 const ETH_CONTRACT = '0x0000000000000000000000000000000000000001';
 
-contract('MultiSig Withdrawal Limits', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, george] = accounts;
+describe('MultiSig Withdrawal Limits', () => {
+  const [alice, bob, charlie, dan, eve, frank, george] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

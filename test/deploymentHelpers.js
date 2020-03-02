@@ -1,25 +1,28 @@
-const PrivateFundFactory = artifacts.require('./PrivateFundFactory.sol');
-const PrivateFundStorageFactory = artifacts.require('./PrivateFundStorageFactory.sol');
-const PrivateFundStorage = artifacts.require('./PrivateFundStorage.sol');
-const PrivateFundController = artifacts.require('./PrivateFundController.sol');
-const MockPrivateFundRA = artifacts.require('./MockPrivateFundRA.sol');
-const FundBareFactory = artifacts.require('./FundBareFactory.sol');
-const FundFactory = artifacts.require('./FundFactory.sol');
-const FundStorageFactory = artifacts.require('./FundStorageFactory.sol');
+const { contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
 
-const FundACL = artifacts.require('./FundACL.sol');
-const FundRegistry = artifacts.require('./FundRegistry.sol');
-const FundStorage = artifacts.require('./FundStorage.sol');
-const FundController = artifacts.require('./FundController.sol');
-const FundMultiSig = artifacts.require('./FundMultiSig.sol');
-const MockFundRA = artifacts.require('./MockFundRA.sol');
-const FundProposalManager = artifacts.require('./FundProposalManager.sol');
-const OwnedUpgradeabilityProxyFactory = artifacts.require('./OwnedUpgradeabilityProxyFactory.sol');
-const FundUpgrader = artifacts.require('./FundUpgrader.sol');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const PrivateFundStorageFactory = contract.fromArtifact('PrivateFundStorageFactory');
+const PrivateFundStorage = contract.fromArtifact('PrivateFundStorage');
+const PrivateFundController = contract.fromArtifact('PrivateFundController');
+const MockPrivateFundRA = contract.fromArtifact('MockPrivateFundRA');
+const FundBareFactory = contract.fromArtifact('FundBareFactory');
+const FundFactory = contract.fromArtifact('FundFactory');
+const FundStorageFactory = contract.fromArtifact('FundStorageFactory');
+
+const FundACL = contract.fromArtifact('FundACL');
+const FundRegistry = contract.fromArtifact('FundRegistry');
+const FundStorage = contract.fromArtifact('FundStorage');
+const FundController = contract.fromArtifact('FundController');
+const FundMultiSig = contract.fromArtifact('FundMultiSig');
+const MockFundRA = contract.fromArtifact('MockFundRA');
+const FundProposalManager = contract.fromArtifact('FundProposalManager');
+const OwnedUpgradeabilityProxyFactory = contract.fromArtifact('OwnedUpgradeabilityProxyFactory');
+const FundUpgrader = contract.fromArtifact('FundUpgrader');
 
 const { initHelperWeb3, getMethodSignature, hex, getEventArg, addressOne } = require('./helpers');
 
-initHelperWeb3(FundProposalManager.web3);
+initHelperWeb3(web3);
 
 MockFundRA.numberFormat = 'String';
 FundProposalManager.numberFormat = 'String';

@@ -1,13 +1,14 @@
-const SpaceToken = artifacts.require('./SpaceToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const RegularErc20FeeFactory = artifacts.require('./RegularErc20FeeFactory.sol');
-const RegularErc20Fee = artifacts.require('./RegularErc20Fee.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const SpaceToken = contract.fromArtifact('SpaceToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const RegularErc20FeeFactory = contract.fromArtifact('RegularErc20FeeFactory');
+const RegularErc20Fee = contract.fromArtifact('RegularErc20Fee');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
-
-const { web3 } = SpaceToken;
 
 initHelperWeb3(web3);
 
@@ -20,8 +21,9 @@ const ONE_DAY = 86400;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-contract('Regular ERC20 Fees', accounts => {
-  const [coreTeam, alice, bob, charlie, dan] = accounts;
+describe('Regular ERC20 Fees', () => {
+  const [alice, bob, charlie, dan] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });

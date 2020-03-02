@@ -1,23 +1,25 @@
-const PPToken = artifacts.require('./PPToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const PPLockerRegistry = artifacts.require('./PPLockerRegistry.sol');
-const PPTokenRegistry = artifacts.require('./PPTokenRegistry.sol');
-const PPLockerFactory = artifacts.require('./PPLockerFactory.sol');
-const PPTokenFactory = artifacts.require('./PPTokenFactory.sol');
-const PPLocker = artifacts.require('./PPLocker.sol');
-const PPTokenControllerFactory = artifacts.require('./PPTokenControllerFactory.sol');
-const PPTokenController = artifacts.require('./PPTokenController.sol');
-const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
-const PPACL = artifacts.require('./PPACL.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const PPToken = contract.fromArtifact('PPToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
+const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
+const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
+const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
+const PPLocker = contract.fromArtifact('PPLocker');
+const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
+const PPTokenController = contract.fromArtifact('PPTokenController');
+const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
+const PPACL = contract.fromArtifact('PPACL');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, getEventArg } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime } = require('./helpers');
 
-const { web3 } = PPACL;
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -32,20 +34,10 @@ const ProposalStatus = {
 // 60 * 60
 const ONE_HOUR = 3600;
 
-contract('ExpelFundMemberProposal', accounts => {
-  const [
-    coreTeam,
-    alice,
-    bob,
-    charlie,
-    dan,
-    eve,
-    frank,
-    minter,
-    fakeRegistry,
-    unauthorized,
-    lockerFeeManager
-  ] = accounts;
+describe('ExpelFundMemberProposal', () => {
+  const [alice, bob, charlie, dan, eve, frank, minter, fakeRegistry, unauthorized, lockerFeeManager] = accounts;
+
+  const coreTeam = defaultSender;
 
   const ethFee = ether(10);
   const galtFee = ether(20);

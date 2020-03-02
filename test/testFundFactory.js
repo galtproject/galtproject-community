@@ -1,14 +1,16 @@
-const SpaceToken = artifacts.require('./SpaceToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const MockSpaceGeoDataRegistry = artifacts.require('./MockSpaceGeoDataRegistry.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
-const FeeRegistry = artifacts.require('./FeeRegistry.sol');
-const ACL = artifacts.require('./ACL.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const SpaceToken = contract.fromArtifact('SpaceToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const MockSpaceGeoDataRegistry = contract.fromArtifact('MockSpaceGeoDataRegistry');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const FeeRegistry = contract.fromArtifact('FeeRegistry');
+const ACL = contract.fromArtifact('ACL');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, assertEthBalanceChanged, assertGaltBalanceChanged } = require('./helpers');
 
-const { web3 } = SpaceToken;
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -16,8 +18,9 @@ GaltToken.numberFormat = 'String';
 
 initHelperWeb3(web3);
 
-contract('FundFactory', accounts => {
-  const [coreTeam, alice, bob, charlie, feeCollector] = accounts;
+describe('FundFactory', () => {
+  const [alice, bob, charlie, feeCollector] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
@@ -109,6 +112,7 @@ contract('FundFactory', accounts => {
         await build(this.fundFactory, ether(5));
         await build(this.fundFactory, ether(5));
 
+        assert.equal(await web3.eth.getBalance(this.fundFactory.address), ether(30));
         const ethBalanceBefore = await web3.eth.getBalance(feeCollector);
         await this.fundFactory.withdrawEthFees({ from: feeCollector });
         const ethBalanceAfter = await web3.eth.getBalance(feeCollector);

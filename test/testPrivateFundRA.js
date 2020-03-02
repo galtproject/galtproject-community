@@ -1,16 +1,19 @@
-const PPToken = artifacts.require('./PPToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const PPLockerRegistry = artifacts.require('./PPLockerRegistry.sol');
-const PPTokenRegistry = artifacts.require('./PPTokenRegistry.sol');
-const PPLockerFactory = artifacts.require('./PPLockerFactory.sol');
-const PPTokenFactory = artifacts.require('./PPTokenFactory.sol');
-const PPTokenControllerFactory = artifacts.require('./PPTokenControllerFactory.sol');
-const PPTokenController = artifacts.require('./PPTokenController.sol');
-const PPLocker = artifacts.require('./PPLocker.sol');
-const PrivateRegularEthFee = artifacts.require('./PrivateRegularEthFee.sol');
-const PrivateRegularEthFeeFactory = artifacts.require('./PrivateRegularEthFeeFactory.sol');
-const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
-const PPACL = artifacts.require('./PPACL.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const PPToken = contract.fromArtifact('PPToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
+const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
+const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
+const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
+const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
+const PPTokenController = contract.fromArtifact('PPTokenController');
+const PPLocker = contract.fromArtifact('PPLocker');
+const PrivateRegularEthFee = contract.fromArtifact('PrivateRegularEthFee');
+const PrivateRegularEthFeeFactory = contract.fromArtifact('PrivateRegularEthFeeFactory');
+const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
+const PPACL = contract.fromArtifact('PPACL');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -26,7 +29,6 @@ const {
   getEventArg
 } = require('./helpers');
 
-const { web3 } = PPToken;
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -39,8 +41,9 @@ const ONE_DAY = 86400;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-contract('PrivateFundRA', accounts => {
-  const [coreTeam, minter, alice, bob, charlie, burner, unauthorized, lockerFeeManager] = accounts;
+describe('PrivateFundRA', () => {
+  const [minter, alice, bob, charlie, burner, unauthorized, lockerFeeManager] = accounts;
+  const coreTeam = defaultSender;
 
   const ethFee = ether(10);
   const galtFee = ether(20);

@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const { assert } = require('chai');
 
 const { BN } = Web3.utils;
 const max = new BN('10000000000000000'); // <- 0.01 ether

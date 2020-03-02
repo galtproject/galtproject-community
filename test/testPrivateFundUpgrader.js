@@ -1,12 +1,15 @@
-const PPToken = artifacts.require('./PPToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const PPLocker = artifacts.require('./PPLocker.sol');
-const PPGlobalRegistry = artifacts.require('./PPGlobalRegistry.sol');
-const PPACL = artifacts.require('./PPACL.sol');
-const MockUpgradeScript1 = artifacts.require('./MockUpgradeScript1.sol');
-const MockUpgradeScript2 = artifacts.require('./MockUpgradeScript2.sol');
-const MockFundProposalManagerV2 = artifacts.require('./MockFundProposalManagerV2.sol');
-const IOwnedUpgradeabilityProxy = artifacts.require('./IOwnedUpgradeabilityProxy.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const PPToken = contract.fromArtifact('PPToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const PPLocker = contract.fromArtifact('PPLocker');
+const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
+const PPACL = contract.fromArtifact('PPACL');
+const MockUpgradeScript1 = contract.fromArtifact('MockUpgradeScript1');
+const MockUpgradeScript2 = contract.fromArtifact('MockUpgradeScript2');
+const MockFundProposalManagerV2 = contract.fromArtifact('MockFundProposalManagerV2');
+const IOwnedUpgradeabilityProxy = contract.fromArtifact('IOwnedUpgradeabilityProxy');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -14,8 +17,6 @@ MockUpgradeScript1.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, assertRevert, zeroAddress } = require('./helpers');
-
-const { web3 } = PPToken;
 
 initHelperWeb3(web3);
 
@@ -25,8 +26,9 @@ const ProposalStatus = {
   EXECUTED: 2
 };
 
-contract('PrivateFundUpgrader', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, fakeRegistry] = accounts;
+describe('PrivateFundUpgrader', () => {
+  const [alice, bob, charlie, dan, eve, frank, fakeRegistry] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

@@ -1,19 +1,21 @@
-const SpaceToken = artifacts.require('./SpaceToken.sol');
-const GaltToken = artifacts.require('./GaltToken.sol');
-const GaltGlobalRegistry = artifacts.require('./GaltGlobalRegistry.sol');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
+
+const SpaceToken = contract.fromArtifact('SpaceToken');
+const GaltToken = contract.fromArtifact('GaltToken');
+const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { initHelperWeb3, getDestinationMarker, getMethodSignature, evmIncreaseTime } = require('./helpers');
-
-const { web3 } = SpaceToken;
 
 // eslint-disable-next-line import/order
 const { ether, hex, assertRevert } = require('@galtproject/solidity-test-chest')(web3);
 
 initHelperWeb3(web3);
 
-contract('Proposal Markers Proposals', accounts => {
-  const [coreTeam, alice, bob, charlie, dan, eve, frank, proposalManager] = accounts;
+describe('Proposal Markers Proposals', () => {
+  const [alice, bob, charlie, dan, eve, frank, proposalManager] = accounts;
+  const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });

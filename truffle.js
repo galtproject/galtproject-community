@@ -45,7 +45,8 @@ const config = {
           enabled: true,
           runs: 200
         }
-      }
+      },
+      evmVersion: 'istanbul'
     }
   }
 };
