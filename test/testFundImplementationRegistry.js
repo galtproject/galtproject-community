@@ -1,4 +1,4 @@
-const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
 
 const FundImplementationRegistry = contract.fromArtifact('FundImplementationRegistry');

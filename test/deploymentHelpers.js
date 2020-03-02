@@ -109,16 +109,18 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
   const markersSignatures = [];
   const markersNames = [];
   getBaseFundStorageMarkersNames().forEach(fullMethodName => {
+    // noinspection TypeScriptValidateTypes
     const contractName = fullMethodName.split('.')[0];
+    // noinspection TypeScriptValidateTypes
     const methodName = fullMethodName.split('.')[1];
-    let contract;
+    let ctr;
     if (contractName === 'storage') {
-      contract = FundStorage;
+      ctr = FundStorage;
     } else if (contractName === 'multiSig') {
-      contract = FundMultiSig;
+      ctr = FundMultiSig;
     }
     markersNames.push(hex(`${fullMethodName}`));
-    markersSignatures.push(getMethodSignature(contract._json.abi, methodName));
+    markersSignatures.push(getMethodSignature(ctr._json.abi, methodName));
   });
 
   await fundFactory.initialize(markersSignatures, markersNames, { from: owner });
@@ -224,10 +226,10 @@ async function buildFund(
     const val = customVotingConfigs[keys[i]];
     const localKeys = Object.keys(val);
     assert(localKeys.length === 1, 'Invalid threshold keys length');
-    const contract = localKeys[0];
+    const ctr = localKeys[0];
     let marker;
 
-    switch (contract) {
+    switch (ctr) {
       case 'fundStorage':
         marker = fundStorage.getThresholdMarker(fundStorage.address, signatures[i]);
         break;
@@ -241,14 +243,14 @@ async function buildFund(
         marker = fundStorage.getThresholdMarker(fundRA.address, signatures[i]);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contract, signatures[i]);
+        marker = fundStorage.getThresholdMarker(ctr, signatures[i]);
         break;
     }
 
     markers.push(marker);
-    supports.push(customVotingConfigs[keys[i]][contract].support);
-    quorums.push(customVotingConfigs[keys[i]][contract].quorum);
-    timeouts.push(customVotingConfigs[keys[i]][contract].timeout);
+    supports.push(customVotingConfigs[keys[i]][ctr].support);
+    quorums.push(customVotingConfigs[keys[i]][ctr].quorum);
+    timeouts.push(customVotingConfigs[keys[i]][ctr].timeout);
   }
 
   markers = await Promise.all(markers);
@@ -358,10 +360,10 @@ async function buildPrivateFund(
   for (let i = 0; i < keys.length; i++) {
     const config = customVotingConfigs[keys[i]];
     assert(config instanceof CustomVotingConfig, 'Invalid threshold keys length');
-    const contract = config.contractAddress;
+    const ctr = config.contractAddress;
     let marker;
 
-    switch (contract) {
+    switch (ctr) {
       case 'fundStorage':
         marker = fundStorage.getThresholdMarker(fundStorage.address, config.methodSignature);
         break;
@@ -375,7 +377,7 @@ async function buildPrivateFund(
         marker = fundStorage.getThresholdMarker(fundRA.address, config.methodSignature);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contract, config.methodSignature);
+        marker = fundStorage.getThresholdMarker(ctr, config.methodSignature);
         break;
     }
 

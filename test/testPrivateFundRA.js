@@ -158,9 +158,15 @@ describe('PrivateFundRA', () => {
     assert.equal(res, charlie);
 
     // HACK
-    await this.controller1.setInitialDetails(this.token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
-    await this.controller2.setInitialDetails(this.token2, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
-    await this.controller3.setInitialDetails(this.token3, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+    await this.controller1.setInitialDetails(this.token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
+      from: minter
+    });
+    await this.controller2.setInitialDetails(this.token2, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', true, {
+      from: minter
+    });
+    await this.controller3.setInitialDetails(this.token3, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', true, {
+      from: minter
+    });
 
     // BUILD LOCKERS
     await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: alice });

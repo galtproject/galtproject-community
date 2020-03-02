@@ -1,7 +1,6 @@
 const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
 
-const SpaceToken = contract.fromArtifact('SpaceToken');
 const GaltToken = contract.fromArtifact('GaltToken');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 

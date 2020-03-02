@@ -34,7 +34,7 @@ const ProposalStatus = {
 // 60 * 60
 const ONE_HOUR = 3600;
 
-describe('ExpelFundMemberProposal', () => {
+describe('PrivateExpelFundMemberProposal', () => {
   const [alice, bob, charlie, dan, eve, frank, minter, fakeRegistry, unauthorized, lockerFeeManager] = accounts;
 
   const coreTeam = defaultSender;
@@ -132,7 +132,9 @@ describe('ExpelFundMemberProposal', () => {
       assert.equal(res, alice);
 
       // HACK
-      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', { from: minter });
+      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: alice });
       res = await this.ppLockerFactory.build({ from: alice });
