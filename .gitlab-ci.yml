@@ -1,4 +1,4 @@
-image: galtspace/node-test-runner:0.5.13
+image: galtspace/node-test-runner:0.5.16
 
 stages:
   - test
