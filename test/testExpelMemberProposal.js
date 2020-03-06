@@ -209,6 +209,10 @@ describe('ExpelFundMemberProposal', () => {
       assert.equal(res, 0);
       res = await this.fundRAX.delegatedBalanceOf(alice, alice);
       assert.equal(res, 0);
+      res = await this.fundRAX.ownedBalanceOf(alice);
+      assert.equal(res, 0);
+      res = await this.fundRAX.totalSupply();
+      assert.equal(res, 1500); // 300 * 5
 
       // MINT REPUTATION REJECTED
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
