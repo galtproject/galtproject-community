@@ -168,6 +168,12 @@ describe('ExpelFundMemberProposal', () => {
       assert.equal(res, 500);
       res = await this.fundRAX.balanceOfAt(bob, block0);
       assert.equal(res, 500);
+      res = await this.fundRAX.spaceTokenOwnersCount();
+      assert.equal(res, 6);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, true);
+      res = await this.fundRAX.ownerHasSpaceToken(alice, token1);
+      assert.equal(res, true);
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
@@ -213,6 +219,12 @@ describe('ExpelFundMemberProposal', () => {
       assert.equal(res, 0);
       res = await this.fundRAX.totalSupply();
       assert.equal(res, 1500); // 300 * 5
+      res = await this.fundRAX.spaceTokenOwnersCount();
+      assert.equal(res, 5);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, false);
+      res = await this.fundRAX.ownerHasSpaceToken(alice, token1);
+      assert.equal(res, false);
 
       // MINT REPUTATION REJECTED
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));

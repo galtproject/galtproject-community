@@ -78,7 +78,16 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
 
     _debitAccount(_delegate, _owner, _amount);
 
+    require(_ownedBalances[_owner] >= _amount, "Not enough funds to burn");
+
+    _ownedBalances[_owner] = _ownedBalances[_owner].sub(_amount);
+    totalStakedSpace = totalStakedSpace.sub(_amount);
+
     if (completelyBurned) {
+      _spaceTokensByOwner[_owner].remove(_spaceTokenId);
+      if (_spaceTokensByOwner[_owner].size() == 0) {
+        _spaceTokenOwners.remove(_owner);
+      }
       reputationMinted[_spaceTokenId] = false;
     }
   }

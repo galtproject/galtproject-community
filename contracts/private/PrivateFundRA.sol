@@ -88,6 +88,11 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
     _debitAccount(_delegate, _owner, _amount);
 
+    require(_ownedBalances[_owner] >= _amount, "Not enough funds to burn");
+
+    _ownedBalances[_owner] = _ownedBalances[_owner].sub(_amount);
+    totalStakedSpace = totalStakedSpace.sub(_amount);
+
     if (completelyBurned) {
       _cacheTokenDecrement(_owner);
       reputationMinted[_registry][_tokenId] = false;
