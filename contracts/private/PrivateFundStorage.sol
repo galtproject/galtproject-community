@@ -20,6 +20,8 @@ import "../abstract/AbstractFundStorage.sol";
 
 contract PrivateFundStorage is AbstractFundStorage {
 
+  uint256 public constant VERSION = 2;
+
   event ApproveMint(address indexed registry, uint256 indexed tokenId);
 
   event Expel(address indexed registry, uint256 indexed tokenId);

@@ -17,6 +17,9 @@ import "../common/interfaces/IFundRegistry.sol";
 
 
 contract PrivateFundController is Initializable {
+
+  uint256 public constant VERSION = 1;
+
   using SafeERC20 for IERC20;
 
   enum Currency {

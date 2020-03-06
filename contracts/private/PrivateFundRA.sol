@@ -21,6 +21,8 @@ import "./traits/PPTokenInputRA.sol";
 
 contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
+  uint256 public constant VERSION = 2;
+
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 

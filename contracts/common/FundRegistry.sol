@@ -15,6 +15,9 @@ import "./interfaces/IFundRegistry.sol";
 
 
 contract FundRegistry is IFundRegistry, OwnableAndInitializable {
+
+  uint256 public constant VERSION = 1;
+
   // solium-disable-next-line mixedcase
   address internal constant ZERO_ADDRESS = address(0);
 

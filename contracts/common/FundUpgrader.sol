@@ -20,6 +20,9 @@ interface UpgradeScript {
 
 
 contract FundUpgrader is Initializable {
+
+  uint256 public constant VERSION = 1;
+
   event UpgradeSucceeded();
   event UpgradeFailed(bytes result);
 
