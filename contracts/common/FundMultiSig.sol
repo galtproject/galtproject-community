@@ -16,6 +16,9 @@ import "./interfaces/IFundRegistry.sol";
 
 
 contract FundMultiSig is MultiSigWallet, Initializable {
+
+  uint256 public constant VERSION = 1;
+
   event NewOwnerSet(uint256 required, uint256 total);
 
   bytes32 public constant ROLE_OWNER_MANAGER = bytes32("owner_manager");

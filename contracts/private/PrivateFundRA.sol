@@ -21,6 +21,8 @@ import "./traits/PPTokenInputRA.sol";
 
 contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
+  uint256 public constant VERSION = 2;
+
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
 
@@ -87,6 +89,11 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
     bool completelyBurned = _fundStorage().decrementExpelledTokenReputation(_registry, _tokenId, _amount);
 
     _debitAccount(_delegate, _owner, _amount);
+
+    require(_ownedBalances[_owner] >= _amount, "Not enough funds to burn");
+
+    _ownedBalances[_owner] = _ownedBalances[_owner].sub(_amount);
+    totalStakedSpace = totalStakedSpace.sub(_amount);
 
     if (completelyBurned) {
       _cacheTokenDecrement(_owner);

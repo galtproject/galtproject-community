@@ -125,6 +125,17 @@ describe('PrivateExpelFundMemberProposal', () => {
       await this.controller1.setMinter(minter);
       await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));
 
+      res = await this.fundRAX.balanceOf(bob);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(charlie);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(dan);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(eve);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(frank);
+      assert.equal(res.toString(10), '300');
+
       res = await this.controller1.mint(alice, { from: minter });
       const token1 = getEventArg(res, 'Mint', 'tokenId');
 
@@ -175,6 +186,7 @@ describe('PrivateExpelFundMemberProposal', () => {
       // DISTRIBUTE REPUTATION
       await this.fundRAX.delegate(bob, alice, 300, { from: alice });
       await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
+
       const block0 = (await web3.eth.getBlock('latest')).number;
 
       await assertRevert(
@@ -203,6 +215,10 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, 500);
       res = await this.fundRAX.balanceOfAt(bob, block0);
       assert.equal(res, 500);
+      res = await this.fundRAX.tokenOwnersCount();
+      assert.equal(res, 6);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, true);
 
       await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
@@ -256,6 +272,14 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, 0);
       res = await this.fundRAX.delegatedBalanceOf(alice, alice);
       assert.equal(res, 0);
+      res = await this.fundRAX.ownedBalanceOf(alice);
+      assert.equal(res, 0);
+      res = await this.fundRAX.totalSupply();
+      assert.equal(res, 1500); // 300 * 5
+      res = await this.fundRAX.tokenOwnersCount();
+      assert.equal(res, 5);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, false);
 
       // MINT REPUTATION REJECTED
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
@@ -273,6 +297,7 @@ describe('PrivateExpelFundMemberProposal', () => {
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData2, 'blah', {
         from: charlie
       });
+
       const proposalId2 = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(proposalId2, true, { from: bob });
       await this.fundProposalManagerX.aye(proposalId2, true, { from: charlie });
@@ -281,7 +306,10 @@ describe('PrivateExpelFundMemberProposal', () => {
 
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
 
-      await this.fundProposalManagerX.executeProposal(proposalId2, 0, { from: dan });
+      res = await this.fundProposalManagerX.proposals(proposalId2);
+      if (res !== ProposalStatus.EXECUTED) {
+        await this.fundProposalManagerX.executeProposal(proposalId2, 0, { from: dan });
+      }
 
       res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
       assert.equal(res, ether(100));
@@ -292,6 +320,23 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(await this.fundRAX.balanceOf(alice), 0);
       await this.fundRAX.mint(lockerAddress, { from: alice });
       assert.equal(await this.fundRAX.balanceOf(alice), 800);
+
+      res = await this.fundRAX.totalSupply();
+      assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.fundRAX.balanceOf(bob);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(charlie);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(dan);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(eve);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.balanceOf(frank);
+      assert.equal(res.toString(10), '300');
+      res = await this.fundRAX.tokenOwnersCount();
+      assert.equal(res, 6);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, true);
     });
   });
 });

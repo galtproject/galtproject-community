@@ -19,6 +19,9 @@ import "../common/interfaces/IFundRA.sol";
 
 
 contract FundProposalManager is Initializable {
+
+  uint256 public constant VERSION = 1;
+
   using SafeMath for uint256;
   using Counters for Counters.Counter;
   using ArraySet for ArraySet.AddressSet;
