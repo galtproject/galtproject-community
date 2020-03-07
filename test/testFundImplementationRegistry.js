@@ -20,15 +20,34 @@ describe('Fund Implementation Registry', () => {
   const code3 = bytes32('code3');
   let registry;
 
-  before(async function() {
+  it('should respond with 0s with no implementation', async function() {
     registry = await FundImplementationRegistry.new();
+
     await registry.addVersion(code2, alice);
     await registry.addVersion(code3, bob);
     await registry.addVersion(code3, charlie);
     await registry.addVersion(code3, dan);
+
+    assert.equal(await registry.getLatestVersionNumber(code1), 0);
+    assert.equal(await registry.getLatestVersionAddress(code1), zeroAddress);
+    assert.sameMembers(await registry.getVersions(code1), []);
+
+    assert.equal(await registry.getLatestVersionNumber(code2), 1);
+    assert.equal(await registry.getLatestVersionAddress(code2), alice);
+    assert.sameMembers(await registry.getVersions(code2), [zeroAddress, alice]);
+
+    assert.equal(await registry.getLatestVersionNumber(code3), 3);
+    assert.equal(await registry.getLatestVersionAddress(code3), dan);
+    assert.sameMembers(await registry.getVersions(code3), [zeroAddress, bob, charlie, dan]);
   });
 
   it('should respond with 0s with no implementation', async function() {
+    registry = await FundImplementationRegistry.new();
+
+    await registry.addVersionList([code2, code3], [alice, bob]);
+    await registry.addVersion(code3, charlie);
+    await registry.addVersion(code3, dan);
+
     assert.equal(await registry.getLatestVersionNumber(code1), 0);
     assert.equal(await registry.getLatestVersionAddress(code1), zeroAddress);
     assert.sameMembers(await registry.getVersions(code1), []);

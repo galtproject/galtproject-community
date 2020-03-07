@@ -21,13 +21,22 @@ contract FundImplementationRegistry is Initializable, Ownable {
   // code => version list
   mapping(bytes32 => address[]) public versions;
 
-  function addVersion(bytes32 _code, address _implementation) external onlyOwner {
+  function addVersion(bytes32 _code, address _implementation) public onlyOwner {
     if (versions[_code].length == 0) {
       versions[_code].push(address(0));
     }
     uint256 len = versions[_code].push(_implementation);
 
     emit NewImplementation(_code, _implementation, len - 1);
+  }
+
+  function addVersionList(bytes32[] calldata _codeList, address[] calldata _implementationList) external onlyOwner {
+    uint256 len = _codeList.length;
+    require(len == _implementationList.length, "Lengths doesn't match");
+
+    for (uint256 i = 0; i < len; i++) {
+      addVersion(_codeList[i], _implementationList[i]);
+    }
   }
 
   // GETTERS
