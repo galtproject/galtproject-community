@@ -273,28 +273,11 @@ contract PrivateFundFactory is ChargesFee {
     fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
     fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
 
-    fundACL.setRole(fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
+    _setFundProposalManagerRoles(fundACL, fundStorage, _fundProposalManager, _fundUpgrader, _fundMultiSig);
+
     fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
     fundACL.setRole(fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
     fundACL.setRole(fundStorage.ROLE_MULTISIG(), _fundMultiSig, true);
-    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
 
     fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
     fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
@@ -313,6 +296,37 @@ contract PrivateFundFactory is ChargesFee {
       _fundController,
       _fundUpgrader
     );
+  }
+
+  function _setFundProposalManagerRoles(
+    IACL fundACL,
+    PrivateFundStorage fundStorage,
+    address _fundProposalManager,
+    address _fundUpgrader,
+    address payable _fundMultiSig
+  )
+    internal
+  {
+    fundACL.setRole(fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
+
+    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
+    fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
   }
 
   function buildSecondStep(

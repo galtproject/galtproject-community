@@ -10,6 +10,7 @@ const MockSpaceGeoDataRegistry = contract.fromArtifact('MockSpaceGeoDataRegistry
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FeeRegistry = contract.fromArtifact('FeeRegistry');
 const ACL = contract.fromArtifact('ACL');
+const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, paymentMethods, evmIncreaseTime } = require('./helpers');
@@ -66,7 +67,7 @@ describe('NewFundMemberProposal', () => {
     });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
   });
 
   beforeEach(async function() {

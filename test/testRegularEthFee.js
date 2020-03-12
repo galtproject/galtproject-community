@@ -6,6 +6,7 @@ const GaltToken = contract.fromArtifact('GaltToken');
 const RegularEthFeeFactory = contract.fromArtifact('RegularEthFeeFactory');
 const RegularEthFee = contract.fromArtifact('RegularEthFee');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, hex } = require('./helpers');
@@ -37,7 +38,7 @@ describe('Regular ETH Fees', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
 
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });

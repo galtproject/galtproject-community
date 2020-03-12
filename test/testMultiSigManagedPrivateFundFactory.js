@@ -3,8 +3,9 @@ const { assert } = require('chai');
 
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
-const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const MultiSigManagedPrivateFundFactory = contract.fromArtifact('MultiSigManagedPrivateFundFactory');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, fundStorageAddressCode, fundUpgraderAddressCode } = require('./helpers');
@@ -13,7 +14,7 @@ initHelperWeb3(web3);
 
 MockBar.numberFormat = 'String';
 
-describe('Private Fund Factory', () => {
+describe('MultiSig Managed Private Fund Factory', () => {
   const [
     alice,
     bob,
@@ -47,52 +48,6 @@ describe('Private Fund Factory', () => {
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
 
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
-  });
-
-  it('should create a new proposal by default', async function() {
-    const fundFactory = await PrivateFundFactory.new(
-      alice,
-      raFactory,
-      multiSigFactory,
-      storageFactory,
-      controllerFactory,
-      proposalManagerFactory,
-      registryFactory,
-      aclFactory,
-      upgraderFactory,
-      1,
-      2,
-      { gas: 9500000 }
-    );
-
-    assert.equal(await fundFactory.fundRAFactory(), raFactory);
-    assert.equal(await fundFactory.fundStorageFactory(), storageFactory);
-    assert.equal(await fundFactory.fundMultiSigFactory(), multiSigFactory);
-    assert.equal(await fundFactory.fundControllerFactory(), controllerFactory);
-    assert.equal(await fundFactory.fundProposalManagerFactory(), proposalManagerFactory);
-    assert.equal(await fundFactory.fundACLFactory(), aclFactory);
-    assert.equal(await fundFactory.fundRegistryFactory(), registryFactory);
-    assert.equal(await fundFactory.fundUpgraderFactory(), upgraderFactory);
-
-    await fundFactory.setSubFactoryAddresses(
-      raFactory2,
-      multiSigFactory2,
-      storageFactory2,
-      controllerFactory2,
-      proposalManagerFactory2,
-      registryFactory2,
-      aclFactory2,
-      upgraderFactory2
-    );
-
-    assert.equal(await fundFactory.fundRAFactory(), raFactory2);
-    assert.equal(await fundFactory.fundStorageFactory(), storageFactory2);
-    assert.equal(await fundFactory.fundMultiSigFactory(), multiSigFactory2);
-    assert.equal(await fundFactory.fundControllerFactory(), controllerFactory2);
-    assert.equal(await fundFactory.fundProposalManagerFactory(), proposalManagerFactory2);
-    assert.equal(await fundFactory.fundACLFactory(), aclFactory2);
-    assert.equal(await fundFactory.fundRegistryFactory(), registryFactory2);
-    assert.equal(await fundFactory.fundUpgraderFactory(), upgraderFactory2);
   });
 
   describe('markers', async function() {

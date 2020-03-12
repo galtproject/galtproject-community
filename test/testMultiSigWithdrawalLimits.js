@@ -3,6 +3,7 @@ const { assert } = require('chai');
 
 const GaltToken = contract.fromArtifact('GaltToken');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
@@ -35,7 +36,7 @@ describe('MultiSig Withdrawal Limits', () => {
     await this.daiToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
   });
 
   before(async function() {
