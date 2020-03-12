@@ -97,7 +97,14 @@ describe('Private Fund Factory', () => {
 
   describe('markers', async function() {
     beforeEach(async function() {
-      this.fundFactory = await deployFundFactory(PrivateFundFactory, this.ppgr.address, alice, true, ether(10), ether(20));
+      this.fundFactory = await deployFundFactory(
+        PrivateFundFactory,
+        this.ppgr.address,
+        alice,
+        true,
+        ether(10),
+        ether(20)
+      );
       await this.fundFactory.setDefaultConfigValues(
         [fundStorageAddressCode, alice, fundUpgraderAddressCode],
         ['0x72483bf9', '0x3f554115', '0x8d996c0d'],

@@ -5,7 +5,6 @@ const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
 const MultiSigManagedPrivateFundFactory = contract.fromArtifact('MultiSigManagedPrivateFundFactory');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
-const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, fundStorageAddressCode, fundUpgraderAddressCode } = require('./helpers');
@@ -15,28 +14,7 @@ initHelperWeb3(web3);
 MockBar.numberFormat = 'String';
 
 describe('MultiSig Managed Private Fund Factory', () => {
-  const [
-    alice,
-    bob,
-    charlie,
-    raFactory,
-    multiSigFactory,
-    storageFactory,
-    controllerFactory,
-    proposalManagerFactory,
-    registryFactory,
-    aclFactory,
-    upgraderFactory,
-
-    raFactory2,
-    multiSigFactory2,
-    storageFactory2,
-    controllerFactory2,
-    proposalManagerFactory2,
-    registryFactory2,
-    aclFactory2,
-    upgraderFactory2
-  ] = accounts;
+  const [alice, bob, charlie] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -52,7 +30,14 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
   describe('markers', async function() {
     beforeEach(async function() {
-      this.fundFactory = await deployFundFactory(PrivateFundFactory, this.ppgr.address, alice, true, ether(10), ether(20));
+      this.fundFactory = await deployFundFactory(
+        MultiSigManagedPrivateFundFactory,
+        this.ppgr.address,
+        alice,
+        true,
+        ether(10),
+        ether(20)
+      );
       await this.fundFactory.setDefaultConfigValues(
         [fundStorageAddressCode, alice, fundUpgraderAddressCode],
         ['0x72483bf9', '0x3f554115', '0x8d996c0d'],

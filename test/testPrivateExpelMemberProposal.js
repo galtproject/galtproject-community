@@ -85,7 +85,14 @@ describe('PrivateExpelFundMemberProposal', () => {
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(PrivateFundFactory, this.ppgr.address, alice, true, ether(10), ether(20));
+    this.fundFactory = await deployFundFactory(
+      PrivateFundFactory,
+      this.ppgr.address,
+      alice,
+      true,
+      ether(10),
+      ether(20)
+    );
   });
 
   beforeEach(async function() {

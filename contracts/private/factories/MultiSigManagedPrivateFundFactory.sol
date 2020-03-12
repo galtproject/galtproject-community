@@ -21,6 +21,7 @@ import "./PrivateFundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 import "./PrivateFundFactory.sol";
 
+
 contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
 
   function _setFundProposalManagerRoles(
