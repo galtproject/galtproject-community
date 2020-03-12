@@ -121,7 +121,7 @@ describe('NewFundMemberProposal', () => {
       assert.equal(res, alice);
 
       res = await locker.spaceTokenId();
-      assert.equal(res, 0);
+      assert.equal(res, token1);
 
       res = await locker.tokenDeposited();
       assert.equal(res, true);

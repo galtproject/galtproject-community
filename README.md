@@ -58,6 +58,6 @@ Also you can use our [Galt Project dApp](https://app.galtproject.io/) on mainnet
 * `make cleanup` - remove solidity build artifacts
 * `make compile` - compile solidity files, executes `make cleanup` before compilation
 * `make ftest` - run tests
-* `make validate` - run solidity and javascript linters
+* `make lint` - run solidity and javascript linters
 
 For more information check out `Makefile`

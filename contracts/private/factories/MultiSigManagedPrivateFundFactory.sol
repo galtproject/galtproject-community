@@ -9,20 +9,42 @@
 
 pragma solidity ^0.5.13;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@galtproject/private-property-registry/contracts/traits/ChargesFee.sol";
-
-import "../PrivateFundStorage.sol";
-import "../../common/FundRegistry.sol";
-import "../../common/FundUpgrader.sol";
-import "../../abstract/interfaces/IAbstractFundStorage.sol";
-
-import "./PrivateFundStorageFactory.sol";
-import "../../common/factories/FundBareFactory.sol";
 import "./PrivateFundFactory.sol";
 
 
 contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
+
+
+  constructor (
+    IPPGlobalRegistry _globalRegistry,
+    FundBareFactory _fundRAFactory,
+    FundBareFactory _fundMultiSigFactory,
+    PrivateFundStorageFactory _fundStorageFactory,
+    FundBareFactory _fundControllerFactory,
+    FundBareFactory _fundProposalManagerFactory,
+    FundBareFactory _fundRegistryFactory,
+    FundBareFactory _fundACLFactory,
+    FundBareFactory _fundUpgraderFactory,
+    uint256 _ethFee,
+    uint256 _galtFee
+  )
+    public
+    PrivateFundFactory(
+      _globalRegistry,
+      _fundRAFactory,
+      _fundMultiSigFactory,
+      _fundStorageFactory,
+      _fundControllerFactory,
+      _fundProposalManagerFactory,
+      _fundRegistryFactory,
+      _fundACLFactory,
+      _fundUpgraderFactory,
+      _ethFee,
+      _galtFee
+    )
+  {
+
+  }
 
   function _setFundProposalManagerRoles(
     IACL fundACL,
