@@ -15,10 +15,9 @@ const PPACL = contract.fromArtifact('PPACL');
 const MultiSigManagedPrivateFundFactory = contract.fromArtifact('MultiSigManagedPrivateFundFactory');
 const MockBar = contract.fromArtifact('MockBar');
 
-const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
-
 const galt = require('@galtproject/utils');
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
 
 const ProposalStatus = {
   NULL: 0,
@@ -104,8 +103,8 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
     );
 
     this.mintToken = async (recipient, area) => {
-      let res = await this.controller1.mint(recipient, { from: minter });
-      const token1 = getEventArg(res, 'Mint', 'tokenId');
+      const res1 = await this.controller1.mint(recipient, { from: minter });
+      const token1 = getEventArg(res1, 'Mint', 'tokenId');
 
       // HACK
       await this.controller1.setInitialDetails(token1, 2, 1, area, utf8ToHex('foo'), 'bar', 'buzz', true, {
@@ -117,8 +116,8 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
 
     this.tokenLock = async (owner, token, fundRa) => {
       await this.galtToken.approve(this.ppLockerFactory.address, galtFee, { from: owner });
-      let res = await this.ppLockerFactory.build({ from: owner });
-      const lockerAddress = res.logs[0].args.locker;
+      const res1 = await this.ppLockerFactory.build({ from: owner });
+      const lockerAddress = res1.logs[0].args.locker;
 
       const locker = await PPLocker.at(lockerAddress);
       await this.registry1.approve(lockerAddress, token, { from: owner });
@@ -156,7 +155,7 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
       this.fundProposalManagerX = fund.fundProposalManager;
       this.fundMultiSigX = fund.fundMultiSig;
 
-      let locker = await this.tokenLock(bob, token1, this.fundRAX);
+      const locker = await this.tokenLock(bob, token1, this.fundRAX);
 
       await this.fundRAX.mint(locker.address, { from: bob });
     });
@@ -306,7 +305,9 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
     it('should not approveMintAll by proposal manager', async function() {
       const token1 = await this.mintToken(alice, 800);
 
-      let proposalData = this.fundStorageX.contract.methods.approveMintAll([this.registry1.address], [parseInt(token1, 10)]).encodeABI();
+      const proposalData = this.fundStorageX.contract.methods
+        .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
+        .encodeABI();
 
       let res = await this.fundProposalManagerX.propose(
         this.fundStorageX.address,
