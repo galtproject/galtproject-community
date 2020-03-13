@@ -13,9 +13,18 @@ const PPTokenController = contract.fromArtifact('PPTokenController');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PPACL = contract.fromArtifact('PPACL');
 const MultiSigManagedPrivateFundFactory = contract.fromArtifact('MultiSigManagedPrivateFundFactory');
+const MockBar = contract.fromArtifact('MockBar');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getEventArg, assertRevert } = require('./helpers');
+const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
+
+const galt = require('@galtproject/utils');
+
+const ProposalStatus = {
+  NULL: 0,
+  ACTIVE: 1,
+  EXECUTED: 2
+};
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -38,6 +47,7 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
+    this.bar = await MockBar.new();
 
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
@@ -92,11 +102,38 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
       ether(10),
       ether(20)
     );
+
+    this.mintToken = async (recipient, area) => {
+      let res = await this.controller1.mint(recipient, { from: minter });
+      const token1 = getEventArg(res, 'Mint', 'tokenId');
+
+      // HACK
+      await this.controller1.setInitialDetails(token1, 2, 1, area, utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
+
+      return token1;
+    };
+
+    this.tokenLock = async (owner, token, fundRa) => {
+      await this.galtToken.approve(this.ppLockerFactory.address, galtFee, { from: owner });
+      let res = await this.ppLockerFactory.build({ from: owner });
+      const lockerAddress = res.logs[0].args.locker;
+
+      const locker = await PPLocker.at(lockerAddress);
+      await this.registry1.approve(lockerAddress, token, { from: owner });
+      await locker.deposit(this.registry1.address, token, { from: owner });
+
+      await locker.approveMint(fundRa.address, { from: owner });
+      return locker;
+    };
   });
 
   describe('proposals', async function() {
     beforeEach(async function() {
       await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
+
+      const token1 = await this.mintToken(bob, 100);
 
       const fund = await buildPrivateFund(
         this.fundFactory,
@@ -105,7 +142,12 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
         new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK),
         {},
         [bob, charlie, dan],
-        2
+        2,
+        ONE_HOUR,
+        '',
+        '',
+        [token1],
+        [this.registry1.address]
       );
 
       this.fundStorageX = fund.fundStorage;
@@ -113,31 +155,18 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
       this.fundRAX = fund.fundRA;
       this.fundProposalManagerX = fund.fundProposalManager;
       this.fundMultiSigX = fund.fundMultiSig;
+
+      let locker = await this.tokenLock(bob, token1, this.fundRAX);
+
+      await this.fundRAX.mint(locker.address, { from: bob });
     });
 
     it('should approve mint by multisig', async function() {
-      let res = await this.controller1.mint(alice, { from: minter });
-      const token1 = getEventArg(res, 'Mint', 'tokenId');
+      const token1 = await this.mintToken(alice, 800);
 
-      res = await this.registry1.ownerOf(token1);
-      assert.equal(res, alice);
+      const locker = await this.tokenLock(alice, token1, this.fundRAX);
 
-      // HACK
-      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
-        from: minter
-      });
-
-      await this.galtToken.approve(this.ppLockerFactory.address, galtFee, { from: alice });
-      res = await this.ppLockerFactory.build({ from: alice });
-      const lockerAddress = res.logs[0].args.locker;
-
-      const locker = await PPLocker.at(lockerAddress);
-
-      // DEPOSIT SPACE TOKEN
-      await this.registry1.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(this.registry1.address, token1, { from: alice });
-
-      res = await locker.reputation();
+      let res = await locker.reputation();
       assert.equal(res, 800);
 
       res = await locker.owner();
@@ -153,9 +182,8 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
       assert.equal(res, false);
 
       // MINT REPUTATION
-      await locker.approveMint(this.fundRAX.address, { from: alice });
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
+      await assertRevert(this.fundRAX.mint(locker.address, { from: minter }));
+      await assertRevert(this.fundRAX.mint(locker.address, { from: alice }));
 
       const calldata = this.fundStorageX.contract.methods
         .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
@@ -171,49 +199,143 @@ describe.only('MultiSig Managed Private Fund Factory', () => {
       res = await this.fundStorageX.isMintApproved(this.registry1.address, token1);
       assert.equal(res, true);
 
-      await this.fundRAX.mint(lockerAddress, { from: alice });
+      await this.fundRAX.mint(locker.address, { from: alice });
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
     });
 
-    it('should use custom markers with 3rd step', async function() {
-      // build fund
-      await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
-      const fund = await buildPrivateFund(
-        this.fundFactory,
-        alice,
+    it('should add/deactivate a rule by proposal manager', async function() {
+      const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
+      let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
+
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
         false,
-        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
-        [
-          // fundStorage.setPeriodLimit()
-          new CustomVotingConfig('fundStorage', '0x8d996c0d', ether(50), ether(30), VotingConfig.ONE_WEEK)
-        ],
-        [bob, charlie],
-        2
+        false,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
       );
 
-      const fundStorageX = fund.fundStorage;
-      const fundControllerX = fund.fundController;
+      const proposalId = res.logs[0].args.proposalId.toString(10);
 
-      let res = await fundStorageX.customVotingConfigs(
-        await fundStorageX.getThresholdMarker(fundStorageX.address, '0x8d996c0d')
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [bob]);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      // verify value changed
+      res = await this.fundStorageX.getActiveFundRulesCount();
+      assert.equal(res, 1);
+
+      res = await this.fundStorageX.getActiveFundRules();
+      assert.sameMembers(res.map(int), [1]);
+
+      res = await this.fundStorageX.fundRules(1);
+      assert.equal(res.active, true);
+      assert.equal(res.id, 1);
+      assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
+      assert.equal(res.dataLink, 'Do that');
+
+      const ruleId = int(res.id);
+
+      // >>> deactivate aforementioned proposal
+
+      proposalData = this.fundStorageX.contract.methods.disableFundRule(ruleId).encodeABI();
+
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'obsolete',
+        {
+          from: bob
+        }
       );
-      assert.equal(res.support, ether(50));
-      assert.equal(res.minAcceptQuorum, ether(30));
-      assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundStorageX.customVotingConfigs(await fundStorageX.getThresholdMarker(alice, '0x3f554115'));
-      assert.equal(res.support, 0);
-      assert.equal(res.minAcceptQuorum, 0);
-      assert.equal(res.timeout, 0);
+      const removeProposalId = res.logs[0].args.proposalId.toString(10);
 
-      res = await fundStorageX.customVotingConfigs(
-        await fundStorageX.getThresholdMarker(fundControllerX.address, '0x8d996c0d')
+      await this.fundProposalManagerX.aye(removeProposalId, true, { from: bob });
+
+      res = await this.fundProposalManagerX.proposals(removeProposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      // verify value changed
+      res = await this.fundStorageX.getActiveFundRulesCount();
+      assert.equal(res, 0);
+
+      res = await this.fundStorageX.getActiveFundRules();
+      assert.sameMembers(res.map(int), []);
+
+      res = await this.fundStorageX.fundRules(ruleId);
+      assert.equal(res.active, false);
+      assert.equal(res.id, 1);
+      assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
+      assert.equal(res.dataLink, 'Do that');
+    });
+
+    it('should execute script if both cast/execute flags are true with enough support', async function() {
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        from: bob
+      });
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [bob]);
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.totalAyes, 100);
+
+      assert.equal(await this.bar.number(), 42);
+    });
+
+    it('should not approveMintAll by proposal manager', async function() {
+      const token1 = await this.mintToken(alice, 800);
+
+      let proposalData = this.fundStorageX.contract.methods.approveMintAll([this.registry1.address], [parseInt(token1, 10)]).encodeABI();
+
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
       );
-      assert.equal(res.support, 0);
-      assert.equal(res.minAcceptQuorum, 0);
-      assert.equal(res.timeout, 0);
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [bob]);
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(100));
+      assert.equal(res.currentSupport, ether(100));
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.fundStorageX.isMintApproved(this.registry1.address, token1);
+      assert.equal(res, false);
     });
   });
 });
