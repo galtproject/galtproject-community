@@ -37,7 +37,7 @@ PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
-describe.only('MultiSig Managed Private Fund Factory', () => {
+describe('MultiSig Managed Private Fund Factory', () => {
   const [alice, bob, charlie, dan, minter, lockerFeeManager] = accounts;
   const coreTeam = defaultSender;
 
