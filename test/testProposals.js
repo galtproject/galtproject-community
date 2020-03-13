@@ -6,6 +6,7 @@ const galt = require('@galtproject/utils');
 const SpaceToken = contract.fromArtifact('SpaceToken');
 const GaltToken = contract.fromArtifact('GaltToken');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
 const { initHelperWeb3, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
@@ -37,7 +38,7 @@ describe('FundProposalManager', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
   });
 
   beforeEach(async function() {

@@ -10,6 +10,7 @@ const MockUpgradeScript1 = contract.fromArtifact('MockUpgradeScript1');
 const MockUpgradeScript2 = contract.fromArtifact('MockUpgradeScript2');
 const MockFundProposalManagerV2 = contract.fromArtifact('MockFundProposalManagerV2');
 const IOwnedUpgradeabilityProxy = contract.fromArtifact('IOwnedUpgradeabilityProxy');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -42,7 +43,14 @@ describe('PrivateFundUpgrader', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ppgr.address, alice, true, ether(10), ether(20));
+    this.fundFactory = await deployFundFactory(
+      PrivateFundFactory,
+      this.ppgr.address,
+      alice,
+      true,
+      ether(10),
+      ether(20)
+    );
   });
 
   beforeEach(async function() {

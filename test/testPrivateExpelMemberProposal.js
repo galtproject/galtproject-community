@@ -12,6 +12,7 @@ const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory
 const PPTokenController = contract.fromArtifact('PPTokenController');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PPACL = contract.fromArtifact('PPACL');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -84,7 +85,14 @@ describe('PrivateExpelFundMemberProposal', () => {
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ppgr.address, alice, true, ether(10), ether(20));
+    this.fundFactory = await deployFundFactory(
+      PrivateFundFactory,
+      this.ppgr.address,
+      alice,
+      true,
+      ether(10),
+      ether(20)
+    );
   });
 
   beforeEach(async function() {

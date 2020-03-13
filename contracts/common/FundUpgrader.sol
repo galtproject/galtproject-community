@@ -67,6 +67,13 @@ contract FundUpgrader is Initializable {
     IOwnedUpgradeabilityProxy(_proxy).upgradeToAndCall(_implementation, _data);
   }
 
+  function callContractScript(address _contract, bytes calldata _data) external onlyUpgradeScriptManager {
+    // solium-disable-next-line security/no-low-level-calls
+    (bool x,) = _contract.call(_data);
+    // solium-disable-next-line error-reason
+    require(x);
+  }
+
   function setNextUpgradeScript(address _nextUpgadeScript) external onlyUpgradeScriptManager {
     nextUpgradeScript = _nextUpgadeScript;
   }

@@ -1,13 +1,11 @@
 const { contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
 
-const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 const PrivateFundStorageFactory = contract.fromArtifact('PrivateFundStorageFactory');
 const PrivateFundStorage = contract.fromArtifact('PrivateFundStorage');
 const PrivateFundController = contract.fromArtifact('PrivateFundController');
 const MockPrivateFundRA = contract.fromArtifact('MockPrivateFundRA');
 const FundBareFactory = contract.fromArtifact('FundBareFactory');
-const FundFactory = contract.fromArtifact('FundFactory');
 const FundStorageFactory = contract.fromArtifact('FundStorageFactory');
 
 const FundACL = contract.fromArtifact('FundACL');
@@ -34,7 +32,7 @@ FundMultiSig.numberFormat = 'String';
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
-async function deployFundFactory(globalRegistry, owner, privateProperty = false, ...ppArguments) {
+async function deployFundFactory(FundFactory, globalRegistry, owner, privateProperty = false, ...ppArguments) {
   let fundFactory;
 
   // deploy contracts
@@ -64,7 +62,7 @@ async function deployFundFactory(globalRegistry, owner, privateProperty = false,
     this.fundControllerFactory = await FundBareFactory.new(proxyFactory, fundController.address);
     this.fundProposalManagerFactory = await FundBareFactory.new(proxyFactory, fundProposalManager.address);
     this.fundUpgraderFactory = await FundBareFactory.new(proxyFactory, fundUpgrader.address);
-    fundFactory = await PrivateFundFactory.new(
+    fundFactory = await FundFactory.new(
       globalRegistry,
       this.fundRAFactory.address,
       this.fundMultiSigFactory.address,

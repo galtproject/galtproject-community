@@ -8,11 +8,11 @@ compile: cleanup
 	node scripts/checkContractSize.js
 	tput bel
 
-validate:
+lint:
 	npm run ethlint
 	npm run eslint
 
-validate-fix:
+lint-fix:
 	npm run ethlint
 	npm run eslint-fix
 

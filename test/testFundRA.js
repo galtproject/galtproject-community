@@ -12,6 +12,7 @@ const RegularEthFeeFactory = contract.fromArtifact('RegularEthFeeFactory');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FeeRegistry = contract.fromArtifact('FeeRegistry');
 const ACL = contract.fromArtifact('ACL');
+const FundFactory = contract.fromArtifact('FundFactory');
 
 SpaceToken.numberFormat = 'String';
 SpaceLocker.numberFormat = 'String';
@@ -79,7 +80,7 @@ describe('FundRA', () => {
     });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
   });
 
   beforeEach(async function() {
