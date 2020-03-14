@@ -140,7 +140,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         true,
         new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK),
         {},
-        [bob, charlie, dan],
+        [charlie, dan],
         2,
         ONE_HOUR,
         '',
@@ -189,7 +189,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
       const calldata = this.fundStorageX.contract.methods
         .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
         .encodeABI();
-      res = await this.fundMultiSigX.submitTransaction(this.fundStorageX.address, '0', calldata, { from: bob });
+      res = await this.fundMultiSigX.submitTransaction(this.fundStorageX.address, '0', calldata, { from: dan });
 
       const { transactionId } = res.logs[0].args;
       await this.fundMultiSigX.confirmTransaction(transactionId, { from: charlie });
@@ -210,25 +210,11 @@ describe('MultiSig Managed Private Fund Factory', () => {
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
       let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
 
-      let res = await this.fundProposalManagerX.propose(
-        this.fundStorageX.address,
-        0,
-        false,
-        false,
-        proposalData,
-        'hey',
-        {
-          from: bob
-        }
-      );
+      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'hey', {
+        from: bob
+      });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
-
-      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
-
-      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
-      assert.sameMembers(res.ayes, [bob]);
-
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
@@ -282,6 +268,48 @@ describe('MultiSig Managed Private Fund Factory', () => {
       assert.equal(res.id, 1);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
       assert.equal(res.dataLink, 'Do that');
+    });
+
+    it('should change multisig owners by proposal manager', async function() {
+      let res = await this.fundMultiSigX.getOwners();
+      assert.sameMembers(res, [dan, charlie]);
+
+      let proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, bob, 'Bob', '').encodeABI();
+
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'hey', {
+        from: bob
+      });
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      res = await this.fundStorageX.multiSigManagers(bob);
+      assert.equal(res.active, true);
+      assert.equal(res.manager, bob);
+      assert.equal(res.name, 'Bob');
+
+      proposalData = this.fundMultiSigX.contract.methods.setOwners([bob], 1).encodeABI();
+
+      res = await this.fundProposalManagerX.propose(
+        this.fundMultiSigX.address,
+        0,
+        true,
+        true,
+        proposalData,
+        'obsolete',
+        {
+          from: bob
+        }
+      );
+
+      const setOwnersProposalId = res.logs[0].args.proposalId.toString(10);
+      res = await this.fundProposalManagerX.proposals(setOwnersProposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      // verify value changed
+      res = await this.fundMultiSigX.getOwners();
+      assert.sameMembers(res, [bob]);
     });
 
     it('fundProposalManager should work with external contracts', async function() {
@@ -366,7 +394,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       // delegate role for approveMintAll method to proposalManager instead of multiSig
       res = await this.fundMultiSigX.submitTransaction(this.fundUpgraderX.address, '0', rolesProposalData, {
-        from: bob
+        from: dan
       });
       let { transactionId } = res.logs[0].args;
       await this.fundMultiSigX.confirmTransaction(transactionId, { from: charlie });
@@ -376,7 +404,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         .encodeABI();
 
       res = await this.fundMultiSigX.submitTransaction(this.fundUpgraderX.address, '0', rolesProposalData, {
-        from: bob
+        from: dan
       });
       transactionId = res.logs[0].args.transactionId;
       await this.fundMultiSigX.confirmTransaction(transactionId, { from: charlie });
@@ -389,7 +417,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         .encodeABI();
 
       // multiSig can't approveMintAll anymore
-      res = await this.fundMultiSigX.submitTransaction(this.fundStorageX.address, '0', proposalData, { from: bob });
+      res = await this.fundMultiSigX.submitTransaction(this.fundStorageX.address, '0', proposalData, { from: dan });
 
       transactionId = res.logs[0].args.transactionId;
       await this.fundMultiSigX.confirmTransaction(transactionId, { from: charlie });
@@ -401,14 +429,11 @@ describe('MultiSig Managed Private Fund Factory', () => {
       assert.equal(res, false);
 
       // execute approveMintAll by proposal manager
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'hey', {
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'hey', {
         from: bob
       });
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
-
-      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
-
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob]);
 

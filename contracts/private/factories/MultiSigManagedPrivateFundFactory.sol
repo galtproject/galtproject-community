@@ -14,7 +14,6 @@ import "./PrivateFundFactory.sol";
 
 contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
 
-
   constructor (
     IPPGlobalRegistry _globalRegistry,
     FundBareFactory _fundRAFactory,
@@ -64,7 +63,7 @@ contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
     fundACL.setRole(fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
     fundACL.setRole(fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
     fundACL.setRole(fundStorage.ROLE_FEE_MANAGER(), _fundMultiSig, true);
-    fundACL.setRole(fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundMultiSig, true);
+    fundACL.setRole(fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     fundACL.setRole(fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundMultiSig, true);
     fundACL.setRole(fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundMultiSig, true);
     fundACL.setRole(fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundMultiSig, true);
