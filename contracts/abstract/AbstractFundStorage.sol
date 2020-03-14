@@ -403,6 +403,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
     m.active = _active;
     m.name = _name;
+    m.manager = _manager;
     m.dataLink = _dataLink;
 
     if (_active) {
