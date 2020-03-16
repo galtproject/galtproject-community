@@ -16,11 +16,12 @@ import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalReg
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
 import "../abstract/AbstractFundStorage.sol";
+import "./traits/PPTokenInputRA.sol";
 
 
 contract PrivateFundStorage is AbstractFundStorage {
 
-  uint256 public constant VERSION = 2;
+  uint256 public constant VERSION = 3;
 
   event ApproveMint(address indexed registry, uint256 indexed tokenId);
 
@@ -76,8 +77,7 @@ contract PrivateFundStorage is AbstractFundStorage {
     _onlyValidToken(_registry);
     require(_expelledTokens[_registry][_tokenId] == false, "Already Expelled");
 
-    address owner = IERC721(_registry).ownerOf(_tokenId);
-    uint256 amount = IPPLocker(owner).reputation();
+    uint256 amount = PPTokenInputRA(fundRegistry.getRAAddress()).reputationMinted(_registry, _tokenId);
 
     assert(amount > 0);
 

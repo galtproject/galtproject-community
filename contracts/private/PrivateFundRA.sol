@@ -21,7 +21,7 @@ import "./traits/PPTokenInputRA.sol";
 
 contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
-  uint256 public constant VERSION = 2;
+  uint256 public constant VERSION = 3;
 
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
@@ -97,7 +97,7 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
     if (completelyBurned) {
       _cacheTokenDecrement(_owner);
-      reputationMinted[_registry][_tokenId] = false;
+      reputationMinted[_registry][_tokenId] = 0;
     }
   }
 
