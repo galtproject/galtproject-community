@@ -347,7 +347,7 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, true);
     });
 
-    it('should allow expel token if it\'s burned', async function() {
+    it("should allow expel token if it's burned", async function() {
       let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
         from: coreTeam,
         value: ether(10)
