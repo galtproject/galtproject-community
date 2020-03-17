@@ -346,5 +346,97 @@ describe('PrivateExpelFundMemberProposal', () => {
       res = await this.fundRAX.isMember(alice);
       assert.equal(res, true);
     });
+
+    it("should allow expel token if it's burned", async function() {
+      let res = await this.ppTokenFactory.build('Buildings', 'BDL', registryDataLink, ONE_HOUR, [], [], utf8ToHex(''), {
+        from: coreTeam,
+        value: ether(10)
+      });
+      this.registry1 = await PPToken.at(getEventArg(res, 'Build', 'token'));
+      this.controller1 = await PPTokenController.at(getEventArg(res, 'Build', 'controller'));
+
+      await this.controller1.setMinter(minter);
+      await this.controller1.setBurner(minter);
+      await this.controller1.setFee(bytes32('LOCKER_ETH'), ether(0.1));
+
+      res = await this.controller1.mint(alice, { from: minter });
+      const token1 = getEventArg(res, 'Mint', 'tokenId');
+
+      await this.controller1.setInitialDetails(token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
+
+      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: alice });
+      res = await this.ppLockerFactory.build({ from: alice });
+      const lockerAddress = res.logs[0].args.locker;
+
+      const locker = await PPLocker.at(lockerAddress);
+
+      // DEPOSIT SPACE TOKEN
+      await this.registry1.approve(lockerAddress, token1, { from: alice });
+      await locker.deposit(this.registry1.address, token1, { from: alice, value: ether(0.1) });
+
+      // MINT REPUTATION
+      await locker.approveMint(this.fundRAX.address, { from: alice });
+      await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
+      await this.fundRAX.mint(lockerAddress, { from: alice });
+
+      await this.controller1.initiateTokenBurn(token1, { from: minter });
+      await evmIncreaseTime(ONE_HOUR + 1);
+      await this.controller1.burnTokenByTimeout(token1);
+
+      // res = await this.fundRAX.registry1Owners();
+      // assert.sameMembers(res, [alice, bob, charlie, dan, eve, frank]);
+
+      // DISTRIBUTE REPUTATION
+      await this.fundRAX.delegate(bob, alice, 300, { from: alice });
+      await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
+
+      // EXPEL
+      const proposalData = this.fundStorageX.contract.methods
+        .expel(this.registry1.address, parseInt(token1, 10))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
+        from: charlie
+      });
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+
+      res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
+      assert.equal(res, ether(100));
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
+      assert.equal(res.isExpelled, true);
+      assert.equal(res.amount, 800);
+
+      await this.fundRAX.burnExpelled(this.registry1.address, token1, charlie, alice, 100, { from: unauthorized });
+      await this.fundRAX.burnExpelled(this.registry1.address, token1, bob, alice, 200, { from: unauthorized });
+      await this.fundRAX.burnExpelled(this.registry1.address, token1, alice, alice, 500, { from: unauthorized });
+
+      res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
+      assert.equal(res.isExpelled, true);
+      assert.equal(res.amount, 0);
+
+      res = await this.fundRAX.balanceOf(alice);
+      assert.equal(res, 0);
+      res = await this.fundRAX.delegatedBalanceOf(alice, alice);
+      assert.equal(res, 0);
+      res = await this.fundRAX.ownedBalanceOf(alice);
+      assert.equal(res, 0);
+      res = await this.fundRAX.totalSupply();
+      assert.equal(res, 1500); // 300 * 5
+      res = await this.fundRAX.tokenOwnersCount();
+      assert.equal(res, 5);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, false);
+    });
   });
 });

@@ -28,8 +28,8 @@ contract PPTokenInputRA is LiquidRA, Initializable {
   // owner => tokenCount
   mapping(address => uint256) public ownerTokenCount;
 
-  // registry => (tokenId => isMinted)
-  mapping(address => mapping(uint256 => bool)) public reputationMinted;
+  // registry => (tokenId => mintedAmount)
+  mapping(address => mapping(uint256 => uint256)) public reputationMinted;
 
   modifier onlyTokenOwner(address _registry, uint256 _tokenId, IPPLocker _tokenLocker) {
     IPPTokenRegistry(globalRegistry.getPPTokenRegistryAddress()).requireValidToken(_registry);
@@ -64,11 +64,11 @@ contract PPTokenInputRA is LiquidRA, Initializable {
 
     uint256 tokenId = _tokenLocker.tokenId();
     address registry = address(_tokenLocker.tokenContract());
-    require(reputationMinted[registry][tokenId] == false, "Reputation already minted");
+    require(reputationMinted[registry][tokenId] == 0, "Reputation already minted");
 
     uint256 reputation = _tokenLocker.reputation();
 
-    _cacheTokenOwner(owner, registry, tokenId);
+    _cacheTokenOwner(owner, registry, tokenId, reputation);
     _mint(owner, reputation);
   }
 
@@ -81,15 +81,14 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     address tokenContractAddress = address(tokenContract);
 
     require(tokenContract.exists(tokenId) == false, "Token still exists");
-    require(reputationMinted[tokenContractAddress][tokenId] == true, "Reputation doesn't minted");
+    require(reputationMinted[tokenContractAddress][tokenId] > 0, "Reputation doesn't minted");
 
-    uint256 reputation = _tokenLocker.reputation();
     address owner = _tokenLocker.owner();
 
-    _burn(owner, reputation);
+    _burn(owner, reputationMinted[tokenContractAddress][tokenId]);
     _cacheTokenDecrement(owner);
 
-    reputationMinted[tokenContractAddress][tokenId] = false;
+    reputationMinted[tokenContractAddress][tokenId] = 0;
   }
 
   // Burn token total reputation
@@ -106,21 +105,20 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     require(msg.sender == owner, "Not owner of the locker");
 
     address registry = address(_tokenLocker.tokenContract());
-    uint256 reputation = _tokenLocker.reputation();
     uint256 tokenId = _tokenLocker.tokenId();
 
-    require(reputationMinted[registry][tokenId] == true, "Reputation doesn't minted");
+    require(reputationMinted[registry][tokenId] > 0, "Reputation doesn't minted");
 
-    _burn(owner, reputation);
+    _burn(owner, reputationMinted[registry][tokenId]);
     _cacheTokenDecrement(owner);
 
-    reputationMinted[registry][tokenId] = false;
+    reputationMinted[registry][tokenId] = 0;
   }
 
-  function _cacheTokenOwner(address _owner, address _registry, uint256 _tokenId) internal {
+  function _cacheTokenOwner(address _owner, address _registry, uint256 _tokenId, uint256 _reputation) internal {
     _tokenOwners.addSilent(_owner);
     ownerTokenCount[_owner] = ownerTokenCount[_owner].add(1);
-    reputationMinted[_registry][_tokenId] = true;
+    reputationMinted[_registry][_tokenId] = _reputation;
   }
 
   function _cacheTokenDecrement(address _owner) internal {
