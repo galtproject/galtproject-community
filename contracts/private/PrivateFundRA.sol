@@ -95,6 +95,10 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
     _ownedBalances[_owner] = _ownedBalances[_owner].sub(_amount);
     totalStakedSpace = totalStakedSpace.sub(_amount);
 
+    updateValueAtNow(_cachedBalances[_delegate], balanceOf(_delegate));
+    updateValueAtNow(_cachedBalances[_owner], balanceOf(_owner));
+    updateValueAtNow(_cachedTotalSupply, totalSupply());
+
     if (completelyBurned) {
       _cacheTokenDecrement(_owner);
       reputationMinted[_registry][_tokenId] = 0;
