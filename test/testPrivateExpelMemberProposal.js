@@ -195,8 +195,6 @@ describe('PrivateExpelFundMemberProposal', () => {
       await this.fundRAX.delegate(bob, alice, 300, { from: alice });
       await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
 
-      const block0 = (await web3.eth.getBlock('latest')).number;
-
       await assertRevert(
         this.fundRAX.burnExpelled(this.registry1.address, token1, bob, alice, 200, { from: unauthorized })
       );
@@ -209,8 +207,10 @@ describe('PrivateExpelFundMemberProposal', () => {
         from: charlie
       });
 
+      const blockNumberBeforeBurn = await web3.eth.getBlockNumber();
+
       const proposalId = res.logs[0].args.proposalId.toString(10);
-      res = await this.fundRAX.totalSupplyAt(block0);
+      res = await this.fundRAX.totalSupplyAt(blockNumberBeforeBurn);
       assert.equal(res, 2300); // 300 * 5 + 800
 
       res = await this.fundProposalManagerX.proposals(proposalId);
@@ -219,9 +219,11 @@ describe('PrivateExpelFundMemberProposal', () => {
 
       res = await this.fundRAX.totalSupply();
       assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.fundRAX.balanceOf(alice);
+      assert.equal(res, 500);
       res = await this.fundRAX.balanceOf(bob);
       assert.equal(res, 500);
-      res = await this.fundRAX.balanceOfAt(bob, block0);
+      res = await this.fundRAX.balanceOfAt(bob, blockNumberBeforeBurn);
       assert.equal(res, 500);
       res = await this.fundRAX.tokenOwnersCount();
       assert.equal(res, 6);
@@ -272,6 +274,8 @@ describe('PrivateExpelFundMemberProposal', () => {
       );
       await this.fundRAX.burnExpelled(this.registry1.address, token1, alice, alice, 500, { from: unauthorized });
 
+      const blockNumberAfterBurn = await web3.eth.getBlockNumber();
+
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
       assert.equal(res.isExpelled, true);
       assert.equal(res.amount, 0);
@@ -288,6 +292,24 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, 5);
       res = await this.fundRAX.isMember(alice);
       assert.equal(res, false);
+
+      res = await this.fundRAX.totalSupplyAt(blockNumberBeforeBurn);
+      assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.fundRAX.balanceOfAt(charlie, blockNumberBeforeBurn);
+      assert.equal(res, 400);
+      res = await this.fundRAX.balanceOfAt(bob, blockNumberBeforeBurn);
+      assert.equal(res, 500);
+      res = await this.fundRAX.balanceOfAt(alice, blockNumberBeforeBurn);
+      assert.equal(res, 500);
+
+      res = await this.fundRAX.totalSupplyAt(blockNumberAfterBurn);
+      assert.equal(res, 1500); // 300 * 5
+      res = await this.fundRAX.balanceOfAt(charlie, blockNumberAfterBurn);
+      assert.equal(res, 300);
+      res = await this.fundRAX.balanceOfAt(bob, blockNumberAfterBurn);
+      assert.equal(res, 300);
+      res = await this.fundRAX.balanceOfAt(alice, blockNumberAfterBurn);
+      assert.equal(res, 0);
 
       // MINT REPUTATION REJECTED
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
@@ -312,13 +334,6 @@ describe('PrivateExpelFundMemberProposal', () => {
       await this.fundProposalManagerX.aye(proposalId2, true, { from: dan });
       await this.fundProposalManagerX.aye(proposalId2, true, { from: eve });
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      res = await this.fundProposalManagerX.proposals(proposalId2);
-      if (res !== ProposalStatus.EXECUTED) {
-        await this.fundProposalManagerX.executeProposal(proposalId2, 0, { from: dan });
-      }
-
       res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
       assert.equal(res, ether(100));
       res = await this.fundProposalManagerX.proposals(proposalId2);
@@ -328,6 +343,8 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(await this.fundRAX.balanceOf(alice), 0);
       await this.fundRAX.mint(lockerAddress, { from: alice });
       assert.equal(await this.fundRAX.balanceOf(alice), 800);
+
+      const blockNumberAfterMint = await web3.eth.getBlockNumber();
 
       res = await this.fundRAX.totalSupply();
       assert.equal(res, 2300); // 300 * 5 + 800
@@ -345,6 +362,33 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, 6);
       res = await this.fundRAX.isMember(alice);
       assert.equal(res, true);
+
+      res = await this.fundRAX.totalSupplyAt(blockNumberBeforeBurn);
+      assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.fundRAX.balanceOfAt(charlie, blockNumberBeforeBurn);
+      assert.equal(res, 400);
+      res = await this.fundRAX.balanceOfAt(bob, blockNumberBeforeBurn);
+      assert.equal(res, 500);
+      res = await this.fundRAX.balanceOfAt(alice, blockNumberBeforeBurn);
+      assert.equal(res, 500);
+
+      res = await this.fundRAX.totalSupplyAt(blockNumberAfterBurn);
+      assert.equal(res, 1500); // 300 * 5
+      res = await this.fundRAX.balanceOfAt(charlie, blockNumberAfterBurn);
+      assert.equal(res, 300);
+      res = await this.fundRAX.balanceOfAt(bob, blockNumberAfterBurn);
+      assert.equal(res, 300);
+      res = await this.fundRAX.balanceOfAt(alice, blockNumberAfterBurn);
+      assert.equal(res, 0);
+
+      res = await this.fundRAX.totalSupplyAt(blockNumberAfterMint);
+      assert.equal(res, 2300); // 300 * 5 + 800
+      res = await this.fundRAX.balanceOfAt(charlie, blockNumberAfterMint);
+      assert.equal(res, 300);
+      res = await this.fundRAX.balanceOfAt(bob, blockNumberAfterMint);
+      assert.equal(res, 300);
+      res = await this.fundRAX.balanceOfAt(alice, blockNumberAfterMint);
+      assert.equal(res, 800);
     });
 
     it("should allow expel token if it's burned", async function() {
