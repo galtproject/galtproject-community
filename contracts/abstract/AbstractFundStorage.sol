@@ -37,9 +37,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   event AddCommunityApp(address indexed contractAddress);
   event RemoveCommunityApp(address indexed contractAddress);
 
-  event AddFundRule(uint256 indexed id);
-  event DisableFundRule(uint256 indexed id);
-
   event AddFeeContract(address indexed contractAddress);
   event RemoveFeeContract(address indexed contractAddress);
 
@@ -62,8 +59,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_FINE_MEMBER_INCREMENT_MANAGER = bytes32("FINE_MEMBER_INCREMENT_MANAGER");
   bytes32 public constant ROLE_FINE_MEMBER_DECREMENT_MANAGER = bytes32("FINE_MEMBER_DECREMENT_MANAGER");
   bytes32 public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = bytes32("CHANGE_NAME_DATA_LINK_MANAGER");
-  bytes32 public constant ROLE_ADD_FUND_RULE_MANAGER = bytes32("ADD_FUND_RULE_MANAGER");
-  bytes32 public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = bytes32("DEACTIVATE_FUND_RULE_MANAGER");
   bytes32 public constant ROLE_FEE_MANAGER = bytes32("FEE_MANAGER");
   bytes32 public constant ROLE_MEMBER_DETAILS_MANAGER = bytes32("MEMBER_DETAILS_MANAGER");
   bytes32 public constant ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = bytes32("MULTISIG_WITHDRAWAL_MANAGER");
@@ -74,15 +69,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_MULTISIG = bytes32("MULTISIG");
 
   bytes32 public constant IS_PRIVATE = bytes32("is_private");
-
-  struct FundRule {
-    bool active;
-    uint256 id;
-    address manager;
-    bytes32 ipfsHash;
-    string dataLink;
-    uint256 createdAt;
-  }
 
   struct CommunityApp {
     bytes32 abiIpfsHash;
@@ -136,10 +122,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   uint256 public periodLength;
 
   ArraySet.AddressSet internal _communityApps;
-  ArraySet.Uint256Set internal _activeFundRules;
   ArraySet.AddressSet internal _feeContracts;
-
-  Counters.Counter internal fundRuleCounter;
 
   ArraySet.AddressSet internal _activeMultisigManagers;
   ArraySet.AddressSet internal _activePeriodLimitsContracts;
@@ -159,9 +142,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   mapping(uint256 => mapping(address => uint256)) internal _periodRunningTotals;
   // member => identification hash
   mapping(address => bytes32) public membersIdentification;
-
-  // FRP => fundRuleDetails
-  mapping(uint256 => FundRule) public fundRules;
 
   // marker => customVotingConfigs
   mapping(bytes32 => VotingConfig) public customVotingConfigs;
@@ -327,38 +307,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     emit ReplaceProposalMarker(_oldMarker, _newMarker, proposalMarkers[_newMarker].proposalManager);
   }
 
-  function addFundRule(
-    bytes32 _ipfsHash,
-    string calldata _dataLink
-  )
-    external
-    onlyRole(ROLE_ADD_FUND_RULE_MANAGER)
-  {
-    fundRuleCounter.increment();
-    uint256 _id = fundRuleCounter.current();
-
-    FundRule storage fundRule = fundRules[_id];
-
-    fundRule.active = true;
-    fundRule.id = _id;
-    fundRule.ipfsHash = _ipfsHash;
-    fundRule.dataLink = _dataLink;
-    fundRule.manager = msg.sender;
-    fundRule.createdAt = block.timestamp;
-
-    _activeFundRules.add(_id);
-
-    emit AddFundRule(_id);
-  }
-
-  function disableFundRule(uint256 _id) external onlyRole(ROLE_DEACTIVATE_FUND_RULE_MANAGER) {
-    fundRules[_id].active = false;
-
-    _activeFundRules.remove(_id);
-
-    emit DisableFundRule(_id);
-  }
-
   function addFeeContract(address _feeContract) external onlyRole(ROLE_FEE_MANAGER) {
     _feeContracts.add(_feeContract);
 
@@ -510,14 +458,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
   function getCommunityApps() external view returns (address[] memory) {
     return _communityApps.elements();
-  }
-
-  function getActiveFundRules() external view returns (uint256[] memory) {
-    return _activeFundRules.elements();
-  }
-
-  function getActiveFundRulesCount() external view returns (uint256) {
-    return _activeFundRules.size();
   }
 
   function areMembersValid(address[] calldata _members) external view returns (bool) {
