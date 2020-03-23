@@ -467,7 +467,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     internal
     pure
   {
-    require(_minAcceptQuorum > 0 && _minAcceptQuorum <= _support, "Invalid min accept quorum value");
+    require(_minAcceptQuorum > 0, "Invalid min accept quorum value");
     require(_support > 0 && _support <= ONE_HUNDRED_PCT, "Invalid support value");
     require(_timeout > 0, "Invalid duration value");
   }
