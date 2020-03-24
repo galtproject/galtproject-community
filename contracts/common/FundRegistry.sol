@@ -16,7 +16,7 @@ import "./interfaces/IFundRegistry.sol";
 
 contract FundRegistry is IFundRegistry, OwnableAndInitializable {
 
-  uint256 public constant VERSION = 1;
+  uint256 public constant VERSION = 2;
 
   // solium-disable-next-line mixedcase
   address internal constant ZERO_ADDRESS = address(0);
@@ -30,7 +30,8 @@ contract FundRegistry is IFundRegistry, OwnableAndInitializable {
   bytes32 public constant RA = bytes32("reputation_accounting");
   bytes32 public constant CONTROLLER = bytes32("controller");
   bytes32 public constant PROPOSAL_MANAGER = bytes32("proposal_manager");
-  bytes32 public constant UPGRADER = bytes32("UPGRADER");
+  bytes32 public constant UPGRADER = bytes32("upgrader");
+  bytes32 public constant RULE_REGISTRY = bytes32("rule_registry");
 
   event SetContract(bytes32 indexed key, address addr);
 
@@ -94,5 +95,10 @@ contract FundRegistry is IFundRegistry, OwnableAndInitializable {
   function getUpgraderAddress() external view returns (address) {
     require(contracts[UPGRADER] != ZERO_ADDRESS, "FundRegistry: UPGRADER not set");
     return contracts[UPGRADER];
+  }
+
+  function getRuleRegistryAddress() external view returns (address) {
+    require(contracts[RULE_REGISTRY] != ZERO_ADDRESS, "FundRegistry: RULE_REGISTRY not set");
+    return contracts[RULE_REGISTRY];
   }
 }

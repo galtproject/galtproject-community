@@ -11,7 +11,7 @@
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#8d59d9a",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#41d79b1",
     "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#1e391f2",
-    "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest#605d332",
+    "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest#898238d",
     "@galtproject/utils": "^0.9.1",
     "@openzeppelin/contracts": "2.4.0",
     "@openzeppelin/test-environment": "^0.1.3",

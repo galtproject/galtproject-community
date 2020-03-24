@@ -19,6 +19,9 @@ import "../../abstract/interfaces/IAbstractFundStorage.sol";
 
 import "./PrivateFundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
+import "../../common/registries/FundRuleRegistryV1.sol";
+
+import "./PrivateFundFactoryLib.sol";
 
 
 contract PrivateFundFactory is ChargesFee {
@@ -32,7 +35,8 @@ contract PrivateFundFactory is ChargesFee {
     address fundProposalManager,
     address fundMultiSig,
     address fundController,
-    address fundUpgrader
+    address fundUpgrader,
+    address fundRuleRegistry
   );
 
   event CreateFundSecondStep(
@@ -62,7 +66,8 @@ contract PrivateFundFactory is ChargesFee {
     FundBareFactory fundProposalManagerFactory,
     FundBareFactory fundRegistryFactory,
     FundBareFactory fundACLFactory,
-    FundBareFactory fundUpgraderFactory
+    FundBareFactory fundUpgraderFactory,
+    FundBareFactory fundRuleRegistryFactory
   );
 
   enum Step {
@@ -91,6 +96,7 @@ contract PrivateFundFactory is ChargesFee {
   FundBareFactory public fundACLFactory;
   FundBareFactory public fundRegistryFactory;
   FundBareFactory public fundUpgraderFactory;
+  FundBareFactory public fundRuleRegistryFactory;
 
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
@@ -114,6 +120,7 @@ contract PrivateFundFactory is ChargesFee {
     FundBareFactory _fundRegistryFactory,
     FundBareFactory _fundACLFactory,
     FundBareFactory _fundUpgraderFactory,
+    FundBareFactory _fundRuleRegistryFactory,
     uint256 _ethFee,
     uint256 _galtFee
   )
@@ -121,6 +128,7 @@ contract PrivateFundFactory is ChargesFee {
     Ownable()
     ChargesFee(_ethFee, _galtFee)
   {
+    fundRuleRegistryFactory = _fundRuleRegistryFactory;
     fundControllerFactory = _fundControllerFactory;
     fundStorageFactory = _fundStorageFactory;
     fundMultiSigFactory = _fundMultiSigFactory;
@@ -156,11 +164,13 @@ contract PrivateFundFactory is ChargesFee {
     FundBareFactory _fundProposalManagerFactory,
     FundBareFactory _fundRegistryFactory,
     FundBareFactory _fundACLFactory,
-    FundBareFactory _fundUpgraderFactory
+    FundBareFactory _fundUpgraderFactory,
+    FundBareFactory _fundRuleRegistryFactory
   )
     external
     onlyOwner
   {
+    fundRuleRegistryFactory = _fundRuleRegistryFactory;
     fundControllerFactory = _fundControllerFactory;
     fundStorageFactory = _fundStorageFactory;
     fundMultiSigFactory = _fundMultiSigFactory;
@@ -178,7 +188,8 @@ contract PrivateFundFactory is ChargesFee {
       _fundProposalManagerFactory,
       _fundRegistryFactory,
       _fundACLFactory,
-      _fundUpgraderFactory
+      _fundUpgraderFactory,
+      _fundRuleRegistryFactory
     );
   }
 
@@ -266,14 +277,23 @@ contract PrivateFundFactory is ChargesFee {
     address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
     address _fundRA = fundRAFactory.build(address(fundRegistry), false, true);
     address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), false, true);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), false, true);
 
     fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
     fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
     fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
     fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
+    fundRegistry.setContract(c.fundRegistry.RULE_REGISTRY(), _fundRuleRegistry);
 
-    _setFundProposalManagerRoles(fundACL, fundStorage, _fundProposalManager, _fundUpgrader, _fundMultiSig);
+    _setFundProposalManagerRoles(
+      fundACL,
+      fundStorage,
+      _fundProposalManager,
+      _fundUpgrader,
+      FundRuleRegistryV1(_fundRuleRegistry),
+      _fundMultiSig
+    );
 
     fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
     fundACL.setRole(fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
@@ -294,39 +314,29 @@ contract PrivateFundFactory is ChargesFee {
       _fundProposalManager,
       _fundMultiSig,
       _fundController,
-      _fundUpgrader
+      _fundUpgrader,
+      _fundRuleRegistry
     );
   }
 
   function _setFundProposalManagerRoles(
-    IACL fundACL,
-    PrivateFundStorage fundStorage,
+    IACL _fundACL,
+    PrivateFundStorage _fundStorage,
     address _fundProposalManager,
     address _fundUpgrader,
+    FundRuleRegistryV1 _fundRuleRegistry,
     address payable _fundMultiSig
   )
     internal
   {
-    fundACL.setRole(fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
-
-    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
-    fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
+    PrivateFundFactoryLib.setFundRoles(
+      _fundACL,
+      _fundStorage,
+      _fundProposalManager,
+      _fundUpgrader,
+      FundRuleRegistryV1(_fundRuleRegistry),
+      _fundMultiSig
+    );
   }
 
   function buildSecondStep(
@@ -422,6 +432,9 @@ contract PrivateFundFactory is ChargesFee {
       // address code for fundUpgrader
       } else if (current == address(152)) {
         marker = getThresholdMarker(c.fundRegistry.getUpgraderAddress(), signature);
+      // address code for fundRuleRegistry
+      } else if (current == address(153)) {
+        marker = getThresholdMarker(c.fundRegistry.getRuleRegistryAddress(), signature);
       } else {
         marker = getThresholdMarker(current, signature);
       }

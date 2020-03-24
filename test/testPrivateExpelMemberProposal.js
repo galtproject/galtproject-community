@@ -246,8 +246,6 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res.totalNays, 0);
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
-      assert.equal(res.totalNays, 0);
       assert.equal(res.ayesShare, '65217391304347826086');
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.requiredSupport, ether(60));

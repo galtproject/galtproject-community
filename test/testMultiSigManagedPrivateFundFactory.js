@@ -1,5 +1,6 @@
 const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
+const { getResTimestamp } = require('@galtproject/solidity-test-chest')(web3);
 
 const PPToken = contract.fromArtifact('PPToken');
 const GaltToken = contract.fromArtifact('GaltToken');
@@ -156,6 +157,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
       this.fundMultiSigX = fund.fundMultiSig;
       this.fundACLX = fund.fundACL;
       this.fundUpgraderX = fund.fundUpgrader;
+      this.fundRuleRegistryX = fund.fundRuleRegistry;
 
       const locker = await this.tokenLock(bob, token1, this.fundRAX);
 
@@ -208,26 +210,40 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
     it('should add/deactivate a rule by proposal manager', async function() {
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
-      let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
+      let proposalData = this.fundRuleRegistryX.contract.methods.addRuleType2(ipfsHash, 'Do that').encodeABI();
 
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'hey', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundRuleRegistryX.address,
+        0,
+        true,
+        true,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
+      );
 
+      const createdAt = await getResTimestamp(res);
       const proposalId = res.logs[0].args.proposalId.toString(10);
+      assert.equal((await this.fundProposalManagerX.getProposalVoting(proposalId)).creationTotalSupply, 100);
+
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // verify value changed
-      res = await this.fundStorageX.getActiveFundRulesCount();
+      res = await this.fundRuleRegistryX.getActiveFundRulesCount();
       assert.equal(res, 1);
 
-      res = await this.fundStorageX.getActiveFundRules();
+      res = await this.fundRuleRegistryX.getActiveFundRules();
       assert.sameMembers(res.map(int), [1]);
 
-      res = await this.fundStorageX.fundRules(1);
+      res = await this.fundRuleRegistryX.fundRules(1);
       assert.equal(res.active, true);
       assert.equal(res.id, 1);
+      assert.equal(res.typeId, 2);
+      assert.equal(res.createdAt, createdAt);
+      assert.equal(res.disabledAt, 0);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
       assert.equal(res.dataLink, 'Do that');
 
@@ -235,10 +251,10 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       // >>> deactivate aforementioned proposal
 
-      proposalData = this.fundStorageX.contract.methods.disableFundRule(ruleId).encodeABI();
+      proposalData = this.fundRuleRegistryX.contract.methods.disableRuleType2(ruleId).encodeABI();
 
       res = await this.fundProposalManagerX.propose(
-        this.fundStorageX.address,
+        this.fundRuleRegistryX.address,
         0,
         false,
         false,
@@ -251,21 +267,24 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       const removeProposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.aye(removeProposalId, true, { from: bob });
+      res = await this.fundProposalManagerX.aye(removeProposalId, true, { from: bob });
+      const disabledAt = await getResTimestamp(res);
 
       res = await this.fundProposalManagerX.proposals(removeProposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // verify value changed
-      res = await this.fundStorageX.getActiveFundRulesCount();
+      res = await this.fundRuleRegistryX.getActiveFundRulesCount();
       assert.equal(res, 0);
 
-      res = await this.fundStorageX.getActiveFundRules();
+      res = await this.fundRuleRegistryX.getActiveFundRules();
       assert.sameMembers(res.map(int), []);
 
-      res = await this.fundStorageX.fundRules(ruleId);
+      res = await this.fundRuleRegistryX.fundRules(ruleId);
       assert.equal(res.active, false);
       assert.equal(res.id, 1);
+      assert.equal(res.typeId, 2);
+      assert.equal(res.disabledAt, disabledAt);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
       assert.equal(res.dataLink, 'Do that');
     });
@@ -325,8 +344,6 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob]);
-
-      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.totalAyes, 100);
 
       assert.equal(await this.bar.number(), 42);

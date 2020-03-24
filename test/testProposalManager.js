@@ -88,9 +88,9 @@ describe('Proposal Manager', () => {
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob]);
+      assert.equal(res.totalAyes, 300);
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.totalAyes, 300);
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.ayesShare, ether(20));
       assert.equal(res.naysShare, ether(0));
@@ -110,9 +110,9 @@ describe('Proposal Manager', () => {
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob]);
+      assert.equal(res.totalAyes, 300);
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.totalAyes, 300);
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.ayesShare, ether(20));
       assert.equal(res.naysShare, ether(0));
@@ -145,9 +145,9 @@ describe('Proposal Manager', () => {
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [bob]);
+      assert.equal(res.totalAyes, 1200);
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.totalAyes, 1200);
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.ayesShare, ether(80));
       assert.equal(res.naysShare, ether(0));
@@ -181,9 +181,9 @@ describe('Proposal Manager', () => {
       await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.ayes, [charlie, bob]);
+      assert.equal(res.totalAyes, 1200);
 
       res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.totalAyes, 1200);
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.ayesShare, ether(80));
       assert.equal(res.naysShare, ether(0));

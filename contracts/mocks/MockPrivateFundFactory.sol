@@ -1,18 +1,19 @@
 /*
- * Copyright ©️ 2018-2020 Galt•Project Society Construction and Terraforming Company
+ * Copyright ©️ 2018 Galt•Project Society Construction and Terraforming Company
  * (Founded by [Nikolai Popeka](https://github.com/npopeka)
  *
- * Copyright ©️ 2018-2020 Galt•Core Blockchain Company
+ * Copyright ©️ 2018 Galt•Core Blockchain Company
  * (Founded by [Nikolai Popeka](https://github.com/npopeka) by
  * [Basic Agreement](ipfs/QmaCiXUmSrP16Gz8Jdzq6AJESY1EAANmmwha15uR3c1bsS)).
  */
 
 pragma solidity ^0.5.13;
 
-import "./PrivateFundFactory.sol";
+import "../private/factories/PrivateFundFactory.sol";
 
 
-contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
+contract MockPrivateFundFactory is PrivateFundFactory {
+  address public proposalManagerToInject;
 
   constructor (
     IPPGlobalRegistry _globalRegistry,
@@ -44,7 +45,10 @@ contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
       _galtFee
     )
   {
+  }
 
+  function setProposalManagerToInject(address _addr) external {
+    proposalManagerToInject = _addr;
   }
 
   function _setFundProposalManagerRoles(
@@ -57,7 +61,7 @@ contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
   )
     internal
   {
-    PrivateFundFactoryLib.setMultiSigManagedFundRoles(
+    PrivateFundFactoryLib.setFundRoles(
       _fundACL,
       _fundStorage,
       _fundProposalManager,
@@ -65,6 +69,16 @@ contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
       FundRuleRegistryV1(_fundRuleRegistry),
       _fundMultiSig
     );
-  }
 
+    if (proposalManagerToInject != address(0)) {
+      PrivateFundFactoryLib.setFundRoles(
+        _fundACL,
+        _fundStorage,
+        proposalManagerToInject,
+        _fundUpgrader,
+        FundRuleRegistryV1(_fundRuleRegistry),
+        _fundMultiSig
+      );
+    }
+  }
 }

@@ -20,7 +20,7 @@ import "../common/interfaces/IFundRA.sol";
 
 contract FundProposalManager is Initializable {
 
-  uint256 public constant VERSION = 1;
+  uint256 public constant VERSION = 2;
 
   using SafeMath for uint256;
   using Counters for Counters.Counter;
@@ -33,6 +33,7 @@ contract FundProposalManager is Initializable {
   event NewProposal(uint256 indexed proposalId, address indexed proposer, bytes32 indexed marker);
   event AyeProposal(uint256 indexed proposalId, address indexed voter);
   event NayProposal(uint256 indexed proposalId, address indexed voter);
+  event AbstainProposal(uint256 indexed proposalId, address indexed voter);
 
   event Approved(uint256 ayeShare, uint256 support, uint256 indexed proposalId, bytes32 indexed marker);
   event Execute(uint256 indexed proposalId, address indexed executer, bool indexed success, bytes response);
@@ -46,9 +47,11 @@ contract FundProposalManager is Initializable {
     uint256 minAcceptQuorum;
     uint256 totalAyes;
     uint256 totalNays;
+    uint256 totalAbstains;
     mapping(address => Choice) participants;
     ArraySet.AddressSet ayes;
     ArraySet.AddressSet nays;
+    ArraySet.AddressSet abstains;
   }
 
   struct Proposal {
@@ -77,7 +80,8 @@ contract FundProposalManager is Initializable {
   enum Choice {
     PENDING,
     AYE,
-    NAY
+    NAY,
+    ABSTAIN
   }
 
   modifier onlyMember() {
@@ -137,6 +141,12 @@ contract FundProposalManager is Initializable {
     _nay(_proposalId, msg.sender);
   }
 
+  function abstain(uint256 _proposalId, bool _executeIfDecided) external {
+    require(_isProposalOpen(_proposalId), "Proposal isn't open");
+
+    _abstain(_proposalId, msg.sender, _executeIfDecided);
+  }
+
   function executeProposal(uint256 _proposalId, uint256 _gasToKeep) external {
     require(proposals[_proposalId].status == ProposalStatus.ACTIVE, "Proposal isn't active");
 
@@ -156,6 +166,9 @@ contract FundProposalManager is Initializable {
     if (pV.participants[_voter] == Choice.NAY) {
       pV.nays.remove(_voter);
       pV.totalNays = pV.totalNays.sub(reputation);
+    } else if (pV.participants[_voter] == Choice.ABSTAIN) {
+      pV.abstains.remove(_voter);
+      pV.totalAbstains = pV.totalAbstains.sub(reputation);
     }
 
     pV.participants[_voter] = Choice.AYE;
@@ -164,10 +177,8 @@ contract FundProposalManager is Initializable {
 
     emit AyeProposal(_proposalId, _voter);
 
-    (bool canExecuteThis,) = _canExecute(_proposalId);
-
     // Fail silently without revert
-    if (_executeIfDecided && canExecuteThis) {
+    if (_executeIfDecided && _canExecuteOnlyBool(_proposalId)) {
       // We've already checked if the vote can be executed with `_canExecute()`
       _unsafeExecuteProposal(_proposalId, 0);
     }
@@ -181,6 +192,9 @@ contract FundProposalManager is Initializable {
     if (pV.participants[_voter] == Choice.AYE) {
       pV.ayes.remove(_voter);
       pV.totalAyes = pV.totalAyes.sub(reputation);
+    } else if (pV.participants[_voter] == Choice.ABSTAIN) {
+      pV.abstains.remove(_voter);
+      pV.totalAbstains = pV.totalAbstains.sub(reputation);
     }
 
     pV.participants[msg.sender] = Choice.NAY;
@@ -188,6 +202,37 @@ contract FundProposalManager is Initializable {
     pV.totalNays = pV.totalNays.add(reputation);
 
     emit NayProposal(_proposalId, _voter);
+  }
+
+  function _abstain(uint256 _proposalId, address _voter, bool _executeIfDecided) internal {
+    ProposalVoting storage pV = _proposalVotings[_proposalId];
+    uint256 reputation = reputationOf(_voter, pV.creationBlock);
+    require(reputation > 0, "Can't vote with 0 reputation");
+
+    if (pV.participants[_voter] == Choice.AYE) {
+      pV.ayes.remove(_voter);
+      pV.totalAyes = pV.totalAyes.sub(reputation);
+    } else if (pV.participants[_voter] == Choice.NAY) {
+      pV.nays.remove(_voter);
+      pV.totalNays = pV.totalNays.sub(reputation);
+    }
+
+    pV.participants[msg.sender] = Choice.ABSTAIN;
+    pV.abstains.add(msg.sender);
+    pV.totalAbstains = pV.totalAbstains.add(reputation);
+
+    emit AbstainProposal(_proposalId, _voter);
+
+    // Fail silently without revert
+    if (_executeIfDecided && _canExecuteOnlyBool(_proposalId)) {
+      // We've already checked if the vote can be executed with `_canExecute()`
+      _unsafeExecuteProposal(_proposalId, 0);
+    }
+  }
+
+  function _canExecuteOnlyBool(uint256 _proposalId) internal view returns (bool) {
+    (bool canExecuteThis,) = _canExecute(_proposalId);
+    return canExecuteThis;
   }
 
   function _onNewProposal(uint256 _proposalId) internal {
@@ -259,9 +304,9 @@ contract FundProposalManager is Initializable {
     }
 
     // Has min quorum?
-    uint256 ayeShare = getAyeShare(_proposalId);
-    if (ayeShare < pv.minAcceptQuorum) {
-      return (false, "MIN aye quorum hasn't been reached");
+    uint256 quorum = getCurrentQuorum(_proposalId);
+    if (quorum < pv.minAcceptQuorum) {
+      return (false, "MIN quorum hasn't been reached");
     }
 
     return (true, "");
@@ -303,8 +348,10 @@ contract FundProposalManager is Initializable {
       uint256 creationTotalSupply,
       uint256 totalAyes,
       uint256 totalNays,
+      uint256 totalAbstains,
       address[] memory ayes,
-      address[] memory nays
+      address[] memory nays,
+      address[] memory abstains
     )
   {
     ProposalVoting storage pV = _proposalVotings[_proposalId];
@@ -314,8 +361,10 @@ contract FundProposalManager is Initializable {
       pV.creationTotalSupply,
       pV.totalAyes,
       pV.totalNays,
+      pV.totalAbstains,
       pV.ayes.elements(),
-      pV.nays.elements()
+      pV.nays.elements(),
+      pV.abstains.elements()
     );
   }
 
@@ -327,9 +376,9 @@ contract FundProposalManager is Initializable {
     returns (
       uint256 ayesShare,
       uint256 naysShare,
-      uint256 totalAyes,
-      uint256 totalNays,
+      uint256 abstainsShare,
       uint256 currentSupport,
+      uint256 currentQuorum,
       uint256 requiredSupport,
       uint256 minAcceptQuorum,
       uint256 timeoutAt
@@ -340,9 +389,9 @@ contract FundProposalManager is Initializable {
     return (
       getAyeShare(_proposalId),
       getNayShare(_proposalId),
-      pV.totalAyes,
-      pV.totalNays,
+      getAbstainShare(_proposalId),
       getCurrentSupport(_proposalId),
+      getCurrentQuorum(_proposalId),
       pV.requiredSupport,
       pV.minAcceptQuorum,
       pV.timeoutAt
@@ -364,13 +413,22 @@ contract FundProposalManager is Initializable {
   function getCurrentSupport(uint256 _proposalId) public view returns (uint256) {
     ProposalVoting storage pv = _proposalVotings[_proposalId];
 
-    uint256 totalVotes = pv.totalAyes.add(pv.totalNays);
+    uint256 totalVotes = pv.totalAyes.add(pv.totalNays).add(pv.totalAbstains);
 
     if (totalVotes == 0) {
       return 0;
     }
 
     return pv.totalAyes.mul(ONE_HUNDRED_PCT) / totalVotes;
+  }
+
+  function getCurrentQuorum(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage pv = _proposalVotings[_proposalId];
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    uint256 totalVotes = pv.totalAyes.add(pv.totalNays).add(pv.totalAbstains);
+
+    return totalVotes.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
   }
 
   function getAyeShare(uint256 _proposalId) public view returns (uint256) {
@@ -383,5 +441,11 @@ contract FundProposalManager is Initializable {
     ProposalVoting storage p = _proposalVotings[_proposalId];
 
     return p.totalNays.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
+  }
+
+  function getAbstainShare(uint256 _proposalId) public view returns (uint256) {
+    ProposalVoting storage p = _proposalVotings[_proposalId];
+
+    return p.totalAbstains.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
   }
 }

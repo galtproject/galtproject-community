@@ -51,15 +51,11 @@ interface IAbstractFundStorage {
   function removeProposalMarker(bytes32 _marker) external;
   function replaceProposalMarker(bytes32 _oldMarker, bytes32 _newMethodSignature, address _newDestination) external;
 
-  function addFundRule(bytes32 _ipfsHash, string calldata _dataLink) external;
-
   function addFeeContract(address _feeContract) external;
 
   function removeFeeContract(address _feeContract) external;
 
   function setMemberIdentification(address _member, bytes32 _identificationHash) external;
-
-  function disableFundRule(uint256 _id) external;
 
   function setNameAndDataLink(
     string calldata _name,
@@ -93,10 +89,6 @@ interface IAbstractFundStorage {
   function config(bytes32 _key) external view returns (bytes32);
 
   function getCommunityApps() external view returns (address[] memory);
-
-  function getActiveFundRules() external view returns (uint256[] memory);
-
-  function getActiveFundRulesCount() external view returns (uint256);
 
   function communityAppsInfo(
     address _contract
