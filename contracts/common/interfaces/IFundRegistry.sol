@@ -25,4 +25,6 @@ interface IFundRegistry {
   function getRAAddress() external view returns (address);
   function getControllerAddress() external view returns (address);
   function getProposalManagerAddress() external view returns (address);
+  function getUpgraderAddress() external view returns (address);
+  function getRuleRegistryAddress() external view returns (address);
 }

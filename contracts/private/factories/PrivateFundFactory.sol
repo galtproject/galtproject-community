@@ -432,6 +432,9 @@ contract PrivateFundFactory is ChargesFee {
       // address code for fundUpgrader
       } else if (current == address(152)) {
         marker = getThresholdMarker(c.fundRegistry.getUpgraderAddress(), signature);
+      // address code for fundRuleRegistry
+      } else if (current == address(153)) {
+        marker = getThresholdMarker(c.fundRegistry.getRuleRegistryAddress(), signature);
       } else {
         marker = getThresholdMarker(current, signature);
       }
