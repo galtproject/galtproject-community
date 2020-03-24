@@ -176,9 +176,11 @@ describe('ExpelFundMemberProposal', () => {
       res = await this.fundRAX.ownerHasSpaceToken(alice, token1);
       assert.equal(res, true);
 
-      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.equal(res.totalAyes, 1500); // 500 + 400 + 300 + 300
       assert.equal(res.totalNays, 0);
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.ayesShare, '65217391304347826086');
       assert.equal(res.currentSupport, ether(100));
       assert.equal(res.requiredSupport, ether(60));

@@ -212,7 +212,7 @@ contract FundProposalManager is Initializable {
     if (pV.participants[_voter] == Choice.AYE) {
       pV.ayes.remove(_voter);
       pV.totalAyes = pV.totalAyes.sub(reputation);
-    } if (pV.participants[_voter] == Choice.NAY) {
+    } else if (pV.participants[_voter] == Choice.NAY) {
       pV.nays.remove(_voter);
       pV.totalNays = pV.totalNays.sub(reputation);
     }

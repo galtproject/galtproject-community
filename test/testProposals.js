@@ -59,6 +59,7 @@ describe('FundProposalManager', () => {
     this.fundMultiSigX = fund.fundMultiSig;
     this.fundRAX = fund.fundRA;
     this.fundProposalManagerX = fund.fundProposalManager;
+    this.fundRuleRegistryX = fund.fundRuleRegistry;
 
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
@@ -126,12 +127,12 @@ describe('FundProposalManager', () => {
         res = await this.fundProposalManagerX.getProposalVoting(proposalId);
         assert.sameMembers(res.ayes, [bob]);
         assert.sameMembers(res.nays, [charlie]);
+        assert.equal(res.totalAyes, 300);
+        assert.equal(res.totalNays, 300);
 
         res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
         assert.equal(res.ayesShare, ether(20));
         assert.equal(res.naysShare, ether(20));
-        assert.equal(res.totalAyes, 300);
-        assert.equal(res.totalNays, 300);
         assert.equal(res.currentSupport, ether(50));
         assert.equal(res.requiredSupport, ether(60));
         assert.equal(res.minAcceptQuorum, ether(50));
@@ -154,11 +155,13 @@ describe('FundProposalManager', () => {
         await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
         await this.fundProposalManagerX.aye(proposalId, false, { from: eve });
 
+        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+        assert.equal(res.totalAyes, 900);
+        assert.equal(res.totalNays, 300);
+
         res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
         assert.equal(res.ayesShare, ether(60));
         assert.equal(res.naysShare, ether(20));
-        assert.equal(res.totalAyes, 900);
-        assert.equal(res.totalNays, 300);
         assert.equal(res.currentSupport, ether(75));
         assert.equal(res.requiredSupport, ether(60));
         assert.equal(res.minAcceptQuorum, ether(50));
@@ -178,12 +181,14 @@ describe('FundProposalManager', () => {
         assert.equal(res.minAcceptQuorum, ether(40));
         assert.equal(res.timeout, 555);
 
+        res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+        assert.equal(res.totalAyes, 900);
+        assert.equal(res.totalNays, 300);
+
         // doesn't affect already created proposals
         res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
         assert.equal(res.ayesShare, ether(60));
         assert.equal(res.naysShare, ether(20));
-        assert.equal(res.totalAyes, 900);
-        assert.equal(res.totalNays, 300);
         assert.equal(res.currentSupport, ether(75));
         assert.equal(res.requiredSupport, ether(60));
         assert.equal(res.minAcceptQuorum, ether(50));
@@ -204,11 +209,13 @@ describe('FundProposalManager', () => {
 
         const newProposalId = res.logs[0].args.proposalId.toString(10);
 
+        res = await this.fundProposalManagerX.getProposalVoting(newProposalId);
+        assert.equal(res.totalAyes, 0);
+        assert.equal(res.totalNays, 0);
+
         res = await this.fundProposalManagerX.getProposalVotingProgress(newProposalId);
         assert.equal(res.ayesShare, 0);
         assert.equal(res.naysShare, 0);
-        assert.equal(res.totalAyes, 0);
-        assert.equal(res.totalNays, 0);
         assert.equal(res.currentSupport, ether(0));
         assert.equal(res.requiredSupport, ether(42));
         assert.equal(res.minAcceptQuorum, ether(40));
@@ -222,10 +229,10 @@ describe('FundProposalManager', () => {
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
-      let proposalData = this.fundStorageX.contract.methods.addFundRule(ipfsHash, 'Do that').encodeABI();
+      let proposalData = this.fundRuleRegistryX.contract.methods.addRuleType3(ipfsHash, 'Do that').encodeABI();
 
       let res = await this.fundProposalManagerX.propose(
-        this.fundStorageX.address,
+        this.fundRuleRegistryX.address,
         0,
         false,
         false,
@@ -271,13 +278,13 @@ describe('FundProposalManager', () => {
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // verify value changed
-      res = await this.fundStorageX.getActiveFundRulesCount();
+      res = await this.fundRuleRegistryX.getActiveFundRulesCount();
       assert.equal(res, 1);
 
-      res = await this.fundStorageX.getActiveFundRules();
+      res = await this.fundRuleRegistryX.getActiveFundRules();
       assert.sameMembers(res.map(int), [1]);
 
-      res = await this.fundStorageX.fundRules(1);
+      res = await this.fundRuleRegistryX.fundRules(1);
       assert.equal(res.active, true);
       assert.equal(res.id, 1);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));
@@ -287,10 +294,10 @@ describe('FundProposalManager', () => {
 
       // >>> deactivate aforementioned proposal
 
-      proposalData = this.fundStorageX.contract.methods.disableFundRule(ruleId).encodeABI();
+      proposalData = this.fundRuleRegistryX.contract.methods.disableRuleType3(ruleId).encodeABI();
 
       res = await this.fundProposalManagerX.propose(
-        this.fundStorageX.address,
+        this.fundRuleRegistryX.address,
         0,
         false,
         false,
@@ -336,13 +343,13 @@ describe('FundProposalManager', () => {
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // verify value changed
-      res = await this.fundStorageX.getActiveFundRulesCount();
+      res = await this.fundRuleRegistryX.getActiveFundRulesCount();
       assert.equal(res, 0);
 
-      res = await this.fundStorageX.getActiveFundRules();
+      res = await this.fundRuleRegistryX.getActiveFundRules();
       assert.sameMembers(res.map(int), []);
 
-      res = await this.fundStorageX.fundRules(ruleId);
+      res = await this.fundRuleRegistryX.fundRules(ruleId);
       assert.equal(res.active, false);
       assert.equal(res.id, 1);
       assert.equal(res.ipfsHash, galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd'));

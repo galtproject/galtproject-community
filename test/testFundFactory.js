@@ -106,6 +106,7 @@ describe('FundFactory', () => {
 
     describe('fee collection', () => {
       it('should allow the collector withdrawing all collected ETH fees', async function() {
+        this.timeout(15000);
         await build(this.fundFactory, ether(5));
         await build(this.fundFactory, ether(5));
         await build(this.fundFactory, ether(5));
@@ -121,6 +122,7 @@ describe('FundFactory', () => {
       });
 
       it('should allow the collector withdrawing all collected GALT fees', async function() {
+        this.timeout(15000);
         await this.galtToken.approve(this.fundFactory.address, ether(70), { from: alice });
         await build(this.fundFactory, 0);
         await build(this.fundFactory, 0);

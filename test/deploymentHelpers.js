@@ -15,8 +15,10 @@ const FundController = contract.fromArtifact('FundController');
 const FundMultiSig = contract.fromArtifact('FundMultiSig');
 const MockFundRA = contract.fromArtifact('MockFundRA');
 const FundProposalManager = contract.fromArtifact('FundProposalManager');
+const FundRuleRegistryV1 = contract.fromArtifact('FundRuleRegistryV1');
 const OwnedUpgradeabilityProxyFactory = contract.fromArtifact('OwnedUpgradeabilityProxyFactory');
 const FundUpgrader = contract.fromArtifact('FundUpgrader');
+const PrivateFundFactoryLib = contract.fromArtifact('PrivateFundFactoryLib');
 
 const { initHelperWeb3, getMethodSignature, hex, getEventArg, addressOne } = require('./helpers');
 
@@ -28,6 +30,7 @@ FundUpgrader.numberFormat = 'String';
 FundStorage.numberFormat = 'String';
 PrivateFundStorage.numberFormat = 'String';
 FundMultiSig.numberFormat = 'String';
+FundRuleRegistryV1.numberFormat = 'String';
 
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
@@ -38,6 +41,7 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
   // deploy contracts
   const fundRegistry = await FundRegistry.new();
   const fundACL = await FundACL.new();
+  const fundRuleRegistry = await FundRuleRegistryV1.new();
 
   // TODO: transfer owned contracts ownership to the 0x0 address
 
@@ -47,6 +51,7 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
 
   this.fundRegistryFactory = await FundBareFactory.new(proxyFactory, fundRegistry.address);
   this.fundACLFactory = await FundBareFactory.new(proxyFactory, fundACL.address);
+  this.fundRuleRegistryFactory = await FundBareFactory.new(proxyFactory, fundRuleRegistry.address);
 
   if (privateProperty) {
     const fundRA = await MockPrivateFundRA.new();
@@ -55,6 +60,7 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
     const fundUpgrader = await FundUpgrader.new();
     const fundStorage = await PrivateFundStorage.new();
     const fundMultiSig = await FundMultiSig.new([addressOne]);
+    const privateFundFactoryLib = await PrivateFundFactoryLib.new();
 
     this.fundRAFactory = await FundBareFactory.new(proxyFactory, fundRA.address);
     this.fundStorageFactory = await PrivateFundStorageFactory.new(proxyFactory, fundStorage.address);
@@ -62,6 +68,10 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
     this.fundControllerFactory = await FundBareFactory.new(proxyFactory, fundController.address);
     this.fundProposalManagerFactory = await FundBareFactory.new(proxyFactory, fundProposalManager.address);
     this.fundUpgraderFactory = await FundBareFactory.new(proxyFactory, fundUpgrader.address);
+
+    await FundFactory.detectNetwork();
+    FundFactory.link('PrivateFundFactoryLib', privateFundFactoryLib.address);
+
     fundFactory = await FundFactory.new(
       globalRegistry,
       this.fundRAFactory.address,
@@ -72,8 +82,9 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
       this.fundRegistryFactory.address,
       this.fundACLFactory.address,
       this.fundUpgraderFactory.address,
+      this.fundRuleRegistryFactory.address,
       ...ppArguments,
-      { from: owner, gas: 9000000 }
+      { from: owner, gas: 9800000 }
     );
   } else {
     const fundRA = await MockFundRA.new();
@@ -100,6 +111,7 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
       this.fundRegistryFactory.address,
       this.fundACLFactory.address,
       this.fundUpgraderFactory.address,
+      this.fundRuleRegistryFactory.address,
       { from: owner }
     );
   }
@@ -116,6 +128,8 @@ async function deployFundFactory(FundFactory, globalRegistry, owner, privateProp
       chosenContract = FundStorage;
     } else if (contractName === 'multiSig') {
       chosenContract = FundMultiSig;
+    } else if (contractName === 'ruleRegistry') {
+      chosenContract = FundRuleRegistryV1;
     }
     markersNames.push(hex(`${fullMethodName}`));
     markersSignatures.push(getMethodSignature(chosenContract._json.abi, methodName));
@@ -131,8 +145,14 @@ function getBaseFundStorageMarkersNames() {
     'storage.addProposalMarker',
     'storage.removeProposalMarker',
     'storage.replaceProposalMarker',
-    'storage.addFundRule',
-    'storage.disableFundRule',
+    'ruleRegistry.addRuleType1',
+    'ruleRegistry.addRuleType2',
+    'ruleRegistry.addRuleType3',
+    'ruleRegistry.addRuleType4',
+    'ruleRegistry.disableRuleType1',
+    'ruleRegistry.disableRuleType2',
+    'ruleRegistry.disableRuleType3',
+    'ruleRegistry.disableRuleType4',
     'storage.addFeeContract',
     'storage.removeFeeContract',
     'storage.setMemberIdentification',
@@ -201,6 +221,7 @@ async function buildFund(
   const fundController = await FundController.at(getEventArg(res, 'CreateFundSecondStep', 'fundController'));
   const fundMultiSig = await FundMultiSig.at(getEventArg(res, 'CreateFundSecondStep', 'fundMultiSig'));
   const fundUpgrader = await FundUpgrader.at(getEventArg(res, 'CreateFundSecondStep', 'fundUpgrader'));
+  const fundRuleRegistry = await FundRuleRegistryV1.at(getEventArg(res, 'CreateFundSecondStep', 'fundRuleRegistry'));
 
   // >>> Step #3
   res = await factory.buildThirdStep(fundId, { from: creator });
@@ -272,7 +293,8 @@ async function buildFund(
     fundRA,
     fundController,
     fundUpgrader,
-    fundProposalManager
+    fundProposalManager,
+    fundRuleRegistry
   };
 }
 
@@ -336,6 +358,7 @@ async function buildPrivateFund(
   const fundMultiSig = await FundMultiSig.at(getEventArg(res, 'CreateFundFirstStep', 'fundMultiSig'));
   const fundUpgrader = await FundUpgrader.at(getEventArg(res, 'CreateFundFirstStep', 'fundUpgrader'));
   const fundRA = await MockPrivateFundRA.at(getEventArg(res, 'CreateFundFirstStep', 'fundRA'));
+  const fundRuleRegistry = await FundRuleRegistryV1.at(getEventArg(res, 'CreateFundFirstStep', 'fundRuleRegistry'));
   const fundProposalManager = await FundProposalManager.at(
     getEventArg(res, 'CreateFundFirstStep', 'fundProposalManager')
   );
@@ -404,7 +427,8 @@ async function buildPrivateFund(
     fundRA,
     fundController,
     fundUpgrader,
-    fundProposalManager
+    fundProposalManager,
+    fundRuleRegistry
   };
 }
 

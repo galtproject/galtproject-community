@@ -25,9 +25,6 @@ interface IFundRuleRegistry {
     uint256 disabledAt;
   }
 
-  function addFundRule(bytes32 _ipfsHash, string calldata _dataLink) external;
-  function disableFundRule(uint256 _id) external;
-
   function getActiveFundRules() external view returns (uint256[] memory);
   function getActiveFundRulesCount() external view returns (uint256);
 }

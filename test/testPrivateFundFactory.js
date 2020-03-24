@@ -5,6 +5,7 @@ const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
+const PrivateFundFactoryLib = contract.fromArtifact('PrivateFundFactoryLib');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, fundStorageAddressCode, fundUpgraderAddressCode } = require('./helpers');
@@ -26,6 +27,7 @@ describe('Private Fund Factory', () => {
     registryFactory,
     aclFactory,
     upgraderFactory,
+    ruleRegistryFactory,
 
     raFactory2,
     multiSigFactory2,
@@ -34,7 +36,8 @@ describe('Private Fund Factory', () => {
     proposalManagerFactory2,
     registryFactory2,
     aclFactory2,
-    upgraderFactory2
+    upgraderFactory2,
+    ruleRegistryFactory2
   ] = accounts;
   const coreTeam = defaultSender;
 
@@ -47,6 +50,11 @@ describe('Private Fund Factory', () => {
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
 
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
+
+    const privateFundFactoryLib = await PrivateFundFactoryLib.new();
+
+    await PrivateFundFactory.detectNetwork();
+    PrivateFundFactory.link('PrivateFundFactoryLib', privateFundFactoryLib.address);
   });
 
   it('should create a new proposal by default', async function() {
@@ -60,6 +68,7 @@ describe('Private Fund Factory', () => {
       registryFactory,
       aclFactory,
       upgraderFactory,
+      ruleRegistryFactory,
       1,
       2,
       { gas: 9500000 }
@@ -73,6 +82,7 @@ describe('Private Fund Factory', () => {
     assert.equal(await fundFactory.fundACLFactory(), aclFactory);
     assert.equal(await fundFactory.fundRegistryFactory(), registryFactory);
     assert.equal(await fundFactory.fundUpgraderFactory(), upgraderFactory);
+    assert.equal(await fundFactory.fundRuleRegistryFactory(), ruleRegistryFactory);
 
     await fundFactory.setSubFactoryAddresses(
       raFactory2,
@@ -82,7 +92,8 @@ describe('Private Fund Factory', () => {
       proposalManagerFactory2,
       registryFactory2,
       aclFactory2,
-      upgraderFactory2
+      upgraderFactory2,
+      ruleRegistryFactory2
     );
 
     assert.equal(await fundFactory.fundRAFactory(), raFactory2);
@@ -93,6 +104,7 @@ describe('Private Fund Factory', () => {
     assert.equal(await fundFactory.fundACLFactory(), aclFactory2);
     assert.equal(await fundFactory.fundRegistryFactory(), registryFactory2);
     assert.equal(await fundFactory.fundUpgraderFactory(), upgraderFactory2);
+    assert.equal(await fundFactory.fundRuleRegistryFactory(), ruleRegistryFactory2);
   });
 
   describe('markers', async function() {

@@ -18,7 +18,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   bytes32 public constant ROLE_ADD_FUND_RULE_MANAGER = bytes32("ADD_FUND_RULE_MANAGER");
   bytes32 public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = bytes32("DEACTIVATE_FUND_RULE_MANAGER");
 
-  constructor() public {
+  constructor() public FundRuleRegistryCore() {
   }
 
   // EXTERNAL INTERFACE
@@ -84,13 +84,14 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   function _disableFundRule(
     uint256 _id,
-    uint256 typeId
+    uint256 _typeId
   )
     internal
   {
     FundRule storage fundRule = fundRules[_id];
 
     require(fundRule.active == true, "Can disable an active rule only");
+    require(fundRule.typeId == _typeId, "Type ID doesn't match");
 
     fundRules[_id].active = false;
     fundRules[_id].disabledAt = block.timestamp;

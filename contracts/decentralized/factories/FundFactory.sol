@@ -23,6 +23,7 @@ import "../../common/FundUpgrader.sol";
 
 import "./FundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
+import "../../common/registries/FundRuleRegistryV1.sol";
 
 
 contract FundFactory is Ownable {
@@ -39,7 +40,8 @@ contract FundFactory is Ownable {
     bytes32 fundId,
     address fundMultiSig,
     address fundController,
-    address fundUpgrader
+    address fundUpgrader,
+    address fundRuleRegistry
   );
 
   event CreateFundThirdStep(
@@ -86,6 +88,7 @@ contract FundFactory is Ownable {
     FundController fundController;
     FundProposalManager fundProposalManager;
     FundUpgrader fundUpgrader;
+    FundRuleRegistryV1 fundRuleRegistry;
   }
 
   bool internal initialized;
@@ -104,6 +107,7 @@ contract FundFactory is Ownable {
   FundBareFactory internal fundACLFactory;
   FundBareFactory public fundRegistryFactory;
   FundBareFactory public fundUpgraderFactory;
+  FundBareFactory public fundRuleRegistryFactory;
 
   mapping(bytes32 => FundContracts) public fundContracts;
 
@@ -127,8 +131,10 @@ contract FundFactory is Ownable {
     FundBareFactory _fundProposalManagerFactory,
     FundBareFactory _fundRegistryFactory,
     FundBareFactory _fundACLFactory,
-    FundBareFactory _fundUpgraderFactory
+    FundBareFactory _fundUpgraderFactory,
+    FundBareFactory _fundRuleRegistryFactory
   ) public {
+    fundRuleRegistryFactory = _fundRuleRegistryFactory;
     fundControllerFactory = _fundControllerFactory;
     fundStorageFactory = _fundStorageFactory;
     fundMultiSigFactory = _fundMultiSigFactory;
@@ -235,21 +241,25 @@ contract FundFactory is Ownable {
 
     address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
     address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), false, true);
 
     fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
     fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
+    fundRegistry.setContract(c.fundRegistry.RULE_REGISTRY(), _fundRuleRegistry);
 
     c.currentStep = Step.THIRD;
     c.fundMultiSig = FundMultiSig(_fundMultiSig);
     c.fundUpgrader = FundUpgrader(_fundUpgrader);
     c.fundController = FundController(_fundController);
+    c.fundRuleRegistry = FundRuleRegistryV1(_fundRuleRegistry);
 
     emit CreateFundSecondStep(
       _fundId,
       _fundMultiSig,
       _fundController,
-      _fundUpgrader
+      _fundUpgrader,
+      _fundRuleRegistry
     );
   }
 
@@ -260,6 +270,7 @@ contract FundFactory is Ownable {
 
     FundStorage _fundStorage = c.fundStorage;
     FundRegistry fundRegistry = c.fundRegistry;
+    FundRuleRegistryV1 _fundRuleRegistry = c.fundRuleRegistry;
     IACL _fundACL = c.fundACL;
 
     address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), false, true);
@@ -274,9 +285,8 @@ contract FundFactory is Ownable {
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
-    // TODO: add fundRuleRegistry support
-    // _fundACL.setRole(_fundStorage.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
-    // _fundACL.setRole(_fundStorage.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundRuleRegistry.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundRuleRegistry.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);

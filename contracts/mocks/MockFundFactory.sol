@@ -23,7 +23,8 @@ contract MockFundFactory is FundFactory {
     FundBareFactory _fundProposalManagerFactory,
     FundBareFactory _fundRegistryFactory,
     FundBareFactory _fundACLFactory,
-    FundBareFactory _fundUpgraderFactory
+    FundBareFactory _fundUpgraderFactory,
+    FundBareFactory _fundRuleRegistryFactory
   )
     public
     FundFactory(
@@ -35,7 +36,8 @@ contract MockFundFactory is FundFactory {
       _fundProposalManagerFactory,
       _fundRegistryFactory,
       _fundACLFactory,
-      _fundUpgraderFactory
+      _fundUpgraderFactory,
+      _fundRuleRegistryFactory
     )
   {
   }
