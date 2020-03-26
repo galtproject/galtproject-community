@@ -27,8 +27,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   using ArraySet for ArraySet.Bytes32Set;
   using Counters for Counters.Counter;
 
-  event AddProposalMarker(bytes32 indexed marker, address indexed proposalManager);
-  event RemoveProposalMarker(bytes32 indexed marker, address indexed proposalManager);
+  event AddProposalMarker(bytes32 indexed marker, bytes32 indexed name, address indexed proposalManager);
+  event RemoveProposalMarker(bytes32 indexed marker, bytes32 indexed name, address indexed proposalManager);
   event ReplaceProposalMarker(bytes32 indexed oldMarker, bytes32 indexed newMarker, address indexed proposalManager);
 
   event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 minAcceptQuorum, uint256 timeout);
@@ -281,13 +281,13 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     m.name = _name;
     m.dataLink = _dataLink;
 
-    emit AddProposalMarker(_marker, _proposalManager);
+    emit AddProposalMarker(_marker, _name, _proposalManager);
   }
 
   function removeProposalMarker(bytes32 _marker) external onlyRole(ROLE_PROPOSAL_MARKERS_MANAGER) {
     proposalMarkers[_marker].active = false;
 
-    emit RemoveProposalMarker(_marker, proposalMarkers[_marker].proposalManager);
+    emit RemoveProposalMarker(_marker, proposalMarkers[_marker].name, proposalMarkers[_marker].proposalManager);
   }
 
   function replaceProposalMarker(

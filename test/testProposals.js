@@ -226,6 +226,13 @@ describe('FundProposalManager', () => {
 
   describe('SetAddFundRuleProposalManager', () => {
     it('should add/deactivate a rule', async function() {
+      const addRuleType3Marker = await this.fundStorageX.proposalMarkers(
+        getDestinationMarker(this.fundRuleRegistryX, 'addRuleType3')
+      );
+      assert.equal(addRuleType3Marker.active, true);
+      assert.equal(addRuleType3Marker.destination, this.fundRuleRegistryX.address);
+      assert.equal(addRuleType3Marker.proposalManager, this.fundProposalManagerX.address);
+
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
