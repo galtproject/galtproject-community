@@ -106,7 +106,6 @@ describe('PrivateFundUpgrader', () => {
     await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
     await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
     await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
-    await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
     assert.equal(await this.fundUpgraderX.nextUpgradeScript(), u1.address);
 
@@ -149,7 +148,6 @@ describe('PrivateFundUpgrader', () => {
     await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
     await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
     await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
-    await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
     assert.equal(await this.fundUpgraderX.nextUpgradeScript(), u2.address);
 
@@ -199,7 +197,6 @@ describe('PrivateFundUpgrader', () => {
     await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
     await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
     await this.fundProposalManagerX.aye(proposalId, true, { from: dan });
-    res = await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
 
     res = await this.fundProposalManagerX.proposals(proposalId);
     assert.equal(res.status, ProposalStatus.EXECUTED);

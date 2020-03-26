@@ -288,7 +288,8 @@ contract FundProposalManager is Initializable {
     }
 
     // Voting is already decided
-    if (_isValuePct(pv.totalAyes, pv.creationTotalSupply, pv.requiredSupport)) {
+    uint256 ayeShare = getAyeShare(_proposalId);
+    if (ayeShare >= pv.requiredSupport) {
       return (true, "");
     }
 
@@ -310,15 +311,6 @@ contract FundProposalManager is Initializable {
     }
 
     return (true, "");
-  }
-
-  function _isValuePct(uint256 _value, uint256 _total, uint256 _pct) internal pure returns (bool) {
-    if (_total == 0) {
-      return false;
-    }
-
-    uint256 computedPct = _value.mul(ONE_HUNDRED_PCT) / _total;
-    return computedPct > _pct;
   }
 
   function _isProposalOpen(uint256 _proposalId) internal view returns (bool) {
