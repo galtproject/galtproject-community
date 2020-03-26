@@ -397,6 +397,9 @@ async function buildPrivateFund(
       case 'fundRA':
         marker = fundStorage.getThresholdMarker(fundRA.address, config.methodSignature);
         break;
+      case 'fundRuleRegistry':
+        marker = fundStorage.getThresholdMarker(fundRuleRegistry.address, config.methodSignature);
+        break;
       default:
         marker = fundStorage.getThresholdMarker(contractName, config.methodSignature);
         break;
