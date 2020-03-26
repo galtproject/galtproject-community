@@ -330,7 +330,6 @@ describe('PrivateExpelFundMemberProposal', () => {
       await this.fundProposalManagerX.aye(proposalId2, true, { from: bob });
       await this.fundProposalManagerX.aye(proposalId2, true, { from: charlie });
       await this.fundProposalManagerX.aye(proposalId2, true, { from: dan });
-      await this.fundProposalManagerX.aye(proposalId2, true, { from: eve });
 
       res = await this.fundProposalManagerX.getCurrentSupport(proposalId);
       assert.equal(res, ether(100));

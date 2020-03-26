@@ -277,10 +277,6 @@ describe('FundProposalManager', () => {
       assert.equal(res.ayesShare, ether(60));
       assert.equal(res.naysShare, ether(20));
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
-
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
@@ -342,10 +338,6 @@ describe('FundProposalManager', () => {
       assert.equal(res.ayesShare, ether(60));
       assert.equal(res.naysShare, ether(20));
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-
-      await this.fundProposalManagerX.executeProposal(removeProposalId, 0, { from: dan });
-
       res = await this.fundProposalManagerX.proposals(removeProposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
@@ -389,7 +381,6 @@ describe('FundProposalManager', () => {
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
       await this.fundProposalManagerX.aye(pId, true, { from: dan });
-      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
       res = await this.fundProposalManagerX.proposals(pId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -404,7 +395,6 @@ describe('FundProposalManager', () => {
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
       await this.fundProposalManagerX.aye(pId, true, { from: dan });
-      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
       res = await this.fundProposalManagerX.proposals(pId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -477,7 +467,6 @@ describe('FundProposalManager', () => {
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
       await this.fundProposalManagerX.aye(pId, true, { from: dan });
-      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
       // approve Frank
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, frank, 'Frank', 'asdf').encodeABI();
@@ -490,8 +479,8 @@ describe('FundProposalManager', () => {
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
       await this.fundProposalManagerX.aye(pId, true, { from: dan });
 
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 1);
-      await this.fundProposalManagerX.executeProposal(pId, 0, { from: dan });
+      res = await this.fundProposalManagerX.proposals(pId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
 
       // now it's ok
       await this.fundProposalManagerX.executeProposal(proposalId, 0, { from: dan });
@@ -538,7 +527,6 @@ describe('FundProposalManager', () => {
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
       await this.fundProposalManagerX.aye(pId, true, { from: dan });
-      await this.fundProposalManagerX.aye(pId, true, { from: eve });
 
       limit = await this.fundStorageX.periodLimits(this.galtToken.address);
       assert.equal(limit.active, true);

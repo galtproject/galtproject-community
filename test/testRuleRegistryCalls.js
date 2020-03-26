@@ -22,7 +22,7 @@ const ProposalStatus = {
   EXECUTED: 2
 };
 
-describe('PrivateFundUpgrader', () => {
+describe('FundRuleRegistry Calls', () => {
   const [alice, bob, charlie, fakeRegistry] = accounts;
   const coreTeam = defaultSender;
 
@@ -79,7 +79,7 @@ describe('PrivateFundUpgrader', () => {
     });
   });
 
-  it('should allow updating FundRegistry and FundACL records', async function() {
+  it('should handle addRuleType4 s100%/q100% correctly', async function() {
     const addRuleType3Marker = await this.fundStorageX.customVotingConfigs(
       getDestinationMarker(this.fundRuleRegistryX, 'addRuleType4')
     );
