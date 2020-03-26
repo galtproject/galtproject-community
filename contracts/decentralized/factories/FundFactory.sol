@@ -389,6 +389,9 @@ contract FundFactory is Ownable {
       if (bytes8(proposalMarkersNames[i]) == bytes8("multiSig")) {
         _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(c.fundMultiSig), address(c.fundProposalManager), proposalMarkersNames[i], "");
       }
+      if (bytes8(proposalMarkersNames[i]) == bytes8("ruleRegi")) {
+        _fundStorage.addProposalMarker(proposalMarkersSignatures[i], address(c.fundRuleRegistry), address(c.fundProposalManager), proposalMarkersNames[i], "");
+      }
     }
     c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
 
