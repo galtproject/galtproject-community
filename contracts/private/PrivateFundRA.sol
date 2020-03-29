@@ -75,6 +75,7 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
 
+    require(_fundStorage().isBurnApproved(registry, tokenId), "No burn permissions");
     onlyValidToken(registry);
 
     require(_fundStorage().getTotalFineAmount(registry, tokenId) == 0, "There are pending fines");
