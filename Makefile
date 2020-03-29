@@ -6,7 +6,7 @@ cleanup:
 compile: cleanup
 	npm run compile
 	node scripts/checkContractSize.js
-	tput bel
+	-tput bel
 
 lint:
 	npm run ethlint
@@ -28,7 +28,7 @@ ftest:
 
 test: only-skip
 	-npm test
-	tput bel
+	-tput bel
 	$(MAKE) only-recover
 
 check-size:
