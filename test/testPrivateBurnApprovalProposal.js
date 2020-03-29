@@ -32,7 +32,6 @@ const ProposalStatus = {
   EXECUTED: 2
 };
 
-// 60 * 60
 const ONE_HOUR = 3600;
 
 describe('PrivateBurnApprovalProposal', () => {
