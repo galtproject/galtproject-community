@@ -1,6 +1,6 @@
 const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
-const { ether, assertRevert, increaseTime } = require('@galtproject/solidity-test-chest')(web3);
+const { ether, assertRevert, evmIncreaseTime } = require('@galtproject/solidity-test-chest')(web3);
 
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
@@ -333,7 +333,7 @@ describe('Proposal Manager', () => {
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), 'Proposal is still active');
 
-      await increaseTime(VotingConfig.ONE_WEEK + 3);
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
 
       await this.fundProposalManagerX.executeProposal(proposalId, 0);
 
@@ -368,7 +368,7 @@ describe('Proposal Manager', () => {
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), 'Proposal is still active');
 
-      await increaseTime(VotingConfig.ONE_WEEK + 3);
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), "Support hasn't been reached");
     });
@@ -396,7 +396,7 @@ describe('Proposal Manager', () => {
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), 'Proposal is still active');
 
-      await increaseTime(VotingConfig.ONE_WEEK + 3);
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), "Support hasn't been reached");
     });
@@ -437,7 +437,7 @@ describe('Proposal Manager', () => {
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), 'Proposal is still active');
 
-      await increaseTime(VotingConfig.ONE_WEEK + 3);
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), "MIN quorum hasn't been reached");
     });
