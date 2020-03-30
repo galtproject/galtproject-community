@@ -25,6 +25,9 @@ contract PrivateFundStorage is AbstractFundStorage {
 
   event ApproveMint(address indexed registry, uint256 indexed tokenId);
 
+  event SetBurnApproval(address indexed registry, uint256 indexed tokenId, bool value);
+  event BurnLockedChange(bool indexed burnLocked);
+
   event Expel(address indexed registry, uint256 indexed tokenId);
   event DecrementExpel(address indexed registry, uint256 indexed tokenId);
 
@@ -32,10 +35,14 @@ contract PrivateFundStorage is AbstractFundStorage {
 
   event LockChange(bool indexed isLock, address indexed registry, uint256 indexed tokenId);
 
+  bool public burnLocked;
+
   // registry => (tokenId => details)
   mapping(address => mapping(uint256 => MemberFines)) private _fines;
   // registry => (tokenId => isMintApproved)
   mapping(address => mapping(uint256 => bool)) private _mintApprovals;
+  // registry => (tokenId => isBurnApproved)
+  mapping(address => mapping(uint256 => bool)) private _burnApprovals;
   // registry => (tokenId => isExpelled)
   mapping(address => mapping(uint256 => bool)) private _expelledTokens;
   // registry => (tokenId => availableAmountToBurn)
@@ -68,6 +75,30 @@ contract PrivateFundStorage is AbstractFundStorage {
 
       emit ApproveMint(_registries[i], _tokenIds[i]);
     }
+  }
+
+  function setBurnApprovalAll(address[] calldata _registries, uint256[] calldata _tokenIds, bool _value)
+    external
+    onlyRole(ROLE_BURN_LOCK_MANAGER)
+  {
+    require(_registries.length == _tokenIds.length, "Array lengths mismatch");
+
+    uint256 len = _registries.length;
+
+    for (uint256 i = 0; i < len; i++) {
+      _onlyValidToken(_registries[i]);
+      _burnApprovals[_registries[i]][_tokenIds[i]] = _value;
+
+      emit SetBurnApproval(_registries[i], _tokenIds[i], _value);
+    }
+  }
+
+  function setBurnLocked(bool _value)
+    external
+    onlyRole(ROLE_BURN_LOCK_MANAGER)
+  {
+    burnLocked = _value;
+    emit BurnLockedChange(_value);
   }
 
   function expel(address _registry, uint256 _tokenId)
@@ -226,6 +257,17 @@ contract PrivateFundStorage is AbstractFundStorage {
     } else {
       return true;
     }
+  }
+
+  function isBurnApproved(
+    address _registry,
+    uint256 _tokenId
+  )
+  external
+  view
+  returns (bool)
+  {
+    return !burnLocked || _burnApprovals[_registry][_tokenId];
   }
 
   function isTokenLocked(

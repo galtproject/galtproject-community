@@ -329,6 +329,9 @@ describe('MultiSig Managed Private Fund Factory', () => {
       // verify value changed
       res = await this.fundMultiSigX.getOwners();
       assert.sameMembers(res, [bob]);
+      assert.equal(await this.fundMultiSigX.isOwner(bob), true);
+      assert.equal(await this.fundMultiSigX.isOwner(dan), false);
+      assert.equal(await this.fundMultiSigX.isOwner(charlie), false);
     });
 
     it('fundProposalManager should work with external contracts', async function() {
