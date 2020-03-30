@@ -76,6 +76,13 @@ contract FundMultiSig is MultiSigWallet, Initializable {
     require(_required > 0, "Required too low");
     require(_fundStorage().areMembersValid(_newOwners), "Not all members are valid");
 
+    for (uint i = 0; i < owners.length; i++) {
+      isOwner[owners[i]] = false;
+    }
+    for (uint i = 0; i < _newOwners.length; i++) {
+      isOwner[_newOwners[i]] = true;
+    }
+
     owners = _newOwners;
     required = _required;
 
