@@ -62,7 +62,7 @@ describe('Proposal Manager', () => {
   });
 
   describe('proposal creation', () => {
-    it.only('should create a new proposal by default', async function() {
+    it('should create a new proposal by default', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       let res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, calldata, 'blah', {
         from: bob
