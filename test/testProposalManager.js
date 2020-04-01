@@ -31,16 +31,9 @@ describe('Proposal Manager', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(
-      PrivateFundFactory,
-      this.ggr.address,
-      alice,
-      true,
-      ether(10),
-      ether(20)
-    );
+    this.fundFactory = await deployFundFactory(PrivateFundFactory, this.ggr.address, alice, true, ether(10), ether(20));
 
-    await this.fundFactory.setFeeManager(coreTeam, {from: alice});
+    await this.fundFactory.setFeeManager(coreTeam, { from: alice });
   });
 
   beforeEach(async function() {
@@ -67,7 +60,9 @@ describe('Proposal Manager', () => {
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
 
-    await this.fundRAX.mintAllHack(this.beneficiaries, this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.beneficiaries, this.benefeciarSpaceTokens, 300, {
+      from: alice
+    });
   });
 
   describe('proposal creation', () => {
@@ -455,28 +450,34 @@ describe('Proposal Manager', () => {
   describe('accept fee', () => {
     let proposalId;
 
-    beforeEach(async function () {
+    beforeEach(async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
         from: bob
       });
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.setEthFee(ether(0.001), {from: coreTeam});
+      await this.fundProposalManagerX.setEthFee(ether(0.001), { from: coreTeam });
     });
 
-    it('should accept fee for voting and creating proposals', async function () {
-      await assertRevert(this.fundProposalManagerX.aye(proposalId, true, {from: charlie}), 'Fee and msg.value not equal.');
-      await assertRevert(this.fundProposalManagerX.nay(proposalId, {from: charlie}), 'Fee and msg.value not equal.');
-      await assertRevert(this.fundProposalManagerX.abstain(proposalId, true, {from: charlie, value: ether(0.002) }), 'Fee and msg.value not equal.');
+    it('should accept fee for voting and creating proposals', async function() {
+      await assertRevert(
+        this.fundProposalManagerX.aye(proposalId, true, { from: charlie }),
+        'Fee and msg.value not equal.'
+      );
+      await assertRevert(this.fundProposalManagerX.nay(proposalId, { from: charlie }), 'Fee and msg.value not equal.');
+      await assertRevert(
+        this.fundProposalManagerX.abstain(proposalId, true, { from: charlie, value: ether(0.002) }),
+        'Fee and msg.value not equal.'
+      );
 
       let res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.abstains, []);
 
-      await this.fundProposalManagerX.nay(proposalId, {from: charlie, value: ether(0.001) });
-      await this.fundProposalManagerX.aye(proposalId, true, {from: charlie, value: ether(0.001) });
-      await this.fundProposalManagerX.abstain(proposalId, true, {from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.nay(proposalId, { from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.abstain(proposalId, true, { from: charlie, value: ether(0.001) });
 
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);
       assert.sameMembers(res.abstains, [charlie]);
