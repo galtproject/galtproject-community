@@ -26,6 +26,7 @@ import "./PrivateFundFactoryLib.sol";
 
 
 contract PrivateFundFactory is ChargesFee {
+  bytes32 public constant PROPOSAL_MANGER_FEE = "PROPOSAL_MANGER_FEE";
 
   event CreateFundFirstStep(
     bytes32 fundId,
@@ -84,8 +85,6 @@ contract PrivateFundFactory is ChargesFee {
     Step currentStep;
     FundRegistry fundRegistry;
   }
-
-  bytes32 public constant PROPOSAL_MANGER_FEE = "PROPOSAL_MANGER_FEE";
 
   bool internal initialized;
 

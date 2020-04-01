@@ -94,9 +94,9 @@ contract FundProposalManager is Initializable, ChargesEthFee {
   constructor() public {
   }
 
-  function initialize(IFundRegistry _fundRegistry) external isInitializer {
+  function initialize(IFundRegistry _fundRegistry, address _feeManager) external isInitializer {
     fundRegistry = _fundRegistry;
-    feeManager = msg.sender;
+    feeManager = _feeManager;
   }
 
   function propose(

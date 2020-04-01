@@ -36,7 +36,11 @@ contract FundBareFactory {
     external
     returns (address)
   {
-    return _build("initialize(address)", _addressArgument, _additionalOperations);
+    if(_additionalOperations & 4 == 4) {
+      return _build("initialize(address,address)", _addressArgument, _additionalOperations);
+    } else {
+      return _build("initialize(address)", _addressArgument, _additionalOperations);
+    }
   }
 
   function build(string calldata _signature, address _addressArgument, uint256 _additionalOperations)
@@ -59,10 +63,17 @@ contract FundBareFactory {
     internal
     returns (address)
   {
-    return _build(
-      abi.encodeWithSignature(_signature, _addressArgument),
-      _additionalOperations
-    );
+    if(_additionalOperations & 4 == 4) {
+      return _build(
+        abi.encodeWithSignature(_signature, _addressArgument, address(this)),
+        _additionalOperations
+      );
+    } else {
+      return _build(
+        abi.encodeWithSignature(_signature, _addressArgument),
+        _additionalOperations
+      );
+    }
   }
 
   function _build(bytes memory _payload, uint256 _additionalOperations)
