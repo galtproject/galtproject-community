@@ -5,9 +5,9 @@ const { ether, assertRevert, evmIncreaseTime } = require('@galtproject/solidity-
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
-const FundFactory = contract.fromArtifact('FundFactory');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 
-const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 
 MockBar.numberFormat = 'String';
 
@@ -31,14 +31,20 @@ describe('Proposal Manager', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(
+      PrivateFundFactory,
+      this.ggr.address,
+      alice,
+      true,
+      ether(10),
+      ether(20));
   });
 
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
     // support 60 quorum 40
-    const fundX = await buildFund(
+    const fundX = await buildPrivateFund(
       this.fundFactory,
       alice,
       false,
@@ -58,7 +64,7 @@ describe('Proposal Manager', () => {
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
 
-    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
   });
 
   describe('proposal creation', () => {
@@ -440,6 +446,69 @@ describe('Proposal Manager', () => {
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), "MIN quorum hasn't been reached");
+    });
+  });
+
+  describe('accept fee', () => {
+    let proposalId;
+
+    beforeEach(async function () {
+      // transfer 1 reputation point to make charlies reputation eq. 201
+      await this.fundRAX.delegate(charlie, dan, 1, {from: dan});
+      assert.equal(await this.fundRAX.balanceOf(bob), 300);
+      assert.equal(await this.fundRAX.balanceOf(charlie), 301);
+
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        from: bob
+      });
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, ether(20));
+      assert.equal(res.naysShare, ether(0));
+      assert.equal(res.currentQuorum, ether(20));
+      assert.equal(res.currentSupport, ether(100));
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+    });
+
+    it('it allow execution with S- / S+ Q+', async function () {
+      await this.fundProposalManagerX.aye(proposalId, true, {from: charlie});
+      await this.fundProposalManagerX.abstain(proposalId, false, {from: eve});
+
+      let res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.ayes, [charlie, bob]);
+      assert.sameMembers(res.abstains, [eve]);
+      assert.equal(res.totalAyes, 601);
+      assert.equal(res.totalAbstains, 300);
+
+      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.ayesShare, '40066666666666666666');
+      assert.equal(res.naysShare, ether(0));
+      assert.equal(res.abstainsShare, ether(20));
+      assert.equal(res.currentQuorum, '60066666666666666666');
+      assert.equal(res.currentSupport, '66703662597114317425');
+      assert.equal(res.requiredSupport, ether(60));
+      assert.equal(res.minAcceptQuorum, ether(40));
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), 'Proposal is still active');
+
+      await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
+
+      await this.fundProposalManagerX.executeProposal(proposalId, 0);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+
+      assert.equal(await this.bar.number(), 42);
     });
   });
 });
