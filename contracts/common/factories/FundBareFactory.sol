@@ -36,7 +36,7 @@ contract FundBareFactory {
     external
     returns (address)
   {
-    if(_additionalOperations & 4 == 4) {
+    if (_additionalOperations & 4 == 4) {
       return _build("initialize(address,address)", _addressArgument, _additionalOperations);
     } else {
       return _build("initialize(address)", _addressArgument, _additionalOperations);
@@ -63,7 +63,7 @@ contract FundBareFactory {
     internal
     returns (address)
   {
-    if(_additionalOperations & 4 == 4) {
+    if (_additionalOperations & 4 == 4) {
       return _build(
         abi.encodeWithSignature(_signature, _addressArgument, address(this)),
         _additionalOperations

@@ -29,7 +29,7 @@ import "../../abstract/fees/ChargesEthFee.sol";
 
 contract FundFactory is Ownable {
   bytes32 public constant ROLE_FEE_COLLECTOR = bytes32("FEE_COLLECTOR");
-  bytes32 public constant PROPOSAL_MANGER_FEE = "PROPOSAL_MANGER_FEE";
+  bytes32 public constant PROPOSAL_MANAGER_FEE = "PROPOSAL_MANAGER_FEE";
 
   event CreateFundFirstStep(
     bytes32 fundId,
@@ -278,7 +278,7 @@ contract FundFactory is Ownable {
     address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), 2);
     address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
 
-    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANGER_FEE]);
+    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
     ChargesEthFee(_fundProposalManager).setFeeCollector(owner());
     ChargesEthFee(_fundProposalManager).setFeeManager(owner());
 

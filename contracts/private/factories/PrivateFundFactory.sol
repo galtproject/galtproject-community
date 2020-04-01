@@ -26,7 +26,7 @@ import "./PrivateFundFactoryLib.sol";
 
 
 contract PrivateFundFactory is ChargesFee {
-  bytes32 public constant PROPOSAL_MANGER_FEE = "PROPOSAL_MANGER_FEE";
+  bytes32 public constant PROPOSAL_MANAGER_FEE = "PROPOSAL_MANAGER_FEE";
 
   event CreateFundFirstStep(
     bytes32 fundId,
@@ -290,7 +290,7 @@ contract PrivateFundFactory is ChargesFee {
     address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
     address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2);
 
-    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANGER_FEE]);
+    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
     ChargesEthFee(_fundProposalManager).setFeeCollector(feeCollector);
     ChargesEthFee(_fundProposalManager).setFeeManager(feeManager);
 
