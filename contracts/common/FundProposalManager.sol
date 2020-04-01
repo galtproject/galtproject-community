@@ -16,11 +16,12 @@ import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 import "./interfaces/IFundRegistry.sol";
 import "../common/interfaces/IFundRA.sol";
+import "../abstract/fees/ChargesEthFee.sol";
 
 
-contract FundProposalManager is Initializable {
+contract FundProposalManager is Initializable, ChargesEthFee {
 
-  uint256 public constant VERSION = 2;
+  uint256 constant VERSION = 2;
 
   using SafeMath for uint256;
   using Counters for Counters.Counter;
@@ -95,6 +96,7 @@ contract FundProposalManager is Initializable {
 
   function initialize(IFundRegistry _fundRegistry) external isInitializer {
     fundRegistry = _fundRegistry;
+    feeManager = msg.sender;
   }
 
   function propose(
@@ -159,6 +161,7 @@ contract FundProposalManager is Initializable {
   // INTERNAL
 
   function _aye(uint256 _proposalId, address _voter, bool _executeIfDecided) internal {
+    _acceptPayment();
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
     require(reputation > 0, "Can't vote with 0 reputation");
@@ -185,6 +188,7 @@ contract FundProposalManager is Initializable {
   }
 
   function _nay(uint256 _proposalId, address _voter) internal {
+    _acceptPayment();
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
     require(reputation > 0, "Can't vote with 0 reputation");
@@ -205,6 +209,7 @@ contract FundProposalManager is Initializable {
   }
 
   function _abstain(uint256 _proposalId, address _voter, bool _executeIfDecided) internal {
+    _acceptPayment();
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
     require(reputation > 0, "Can't vote with 0 reputation");

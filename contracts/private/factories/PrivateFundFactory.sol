@@ -20,6 +20,7 @@ import "../../abstract/interfaces/IAbstractFundStorage.sol";
 import "./PrivateFundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 import "../../common/registries/FundRuleRegistryV1.sol";
+import "../../abstract/fees/ChargesEthFee.sol";
 
 import "./PrivateFundFactoryLib.sol";
 
@@ -84,6 +85,8 @@ contract PrivateFundFactory is ChargesFee {
     FundRegistry fundRegistry;
   }
 
+  bytes32 public constant PROPOSAL_MANGER_FEE = "PROPOSAL_MANGER_FEE";
+
   bool internal initialized;
 
   IPPGlobalRegistry internal globalRegistry;
@@ -98,6 +101,7 @@ contract PrivateFundFactory is ChargesFee {
   FundBareFactory public fundUpgraderFactory;
   FundBareFactory public fundRuleRegistryFactory;
 
+  mapping(bytes32 => uint256) internal fundEthFees;
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
 
@@ -218,6 +222,15 @@ contract PrivateFundFactory is ChargesFee {
     emit SetDefaultConfigValues(len);
   }
 
+  function setFundEthFees(bytes32[] calldata _feeNames, uint256[] calldata _feeValues) external onlyOwner {
+    uint256 len = _feeNames.length;
+    require(len == _feeValues.length, "Fee key and value array lengths mismatch");
+
+    for (uint256 i = 0; i < _feeNames.length; i++) {
+      fundEthFees[_feeNames[i]] = _feeValues[_feeValues[i]];
+    }
+  }
+
   // USER INTERFACE
 
   function buildFirstStep(
@@ -268,16 +281,19 @@ contract PrivateFundFactory is ChargesFee {
         _initialMultiSigRequired,
         address(fundRegistry)
       ),
-      false,
-      true
+      2
     );
     address payable _fundMultiSig = address(uint160(_fundMultiSigNonPayable));
 
-    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
-    address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
-    address _fundRA = fundRAFactory.build(address(fundRegistry), false, true);
-    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), false, true);
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), false, true);
+    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), 2);
+    address _fundController = fundControllerFactory.build(address(fundRegistry), 2);
+    address _fundRA = fundRAFactory.build(address(fundRegistry), 2);
+    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2);
+
+    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANGER_FEE]);
+    ChargesEthFee(_fundProposalManager).setFeeCollector(feeCollector);
+    ChargesEthFee(_fundProposalManager).setFeeManager(feeManager);
 
     fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);

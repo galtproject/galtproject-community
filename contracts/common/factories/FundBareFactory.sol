@@ -13,6 +13,7 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxy.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
+import "../../abstract/fees/ChargesEthFee.sol";
 
 
 contract FundBareFactory {
@@ -28,44 +29,43 @@ contract FundBareFactory {
     external
     returns (address)
   {
-    return _build("initialize(address)", address(this), true, true);
+    return _build("initialize(address)", address(this), 2 | 1);
   }
 
-  function build(address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+  function build(address _addressArgument, uint256 _additionalOperations)
     external
     returns (address)
   {
-    return _build("initialize(address)", _addressArgument, _transferOwnership, _transferProxyOwnership);
+    return _build("initialize(address)", _addressArgument, _additionalOperations);
   }
 
-  function build(string calldata _signature, address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+  function build(string calldata _signature, address _addressArgument, uint256 _additionalOperations)
     external
     returns (address)
   {
-    return _build(_signature, _addressArgument, _transferOwnership, _transferProxyOwnership);
+    return _build(_signature, _addressArgument, _additionalOperations);
   }
 
-  function build(bytes calldata _payload, bool _transferOwnership, bool _transferProxyOwnership)
+  function build(bytes calldata _payload, uint256 _additionalOperations)
     external
     returns (address)
   {
-    return _build(_payload, _transferOwnership, _transferProxyOwnership);
+    return _build(_payload, _additionalOperations);
   }
 
   // INTERNAL
 
-  function _build(string memory _signature, address _addressArgument, bool _transferOwnership, bool _transferProxyOwnership)
+  function _build(string memory _signature, address _addressArgument, uint256 _additionalOperations)
     internal
     returns (address)
   {
     return _build(
       abi.encodeWithSignature(_signature, _addressArgument),
-      _transferOwnership,
-      _transferProxyOwnership
+      _additionalOperations
     );
   }
 
-  function _build(bytes memory _payload, bool _transferOwnership, bool _transferProxyOwnership)
+  function _build(bytes memory _payload, uint256 _additionalOperations)
     internal
     returns (address)
   {
@@ -73,12 +73,19 @@ contract FundBareFactory {
 
     proxy.upgradeToAndCall(implementation, _payload);
 
-    if (_transferOwnership == true) {
+    // Transfer ownership
+    if (_additionalOperations & 1 == 1) {
       Ownable(address(proxy)).transferOwnership(msg.sender);
     }
 
-    if (_transferProxyOwnership == true) {
+    // Transfer proxy ownership
+    if (_additionalOperations & 2 == 2) {
       proxy.transferProxyOwnership(msg.sender);
+    }
+
+    // Transfer fee manager
+    if (_additionalOperations & 4 == 4) {
+      ChargesEthFee(address(proxy)).setFeeManager(msg.sender);
     }
 
     return address(proxy);

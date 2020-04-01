@@ -234,14 +234,13 @@ contract FundFactory is Ownable {
         _initialMultiSigRequired,
         address(fundRegistry)
       ),
-      false,
-      true
+      2
     );
     address payable _fundMultiSig = address(uint160(_fundMultiSigNonPayable));
 
-    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
-    address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), false, true);
+    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), 2);
+    address _fundController = fundControllerFactory.build(address(fundRegistry), 2);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2);
 
     fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
@@ -273,8 +272,8 @@ contract FundFactory is Ownable {
     FundRuleRegistryV1 _fundRuleRegistry = c.fundRuleRegistry;
     IACL _fundACL = c.fundACL;
 
-    address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), false, true);
-    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), false, true);
+    address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), 2);
+    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
 
     fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
     fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
