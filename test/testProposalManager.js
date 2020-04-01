@@ -37,7 +37,10 @@ describe('Proposal Manager', () => {
       alice,
       true,
       ether(10),
-      ether(20));
+      ether(20)
+    );
+
+    await this.fundFactory.setFeeManager(coreTeam, {from: alice});
   });
 
   beforeEach(async function() {
@@ -453,11 +456,6 @@ describe('Proposal Manager', () => {
     let proposalId;
 
     beforeEach(async function () {
-      // transfer 1 reputation point to make charlies reputation eq. 201
-      await this.fundRAX.delegate(charlie, dan, 1, {from: dan});
-      assert.equal(await this.fundRAX.balanceOf(bob), 300);
-      assert.equal(await this.fundRAX.balanceOf(charlie), 301);
-
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
         from: bob
@@ -465,50 +463,38 @@ describe('Proposal Manager', () => {
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
-      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.ayesShare, ether(20));
-      assert.equal(res.naysShare, ether(0));
-      assert.equal(res.currentQuorum, ether(20));
-      assert.equal(res.currentSupport, ether(100));
-      assert.equal(res.requiredSupport, ether(60));
-      assert.equal(res.minAcceptQuorum, ether(40));
-
-      res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.status, ProposalStatus.ACTIVE);
+      await this.fundProposalManagerX.setEthFee(ether(0.001), {from: coreTeam});
     });
 
-    it('it allow execution with S- / S+ Q+', async function () {
-      await this.fundProposalManagerX.aye(proposalId, true, {from: charlie});
-      await this.fundProposalManagerX.abstain(proposalId, false, {from: eve});
+    it('should accept fee for voting and creating proposals', async function () {
+      await assertRevert(this.fundProposalManagerX.aye(proposalId, true, {from: charlie}), 'Fee and msg.value not equal.');
+      await assertRevert(this.fundProposalManagerX.nay(proposalId, {from: charlie}), 'Fee and msg.value not equal.');
+      await assertRevert(this.fundProposalManagerX.abstain(proposalId, true, {from: charlie, value: ether(0.002) }), 'Fee and msg.value not equal.');
 
       let res = await this.fundProposalManagerX.getProposalVoting(proposalId);
-      assert.sameMembers(res.ayes, [charlie, bob]);
-      assert.sameMembers(res.abstains, [eve]);
-      assert.equal(res.totalAyes, 601);
-      assert.equal(res.totalAbstains, 300);
+      assert.sameMembers(res.abstains, []);
 
-      res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
-      assert.equal(res.ayesShare, '40066666666666666666');
-      assert.equal(res.naysShare, ether(0));
-      assert.equal(res.abstainsShare, ether(20));
-      assert.equal(res.currentQuorum, '60066666666666666666');
-      assert.equal(res.currentSupport, '66703662597114317425');
-      assert.equal(res.requiredSupport, ether(60));
-      assert.equal(res.minAcceptQuorum, ether(40));
+      await this.fundProposalManagerX.nay(proposalId, {from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.aye(proposalId, true, {from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.abstain(proposalId, true, {from: charlie, value: ether(0.001) });
 
-      res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.status, ProposalStatus.ACTIVE);
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.abstains, [charlie]);
 
-      await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), 'Proposal is still active');
-
-      await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
-
-      await this.fundProposalManagerX.executeProposal(proposalId, 0);
-
-      res = await this.fundProposalManagerX.proposals(proposalId);
-      assert.equal(res.status, ProposalStatus.EXECUTED);
-
-      assert.equal(await this.bar.number(), 42);
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      await assertRevert(
+        this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+          from: bob
+        }),
+        'Fee and msg.value not equal.'
+      );
+      this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        from: bob,
+        value: ether(0.001)
+      });
+      await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, calldata, 'blah', {
+        from: bob
+      });
     });
   });
 });

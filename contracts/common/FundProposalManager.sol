@@ -108,6 +108,7 @@ contract FundProposalManager is Initializable, ChargesEthFee {
     string calldata _dataLink
   )
     external
+    payable
     onlyMember
   {
     idCounter.increment();
@@ -131,19 +132,19 @@ contract FundProposalManager is Initializable, ChargesEthFee {
     }
   }
 
-  function aye(uint256 _proposalId, bool _executeIfDecided) external {
+  function aye(uint256 _proposalId, bool _executeIfDecided) external payable {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
     _aye(_proposalId, msg.sender, _executeIfDecided);
   }
 
-  function nay(uint256 _proposalId) external {
+  function nay(uint256 _proposalId) external payable {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
     _nay(_proposalId, msg.sender);
   }
 
-  function abstain(uint256 _proposalId, bool _executeIfDecided) external {
+  function abstain(uint256 _proposalId, bool _executeIfDecided) external payable {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
     _abstain(_proposalId, msg.sender, _executeIfDecided);
