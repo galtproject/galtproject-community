@@ -11,8 +11,10 @@ pragma solidity ^0.5.13;
 
 
 import "../../common/registries/FundRuleRegistryV1.sol";
+import "../../common/interfaces/IFundMultiSig.sol";
 import "../../common/FundUpgrader.sol";
 import "../PrivateFundStorage.sol";
+import "../../common/FundProposalManager.sol";
 
 
 library PrivateFundFactoryLib {
@@ -23,7 +25,7 @@ library PrivateFundFactoryLib {
     address _fundProposalManager,
     address _fundUpgrader,
     FundRuleRegistryV1 _fundRuleRegistry,
-    address payable _fundMultiSig
+    address _fundMultiSig
   )
     external
   {
@@ -40,14 +42,22 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_PROPOSAL_THRESHOLD_MANAGER(),
+      _fundProposalManager,
+      true
+    );
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      _fundProposalManager,
+      true
+    );
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
 
     _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(IFundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
   }
 
   function setMultiSigManagedFundRoles(
@@ -73,8 +83,16 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundMultiSig, true);
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundMultiSig, true);
-    _fundACL.setRole(_fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundMultiSig, true);
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_PROPOSAL_THRESHOLD_MANAGER(),
+      _fundMultiSig,
+      true
+    );
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      _fundMultiSig,
+      true
+    );
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundMultiSig, true);
 

@@ -31,6 +31,9 @@ contract FundProposalManager is Initializable, ChargesEthFee {
   // 100% == 100 ether
   uint256 public constant ONE_HUNDRED_PCT = 100 ether;
 
+  bytes32 public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = bytes32("THRESHOLD_MANAGER");
+  bytes32 public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = bytes32("DEFAULT_THRESHOLD_MANAGER");
+
   event NewProposal(uint256 indexed proposalId, address indexed proposer, bytes32 indexed marker);
   event AyeProposal(uint256 indexed proposalId, address indexed voter);
   event NayProposal(uint256 indexed proposalId, address indexed voter);
@@ -38,6 +41,9 @@ contract FundProposalManager is Initializable, ChargesEthFee {
 
   event Approved(uint256 ayeShare, uint256 support, uint256 indexed proposalId, bytes32 indexed marker);
   event Execute(uint256 indexed proposalId, address indexed executer, bool indexed success, bytes response);
+
+  event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 minAcceptQuorum, uint256 timeout);
+  event SetDefaultProposalVotingConfig(uint256 support, uint256 minAcceptQuorum, uint256 timeout);
 
   struct ProposalVoting {
     uint256 creationBlock;
@@ -65,12 +71,23 @@ contract FundProposalManager is Initializable, ChargesEthFee {
     string dataLink;
   }
 
+  struct VotingConfig {
+    uint256 support;
+    uint256 minAcceptQuorum;
+    uint256 timeout;
+  }
+
   IFundRegistry public fundRegistry;
   Counters.Counter public idCounter;
 
   mapping(uint256 => Proposal) public proposals;
   mapping(uint256 => ProposalVoting) internal _proposalVotings;
   mapping(uint256 => address) private _proposalToSender;
+
+  VotingConfig public defaultVotingConfig;
+
+  // marker => customVotingConfigs
+  mapping(bytes32 => VotingConfig) public customVotingConfigs;
 
   enum ProposalStatus {
     NULL,
@@ -87,6 +104,12 @@ contract FundProposalManager is Initializable, ChargesEthFee {
 
   modifier onlyMember() {
     require(_fundRA().balanceOf(msg.sender) > 0, "Not valid member");
+
+    _;
+  }
+
+  modifier onlyRole(bytes32 _role) {
+    require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
 
     _;
   }
@@ -253,7 +276,7 @@ contract FundProposalManager is Initializable, ChargesEthFee {
     pv.creationBlock = blockNumber;
     pv.creationTotalSupply = totalSupply;
 
-    (uint256 support, uint256 quorum, uint256 timeout) = _fundStorage().getProposalVotingConfig(marker);
+    (uint256 support, uint256 quorum, uint256 timeout) = getProposalVotingConfig(marker);
     pv.createdAt = block.timestamp;
     // pv.timeoutAt = block.timestamp + timeout;
     pv.timeoutAt = block.timestamp.add(timeout);
@@ -283,6 +306,45 @@ contract FundProposalManager is Initializable, ChargesEthFee {
 
     emit Execute(_proposalId, msg.sender, ok, response);
   }
+
+  function setDefaultProposalConfig(
+    uint256 _support,
+    uint256 _minAcceptQuorum,
+    uint256 _timeout
+  )
+    external
+    onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER)
+  {
+    _validateVotingConfig(_support, _minAcceptQuorum, _timeout);
+
+    defaultVotingConfig.support = _support;
+    defaultVotingConfig.minAcceptQuorum = _minAcceptQuorum;
+    defaultVotingConfig.timeout = _timeout;
+
+    emit SetDefaultProposalVotingConfig(_support, _minAcceptQuorum, _timeout);
+  }
+
+  function setProposalConfig(
+    bytes32 _marker,
+    uint256 _support,
+    uint256 _minAcceptQuorum,
+    uint256 _timeout
+  )
+    external
+    onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER)
+  {
+    _validateVotingConfig(_support, _minAcceptQuorum, _timeout);
+
+    customVotingConfigs[_marker] = VotingConfig({
+      support: _support,
+      minAcceptQuorum: _minAcceptQuorum,
+      timeout: _timeout
+    });
+
+    emit SetProposalVotingConfig(_marker, _support, _minAcceptQuorum, _timeout);
+  }
+
+  // INTERNAL GETTERS
 
   function _canExecute(uint256 _proposalId) internal view returns (bool can, string memory errorReason) {
     Proposal storage p = proposals[_proposalId];
@@ -332,6 +394,19 @@ contract FundProposalManager is Initializable, ChargesEthFee {
 
   function _fundRA() internal view returns (IFundRA) {
     return IFundRA(fundRegistry.getRAAddress());
+  }
+
+  function _validateVotingConfig(
+    uint256 _support,
+    uint256 _minAcceptQuorum,
+    uint256 _timeout
+  )
+    internal
+    pure
+  {
+    require(_minAcceptQuorum > 0, "Invalid min accept quorum value");
+    require(_support > 0 && _support <= ONE_HUNDRED_PCT, "Invalid support value");
+    require(_timeout > 0, "Invalid duration value");
   }
 
   // GETTERS
@@ -445,5 +520,30 @@ contract FundProposalManager is Initializable, ChargesEthFee {
     ProposalVoting storage p = _proposalVotings[_proposalId];
 
     return p.totalAbstains.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
+  }
+
+
+  function getProposalVotingConfig(
+    bytes32 _key
+  )
+    public
+    view
+    returns (uint256 support, uint256 minAcceptQuorum, uint256 timeout)
+  {
+    uint256 to = customVotingConfigs[_key].timeout;
+
+    if (to > 0) {
+      return (
+      customVotingConfigs[_key].support,
+      customVotingConfigs[_key].minAcceptQuorum,
+      customVotingConfigs[_key].timeout
+      );
+    } else {
+      return (
+      defaultVotingConfig.support,
+      defaultVotingConfig.minAcceptQuorum,
+      defaultVotingConfig.timeout
+      );
+    }
   }
 }
