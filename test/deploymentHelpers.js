@@ -199,16 +199,11 @@ async function buildFund(
   value = 0
 ) {
   // >>> Step #1
-  let res = await factory.buildFirstStep(
-    creator,
-    isPrivate,
-    periodLength,
-    {
-      from: creator,
-      gas: 9000000,
-      value
-    }
-  );
+  let res = await factory.buildFirstStep(creator, isPrivate, periodLength, {
+    from: creator,
+    gas: 9000000,
+    value
+  });
   // console.log('buildFirstStep gasUsed', res.receipt.gasUsed);
   const fundId = getEventArg(res, 'CreateFundFirstStep', 'fundId');
   const fundStorage = await FundStorage.at(getEventArg(res, 'CreateFundFirstStep', 'fundStorage'));
@@ -230,7 +225,7 @@ async function buildFund(
     defaultVotingConfig.quorum,
     defaultVotingConfig.timeout,
     { from: creator }
-    );
+  );
   // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   const fundRA = await MockFundRA.at(getEventArg(res, 'CreateFundThirdStep', 'fundRA'));
   const fundProposalManager = await FundProposalManager.at(

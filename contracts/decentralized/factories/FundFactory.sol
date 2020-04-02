@@ -264,7 +264,9 @@ contract FundFactory is Ownable {
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalQuorum,
     uint256 _defaultProposalTimeout
-  ) external {
+  )
+    external
+  {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.THIRD, "Requires third step");

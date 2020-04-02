@@ -522,7 +522,6 @@ contract FundProposalManager is Initializable, ChargesEthFee {
     return p.totalAbstains.mul(ONE_HUNDRED_PCT) / p.creationTotalSupply;
   }
 
-
   function getProposalVotingConfig(
     bytes32 _key
   )

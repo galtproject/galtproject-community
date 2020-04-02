@@ -273,15 +273,19 @@ contract PrivateFundFactory is ChargesFee {
     c.fundRegistry.setContract(c.fundRegistry.ACL(), address(c.fundACL));
     c.fundRegistry.setContract(c.fundRegistry.STORAGE(), address(c.fundStorage));
 
-    address _fundMultiSig = address(uint160(fundMultiSigFactory.build(
-      abi.encodeWithSignature(
-        "initialize(address[],uint256,address)",
-        _initialMultiSigOwners,
-        _initialMultiSigRequired,
-        address(c.fundRegistry)
-      ),
-      2
-    )));
+    address _fundMultiSig = address(
+      uint160(
+        fundMultiSigFactory.build(
+          abi.encodeWithSignature(
+            "initialize(address[],uint256,address)",
+            _initialMultiSigOwners,
+            _initialMultiSigRequired,
+            address(c.fundRegistry)
+          ),
+          2
+        )
+      )
+    );
 
     address _fundUpgrader = fundUpgraderFactory.build(address(c.fundRegistry), 2);
     address _fundController = fundControllerFactory.build(address(c.fundRegistry), 2);
