@@ -178,9 +178,6 @@ contract FundFactory is Ownable {
   function buildFirstStep(
     address operator,
     bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -262,7 +259,12 @@ contract FundFactory is Ownable {
     );
   }
 
-  function buildThirdStep(bytes32 _fundId) external {
+  function buildThirdStep(
+    bytes32 _fundId,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout
+  ) external {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.THIRD, "Requires third step");
@@ -274,6 +276,22 @@ contract FundFactory is Ownable {
 
     address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), 2);
     address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
+
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      address(this),
+      true
+    );
+    FundProposalManager(_fundProposalManager).setDefaultProposalConfig(
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout
+    );
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      address(this),
+      false
+    );
 
     ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
     ChargesEthFee(_fundProposalManager).setFeeCollector(owner());

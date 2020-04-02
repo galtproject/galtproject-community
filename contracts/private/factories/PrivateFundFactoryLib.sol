@@ -66,7 +66,7 @@ library PrivateFundFactoryLib {
     address _fundProposalManager,
     address _fundUpgrader,
     FundRuleRegistryV1 _fundRuleRegistry,
-    address payable _fundMultiSig
+    address _fundMultiSig
   )
     external
   {
@@ -98,6 +98,6 @@ library PrivateFundFactoryLib {
 
     _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_UPGRADE_SCRIPT_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(FundUpgrader(_fundUpgrader).ROLE_IMPL_UPGRADE_MANAGER(), _fundMultiSig, true);
-    _fundACL.setRole(FundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(IFundMultiSig(_fundMultiSig).ROLE_OWNER_MANAGER(), _fundProposalManager, true);
   }
 }

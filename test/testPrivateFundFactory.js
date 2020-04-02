@@ -143,27 +143,28 @@ describe('Private Fund Factory', () => {
       const fundStorageX = fund.fundStorage;
       const fundControllerX = fund.fundController;
       const fundUpgraderX = fund.fundUpgrader;
+      const fundProposalManagerX = fund.fundProposalManager;
 
-      let res = await fundStorageX.customVotingConfigs(
+      let res = await fundProposalManagerX.customVotingConfigs(
         await fundStorageX.getThresholdMarker(fundStorageX.address, '0x72483bf9')
       );
       assert.equal(res.support, ether(20));
       assert.equal(res.minAcceptQuorum, ether(10));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundStorageX.customVotingConfigs(await fundStorageX.getThresholdMarker(alice, '0x3f554115'));
+      res = await fundProposalManagerX.customVotingConfigs(await fundStorageX.getThresholdMarker(alice, '0x3f554115'));
       assert.equal(res.support, ether(30));
       assert.equal(res.minAcceptQuorum, ether(20));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundStorageX.customVotingConfigs(
+      res = await fundProposalManagerX.customVotingConfigs(
         await fundStorageX.getThresholdMarker(fundUpgraderX.address, '0x8d996c0d')
       );
       assert.equal(res.support, ether(20));
       assert.equal(res.minAcceptQuorum, ether(10));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundStorageX.customVotingConfigs(
+      res = await fundProposalManagerX.customVotingConfigs(
         await fundStorageX.getThresholdMarker(fundControllerX.address, '0x8d996c0d')
       );
       assert.equal(res.support, 0);
@@ -189,20 +190,21 @@ describe('Private Fund Factory', () => {
 
       const fundStorageX = fund.fundStorage;
       const fundControllerX = fund.fundController;
+      const fundProposalManagerX = fund.fundProposalManager;
 
-      let res = await fundStorageX.customVotingConfigs(
+      let res = await fundProposalManagerX.customVotingConfigs(
         await fundStorageX.getThresholdMarker(fundStorageX.address, '0x8d996c0d')
       );
       assert.equal(res.support, ether(50));
       assert.equal(res.minAcceptQuorum, ether(30));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundStorageX.customVotingConfigs(await fundStorageX.getThresholdMarker(alice, '0x3f554115'));
+      res = await fundProposalManagerX.customVotingConfigs(await fundStorageX.getThresholdMarker(alice, '0x3f554115'));
       assert.equal(res.support, 0);
       assert.equal(res.minAcceptQuorum, 0);
       assert.equal(res.timeout, 0);
 
-      res = await fundStorageX.customVotingConfigs(
+      res = await fundProposalManagerX.customVotingConfigs(
         await fundStorageX.getThresholdMarker(fundControllerX.address, '0x8d996c0d')
       );
       assert.equal(res.support, 0);

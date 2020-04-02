@@ -399,6 +399,15 @@ contract PrivateFundFactory is ChargesFee {
           ""
         );
       }
+      if (bytes8(proposalMarkersNames[i]) == bytes8("voting.s")) {
+        c.fundStorage.addProposalMarker(
+          proposalMarkersSignatures[i],
+          _fundProposalManager,
+          _fundProposalManager,
+          proposalMarkersNames[i],
+          ""
+        );
+      }
       if (bytes8(proposalMarkersNames[i]) == bytes8("multiSig")) {
         c.fundStorage.addProposalMarker(
           proposalMarkersSignatures[i],

@@ -48,19 +48,17 @@ contract MultiSigManagedPrivateFundFactory is PrivateFundFactory {
   }
 
   function _setFundProposalManagerRoles(
-    IACL _fundACL,
-    PrivateFundStorage _fundStorage,
-    address _fundProposalManager,
+    FundContracts storage _c,
     address _fundUpgrader,
     FundRuleRegistryV1 _fundRuleRegistry,
-    address payable _fundMultiSig
+    address _fundMultiSig
   )
     internal
   {
     PrivateFundFactoryLib.setMultiSigManagedFundRoles(
-      _fundACL,
-      _fundStorage,
-      _fundProposalManager,
+      _c.fundACL,
+      _c.fundStorage,
+      address(_c.fundProposalManager),
       _fundUpgrader,
       FundRuleRegistryV1(_fundRuleRegistry),
       _fundMultiSig
