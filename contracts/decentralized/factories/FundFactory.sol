@@ -24,10 +24,12 @@ import "../../common/FundUpgrader.sol";
 import "./FundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 import "../../common/registries/FundRuleRegistryV1.sol";
+import "../../abstract/fees/ChargesEthFee.sol";
 
 
 contract FundFactory is Ownable {
   bytes32 public constant ROLE_FEE_COLLECTOR = bytes32("FEE_COLLECTOR");
+  bytes32 public constant PROPOSAL_MANAGER_FEE = "PROPOSAL_MANAGER_FEE";
 
   event CreateFundFirstStep(
     bytes32 fundId,
@@ -109,6 +111,7 @@ contract FundFactory is Ownable {
   FundBareFactory public fundUpgraderFactory;
   FundBareFactory public fundRuleRegistryFactory;
 
+  mapping(bytes32 => uint256) internal fundEthFees;
   mapping(bytes32 => FundContracts) public fundContracts;
 
   bytes4[] internal proposalMarkersSignatures;
@@ -234,14 +237,13 @@ contract FundFactory is Ownable {
         _initialMultiSigRequired,
         address(fundRegistry)
       ),
-      false,
-      true
+      2
     );
     address payable _fundMultiSig = address(uint160(_fundMultiSigNonPayable));
 
-    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), false, true);
-    address _fundController = fundControllerFactory.build(address(fundRegistry), false, true);
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), false, true);
+    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), 2);
+    address _fundController = fundControllerFactory.build(address(fundRegistry), 2);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2);
 
     fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
@@ -273,8 +275,12 @@ contract FundFactory is Ownable {
     FundRuleRegistryV1 _fundRuleRegistry = c.fundRuleRegistry;
     IACL _fundACL = c.fundACL;
 
-    address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), false, true);
-    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), false, true);
+    address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), 2);
+    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
+
+    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
+    ChargesEthFee(_fundProposalManager).setFeeCollector(owner());
+    ChargesEthFee(_fundProposalManager).setFeeManager(owner());
 
     fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
     fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
@@ -410,6 +416,15 @@ contract FundFactory is Ownable {
     Ownable(address(c.fundACL)).transferOwnership(owner);
 
     emit CreateFundFifthStep(_fundId, len);
+  }
+
+  function setFundEthFees(bytes32[] calldata _feeNames, uint256[] calldata _feeValues) external onlyOwner {
+    uint256 len = _feeNames.length;
+    require(len == _feeValues.length, "Fee key and value array lengths mismatch");
+
+    for (uint256 i = 0; i < _feeNames.length; i++) {
+      fundEthFees[_feeNames[i]] = _feeValues[_feeValues[i]];
+    }
   }
 
   function setEthFee(uint256 _ethFee) external onlyOwner {

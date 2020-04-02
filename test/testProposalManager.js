@@ -5,9 +5,9 @@ const { ether, assertRevert, evmIncreaseTime } = require('@galtproject/solidity-
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
 const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
-const FundFactory = contract.fromArtifact('FundFactory');
+const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 
-const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 
 MockBar.numberFormat = 'String';
 
@@ -31,14 +31,16 @@ describe('Proposal Manager', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(FundFactory, this.ggr.address, alice);
+    this.fundFactory = await deployFundFactory(PrivateFundFactory, this.ggr.address, alice, true, ether(10), ether(20));
+
+    await this.fundFactory.setFeeManager(coreTeam, { from: alice });
   });
 
   beforeEach(async function() {
     // build fund
     await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
     // support 60 quorum 40
-    const fundX = await buildFund(
+    const fundX = await buildPrivateFund(
       this.fundFactory,
       alice,
       false,
@@ -58,7 +60,9 @@ describe('Proposal Manager', () => {
     this.beneficiaries = [bob, charlie, dan, eve, frank];
     this.benefeciarSpaceTokens = ['1', '2', '3', '4', '5'];
 
-    await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
+    await this.fundRAX.mintAllHack(this.beneficiaries, this.beneficiaries, this.benefeciarSpaceTokens, 300, {
+      from: alice
+    });
   });
 
   describe('proposal creation', () => {
@@ -440,6 +444,58 @@ describe('Proposal Manager', () => {
       await evmIncreaseTime(VotingConfig.ONE_WEEK + 3);
 
       await assertRevert(this.fundProposalManagerX.executeProposal(proposalId, 0), "MIN quorum hasn't been reached");
+    });
+  });
+
+  describe('accept fee', () => {
+    let proposalId;
+
+    beforeEach(async function() {
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        from: bob
+      });
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await this.fundProposalManagerX.setEthFee(ether(0.001), { from: coreTeam });
+    });
+
+    it('should accept fee for voting and creating proposals', async function() {
+      await assertRevert(
+        this.fundProposalManagerX.aye(proposalId, true, { from: charlie }),
+        'Fee and msg.value not equal.'
+      );
+      await assertRevert(this.fundProposalManagerX.nay(proposalId, { from: charlie }), 'Fee and msg.value not equal.');
+      await assertRevert(
+        this.fundProposalManagerX.abstain(proposalId, true, { from: charlie, value: ether(0.002) }),
+        'Fee and msg.value not equal.'
+      );
+
+      let res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.abstains, []);
+
+      await this.fundProposalManagerX.nay(proposalId, { from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie, value: ether(0.001) });
+      await this.fundProposalManagerX.abstain(proposalId, true, { from: charlie, value: ether(0.001) });
+
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.sameMembers(res.abstains, [charlie]);
+
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      await assertRevert(
+        this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+          from: bob
+        }),
+        'Fee and msg.value not equal.'
+      );
+      this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        from: bob,
+        value: ether(0.001)
+      });
+      await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, calldata, 'blah', {
+        from: bob
+      });
     });
   });
 });

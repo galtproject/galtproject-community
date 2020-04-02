@@ -16,11 +16,12 @@ import "@galtproject/libs/contracts/traits/Initializable.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 import "./interfaces/IFundRegistry.sol";
 import "../common/interfaces/IFundRA.sol";
+import "../abstract/fees/ChargesEthFee.sol";
 
 
-contract FundProposalManager is Initializable {
+contract FundProposalManager is Initializable, ChargesEthFee {
 
-  uint256 public constant VERSION = 2;
+  uint256 constant VERSION = 2;
 
   using SafeMath for uint256;
   using Counters for Counters.Counter;
@@ -93,8 +94,9 @@ contract FundProposalManager is Initializable {
   constructor() public {
   }
 
-  function initialize(IFundRegistry _fundRegistry) external isInitializer {
+  function initialize(IFundRegistry _fundRegistry, address _feeManager) external isInitializer {
     fundRegistry = _fundRegistry;
+    feeManager = _feeManager;
   }
 
   function propose(
@@ -106,6 +108,7 @@ contract FundProposalManager is Initializable {
     string calldata _dataLink
   )
     external
+    payable
     onlyMember
   {
     idCounter.increment();
@@ -129,19 +132,19 @@ contract FundProposalManager is Initializable {
     }
   }
 
-  function aye(uint256 _proposalId, bool _executeIfDecided) external {
+  function aye(uint256 _proposalId, bool _executeIfDecided) external payable {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
     _aye(_proposalId, msg.sender, _executeIfDecided);
   }
 
-  function nay(uint256 _proposalId) external {
+  function nay(uint256 _proposalId) external payable {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
     _nay(_proposalId, msg.sender);
   }
 
-  function abstain(uint256 _proposalId, bool _executeIfDecided) external {
+  function abstain(uint256 _proposalId, bool _executeIfDecided) external payable {
     require(_isProposalOpen(_proposalId), "Proposal isn't open");
 
     _abstain(_proposalId, msg.sender, _executeIfDecided);
@@ -159,6 +162,7 @@ contract FundProposalManager is Initializable {
   // INTERNAL
 
   function _aye(uint256 _proposalId, address _voter, bool _executeIfDecided) internal {
+    _acceptPayment();
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
     require(reputation > 0, "Can't vote with 0 reputation");
@@ -185,6 +189,7 @@ contract FundProposalManager is Initializable {
   }
 
   function _nay(uint256 _proposalId, address _voter) internal {
+    _acceptPayment();
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
     require(reputation > 0, "Can't vote with 0 reputation");
@@ -205,6 +210,7 @@ contract FundProposalManager is Initializable {
   }
 
   function _abstain(uint256 _proposalId, address _voter, bool _executeIfDecided) internal {
+    _acceptPayment();
     ProposalVoting storage pV = _proposalVotings[_proposalId];
     uint256 reputation = reputationOf(_voter, pV.creationBlock);
     require(reputation > 0, "Can't vote with 0 reputation");
