@@ -13,6 +13,7 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@galtproject/private-property-registry/contracts/traits/ChargesFee.sol";
 
 import "../PrivateFundStorage.sol";
+import "../../common/FundProposalManager.sol";
 import "../../common/FundRegistry.sol";
 import "../../common/FundUpgrader.sol";
 import "../../abstract/interfaces/IAbstractFundStorage.sol";
@@ -84,6 +85,9 @@ contract PrivateFundFactory is ChargesFee {
     address operator;
     Step currentStep;
     FundRegistry fundRegistry;
+    IACL fundACL;
+    PrivateFundStorage fundStorage;
+    FundProposalManager fundProposalManager;
   }
 
   bool internal initialized;
@@ -253,80 +257,87 @@ contract PrivateFundFactory is ChargesFee {
 
     _acceptPayment();
 
-    FundRegistry fundRegistry = FundRegistry(fundRegistryFactory.build());
-    IACL fundACL = IACL(fundACLFactory.build());
+    c.fundACL = IACL(fundACLFactory.build());
+    c.fundRegistry = FundRegistry(fundRegistryFactory.build());
 
-    PrivateFundStorage fundStorage = fundStorageFactory.build(
-      fundRegistry,
+    c.fundStorage = fundStorageFactory.build(
+      c.fundRegistry,
       _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
       _periodLength
     );
 
     c.creator = msg.sender;
     c.operator = operator;
-    c.fundRegistry = fundRegistry;
 
-    fundRegistry.setContract(fundRegistry.PPGR(), address(globalRegistry));
-    fundRegistry.setContract(fundRegistry.ACL(), address(fundACL));
-    fundRegistry.setContract(fundRegistry.STORAGE(), address(fundStorage));
+    c.fundRegistry.setContract(c.fundRegistry.PPGR(), address(globalRegistry));
+    c.fundRegistry.setContract(c.fundRegistry.ACL(), address(c.fundACL));
+    c.fundRegistry.setContract(c.fundRegistry.STORAGE(), address(c.fundStorage));
 
-    address _fundMultiSigNonPayable = fundMultiSigFactory.build(
-      abi.encodeWithSignature(
-        "initialize(address[],uint256,address)",
-        _initialMultiSigOwners,
-        _initialMultiSigRequired,
-        address(fundRegistry)
-      ),
-      2
+    address _fundMultiSig = address(
+      uint160(
+        fundMultiSigFactory.build(
+          abi.encodeWithSignature(
+            "initialize(address[],uint256,address)",
+            _initialMultiSigOwners,
+            _initialMultiSigRequired,
+            address(c.fundRegistry)
+          ),
+          2
+        )
+      )
     );
-    address payable _fundMultiSig = address(uint160(_fundMultiSigNonPayable));
 
-    address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), 2);
-    address _fundController = fundControllerFactory.build(address(fundRegistry), 2);
-    address _fundRA = fundRAFactory.build(address(fundRegistry), 2);
-    address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2);
+    address _fundUpgrader = fundUpgraderFactory.build(address(c.fundRegistry), 2);
+    address _fundController = fundControllerFactory.build(address(c.fundRegistry), 2);
+    address _fundRA = fundRAFactory.build(address(c.fundRegistry), 2);
+    c.fundProposalManager = FundProposalManager(
+      fundProposalManagerFactory.build(address(c.fundRegistry), 2 | 4)
+    );
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(c.fundRegistry), 2);
 
-    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
-    ChargesEthFee(_fundProposalManager).setFeeCollector(feeCollector);
-    ChargesEthFee(_fundProposalManager).setFeeManager(feeManager);
+    c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
+    c.fundProposalManager.setDefaultProposalConfig(
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout
+    );
+    c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
-    fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
-    fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
-    fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
-    fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
-    fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), _fundProposalManager);
-    fundRegistry.setContract(c.fundRegistry.RULE_REGISTRY(), _fundRuleRegistry);
+    c.fundProposalManager.setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
+    c.fundProposalManager.setFeeCollector(feeCollector);
+    c.fundProposalManager.setFeeManager(feeManager);
+
+    c.fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
+    c.fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
+    c.fundRegistry.setContract(c.fundRegistry.UPGRADER(), _fundUpgrader);
+    c.fundRegistry.setContract(c.fundRegistry.RA(), _fundRA);
+    c.fundRegistry.setContract(c.fundRegistry.PROPOSAL_MANAGER(), address(c.fundProposalManager));
+    c.fundRegistry.setContract(c.fundRegistry.RULE_REGISTRY(), _fundRuleRegistry);
 
     _setFundProposalManagerRoles(
-      fundACL,
-      fundStorage,
-      _fundProposalManager,
+      c,
       _fundUpgrader,
       FundRuleRegistryV1(_fundRuleRegistry),
       _fundMultiSig
     );
 
-    fundACL.setRole(fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
-    fundACL.setRole(fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
-    fundACL.setRole(fundStorage.ROLE_MULTISIG(), _fundMultiSig, true);
+    c.fundACL.setRole(c.fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
+    c.fundACL.setRole(c.fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
+    c.fundACL.setRole(c.fundStorage.ROLE_MULTISIG(), _fundMultiSig, true);
 
-    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
-    fundStorage.addCommunityApp(_fundProposalManager, bytes32(""), bytes32(""), "Default");
-    fundACL.setRole(fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
+    c.fundACL.setRole(c.fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), true);
+    c.fundStorage.addCommunityApp(address(c.fundProposalManager), bytes32(""), bytes32(""), "Default");
+    c.fundACL.setRole(c.fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), address(this), false);
 
     c.currentStep = Step.SECOND;
 
     emit CreateFundFirstStep(
       fundId,
-      address(fundRegistry),
-      address(fundACL),
-      address(fundStorage),
+      address(c.fundRegistry),
+      address(c.fundACL),
+      address(c.fundStorage),
       _fundRA,
-      _fundProposalManager,
+      address(c.fundProposalManager),
       _fundMultiSig,
       _fundController,
       _fundUpgrader,
@@ -335,19 +346,17 @@ contract PrivateFundFactory is ChargesFee {
   }
 
   function _setFundProposalManagerRoles(
-    IACL _fundACL,
-    PrivateFundStorage _fundStorage,
-    address _fundProposalManager,
+    FundContracts storage _c,
     address _fundUpgrader,
     FundRuleRegistryV1 _fundRuleRegistry,
-    address payable _fundMultiSig
+    address _fundMultiSig
   )
     internal
   {
     PrivateFundFactoryLib.setFundRoles(
-      _fundACL,
-      _fundStorage,
-      _fundProposalManager,
+      _c.fundACL,
+      _c.fundStorage,
+      address(_c.fundProposalManager),
       _fundUpgrader,
       FundRuleRegistryV1(_fundRuleRegistry),
       _fundMultiSig
@@ -368,36 +377,43 @@ contract PrivateFundFactory is ChargesFee {
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.SECOND, "Requires second step");
 
-    PrivateFundStorage _fundStorage = PrivateFundStorage(c.fundRegistry.getStorageAddress());
-    IACL _fundACL = c.fundRegistry.getACL();
     address _fundProposalManager = c.fundRegistry.getProposalManagerAddress();
 
-    _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), true);
-    _fundStorage.setNameAndDataLink(_name, _dataLink);
-    _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), false);
+    c.fundACL.setRole(c.fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), true);
+    c.fundStorage.setNameAndDataLink(_name, _dataLink);
+    c.fundACL.setRole(c.fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), address(this), false);
 
     uint256 len = _initialTokensToApprove.length;
 
-    _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);
+    c.fundACL.setRole(c.fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), true);
 
-    _fundStorage.approveMintAll(_initialRegistriesToApprove, _initialTokensToApprove);
+    c.fundStorage.approveMintAll(_initialRegistriesToApprove, _initialTokensToApprove);
 
-    _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), false);
+    c.fundACL.setRole(c.fundStorage.ROLE_NEW_MEMBER_MANAGER(), address(this), false);
 
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
+    c.fundACL.setRole(c.fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), true);
 
     for (uint i = 0; i < proposalMarkersSignatures.length; i++) {
       if (bytes8(proposalMarkersNames[i]) == bytes8("storage.")) {
-        _fundStorage.addProposalMarker(
+        c.fundStorage.addProposalMarker(
           proposalMarkersSignatures[i],
-          address(_fundStorage),
+          address(c.fundStorage),
+          _fundProposalManager,
+          proposalMarkersNames[i],
+          ""
+        );
+      }
+      if (bytes8(proposalMarkersNames[i]) == bytes8("voting.s")) {
+        c.fundStorage.addProposalMarker(
+          proposalMarkersSignatures[i],
+          _fundProposalManager,
           _fundProposalManager,
           proposalMarkersNames[i],
           ""
         );
       }
       if (bytes8(proposalMarkersNames[i]) == bytes8("multiSig")) {
-        _fundStorage.addProposalMarker(
+        c.fundStorage.addProposalMarker(
           proposalMarkersSignatures[i],
           c.fundRegistry.getMultiSigAddress(),
           _fundProposalManager,
@@ -406,7 +422,7 @@ contract PrivateFundFactory is ChargesFee {
         );
       }
       if (bytes8(proposalMarkersNames[i]) == bytes8("ruleRegi")) {
-        _fundStorage.addProposalMarker(
+        c.fundStorage.addProposalMarker(
           proposalMarkersSignatures[i],
           c.fundRegistry.getRuleRegistryAddress(),
           _fundProposalManager,
@@ -415,7 +431,7 @@ contract PrivateFundFactory is ChargesFee {
         );
       }
     }
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), false);
+    c.fundACL.setRole(c.fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), address(this), false);
 
     if (_finishFlag == true) {
       _applyFundDefaultConfigValues(_fundId);
@@ -438,7 +454,6 @@ contract PrivateFundFactory is ChargesFee {
 
   function _generateFundDefaultMarkers(bytes32 _fundId) internal returns (bytes32[] memory) {
     FundContracts storage c = fundContracts[_fundId];
-    IAbstractFundStorage fundStorage = IAbstractFundStorage(c.fundRegistry.getStorageAddress());
     uint256 len = defaultMarkerContracts.length;
     bytes32[] memory markers = new bytes32[](len);
     bytes32 marker;
@@ -449,7 +464,7 @@ contract PrivateFundFactory is ChargesFee {
 
       // address code for fundStorage
       if (current == address(150)) {
-        marker = getThresholdMarker(address(fundStorage), signature);
+        marker = getThresholdMarker(address(c.fundStorage), signature);
       // address code for fundMultiSig
       } else if (current == address(151)) {
         marker = getThresholdMarker(c.fundRegistry.getMultiSigAddress(), signature);
@@ -511,26 +526,24 @@ contract PrivateFundFactory is ChargesFee {
   {
     FundContracts storage c = fundContracts[_fundId];
 
-    PrivateFundStorage _fundStorage = PrivateFundStorage(c.fundRegistry.getStorageAddress());
-    IACL _fundACL = c.fundRegistry.getACL();
+    FundProposalManager _fundProposalManager = FundProposalManager(c.fundRegistry.getProposalManagerAddress());
     uint256 len = _markers.length;
 
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
+    c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
     for (uint256 i = 0; i < len; i++) {
-      _fundStorage.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
+      _fundProposalManager.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
     }
 
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
+    c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
   }
 
   function _finish(bytes32 _fundId) internal {
     FundContracts storage c = fundContracts[_fundId];
     address owner = c.fundRegistry.getUpgraderAddress();
-    IACL _fundACL = c.fundRegistry.getACL();
 
     IOwnedUpgradeabilityProxy(address(c.fundRegistry)).transferProxyOwnership(owner);
-    IOwnedUpgradeabilityProxy(address(_fundACL)).transferProxyOwnership(owner);
+    IOwnedUpgradeabilityProxy(address(c.fundACL)).transferProxyOwnership(owner);
     IOwnedUpgradeabilityProxy(c.fundRegistry.getStorageAddress()).transferProxyOwnership(owner);
     IOwnedUpgradeabilityProxy(c.fundRegistry.getProposalManagerAddress()).transferProxyOwnership(owner);
     IOwnedUpgradeabilityProxy(c.fundRegistry.getRAAddress()).transferProxyOwnership(owner);
@@ -540,7 +553,7 @@ contract PrivateFundFactory is ChargesFee {
     c.currentStep = Step.DONE;
 
     c.fundRegistry.transferOwnership(owner);
-    Ownable(address(_fundACL)).transferOwnership(owner);
+    Ownable(address(c.fundACL)).transferOwnership(owner);
 
     emit CreateFundDone(_fundId);
   }

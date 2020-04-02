@@ -16,21 +16,6 @@ import "../../common/FundMultiSig.sol";
 interface IAbstractFundStorage {
   function setConfigValue(bytes32 _key, bytes32 _value) external;
 
-  function setDefaultProposalConfig(
-    uint256 _support,
-    uint256 _quorum,
-    uint256 _timeout
-  )
-    external;
-
-  function setProposalConfig(
-    bytes32 _marker,
-    uint256 _support,
-    uint256 _quorum,
-    uint256 _timeout
-  )
-    external;
-
   function addCommunityApp(
     address _contract,
     bytes32 _type,
@@ -81,8 +66,6 @@ interface IAbstractFundStorage {
 
   // GETTERS
   function membersIdentification(address _member) external view returns(bytes32);
-
-  function getProposalVotingConfig(bytes32 _key) external view returns (uint256 support, uint256 quorum, uint256 timeout);
 
   function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
 

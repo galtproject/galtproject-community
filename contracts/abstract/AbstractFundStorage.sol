@@ -31,9 +31,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   event RemoveProposalMarker(bytes32 indexed marker, bytes32 indexed name, address indexed proposalManager);
   event ReplaceProposalMarker(bytes32 indexed oldMarker, bytes32 indexed newMarker, address indexed proposalManager);
 
-  event SetProposalVotingConfig(bytes32 indexed key, uint256 support, uint256 minAcceptQuorum, uint256 timeout);
-  event SetDefaultProposalVotingConfig(uint256 support, uint256 minAcceptQuorum, uint256 timeout);
-
   event AddCommunityApp(address indexed contractAddress);
   event RemoveCommunityApp(address indexed contractAddress);
 
@@ -64,8 +61,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_MEMBER_DETAILS_MANAGER = bytes32("MEMBER_DETAILS_MANAGER");
   bytes32 public constant ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = bytes32("MULTISIG_WITHDRAWAL_MANAGER");
   bytes32 public constant ROLE_MEMBER_IDENTIFICATION_MANAGER = bytes32("MEMBER_IDENTIFICATION_MANAGER");
-  bytes32 public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = bytes32("THRESHOLD_MANAGER");
-  bytes32 public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = bytes32("DEFAULT_THRESHOLD_MANAGER");
   bytes32 public constant ROLE_DECREMENT_TOKEN_REPUTATION = bytes32("DECREMENT_TOKEN_REPUTATION_ROLE");
   bytes32 public constant ROLE_MULTISIG = bytes32("MULTISIG");
 
@@ -108,14 +103,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     uint256 amount;
   }
 
-  struct VotingConfig {
-    uint256 support;
-    uint256 minAcceptQuorum;
-    uint256 timeout;
-  }
-
   IFundRegistry public fundRegistry;
-  VotingConfig public defaultVotingConfig;
 
   string public name;
   string public dataLink;
@@ -144,9 +132,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   // member => identification hash
   mapping(address => bytes32) public membersIdentification;
 
-  // marker => customVotingConfigs
-  mapping(bytes32 => VotingConfig) public customVotingConfigs;
-
   modifier onlyFeeContract() {
     require(_feeContracts.has(msg.sender), "Not a fee contract");
 
@@ -171,9 +156,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   function initialize(
     IFundRegistry _fundRegistry,
     bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalMinAcceptQuorum,
-    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -184,50 +166,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     periodLength = _periodLength;
     initialTimestamp = block.timestamp;
 
-    _validateVotingConfig(_defaultProposalSupport, _defaultProposalMinAcceptQuorum, _defaultProposalTimeout);
-
-    defaultVotingConfig.support = _defaultProposalSupport;
-    defaultVotingConfig.minAcceptQuorum = _defaultProposalMinAcceptQuorum;
-    defaultVotingConfig.timeout = _defaultProposalTimeout;
-
     fundRegistry = _fundRegistry;
-  }
-
-  function setDefaultProposalConfig(
-    uint256 _support,
-    uint256 _minAcceptQuorum,
-    uint256 _timeout
-  )
-    external
-    onlyRole(ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER)
-  {
-    _validateVotingConfig(_support, _minAcceptQuorum, _timeout);
-
-    defaultVotingConfig.support = _support;
-    defaultVotingConfig.minAcceptQuorum = _minAcceptQuorum;
-    defaultVotingConfig.timeout = _timeout;
-
-    emit SetDefaultProposalVotingConfig(_support, _minAcceptQuorum, _timeout);
-  }
-
-  function setProposalConfig(
-    bytes32 _marker,
-    uint256 _support,
-    uint256 _minAcceptQuorum,
-    uint256 _timeout
-  )
-    external
-    onlyRole(ROLE_PROPOSAL_THRESHOLD_MANAGER)
-  {
-    _validateVotingConfig(_support, _minAcceptQuorum, _timeout);
-
-    customVotingConfigs[_marker] = VotingConfig({
-      support: _support,
-      minAcceptQuorum: _minAcceptQuorum,
-      timeout: _timeout
-    });
-
-    emit SetProposalVotingConfig(_marker, _support, _minAcceptQuorum, _timeout);
   }
 
   function setConfigValue(bytes32 _key, bytes32 _value) external onlyRole(ROLE_CONFIG_MANAGER) {
@@ -406,21 +345,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     emit HandleMultiSigTransaction(_erc20Contract, _amount);
   }
 
-  // INTERNAL
-
-  function _validateVotingConfig(
-    uint256 _support,
-    uint256 _minAcceptQuorum,
-    uint256 _timeout
-  )
-    internal
-    pure
-  {
-    require(_minAcceptQuorum > 0, "Invalid min accept quorum value");
-    require(_support > 0 && _support <= ONE_HUNDRED_PCT, "Invalid support value");
-    require(_timeout > 0, "Invalid duration value");
-  }
-
   // GETTERS
 
   function getThresholdMarker(address _destination, bytes memory _data) public pure returns(bytes32 marker) {
@@ -431,30 +355,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     }
 
     return keccak256(abi.encode(_destination, methodName));
-  }
-
-  function getProposalVotingConfig(
-    bytes32 _key
-  )
-    external
-    view
-    returns (uint256 support, uint256 minAcceptQuorum, uint256 timeout)
-  {
-    uint256 to = customVotingConfigs[_key].timeout;
-
-    if (to > 0) {
-      return (
-        customVotingConfigs[_key].support,
-        customVotingConfigs[_key].minAcceptQuorum,
-        customVotingConfigs[_key].timeout
-      );
-    } else {
-      return (
-        defaultVotingConfig.support,
-        defaultVotingConfig.minAcceptQuorum,
-        defaultVotingConfig.timeout
-      );
-    }
   }
 
   function getCommunityApps() external view returns (address[] memory) {
