@@ -249,6 +249,21 @@ describe('PrivateFundRA', () => {
       assert.equal(await danLocker.tokenContract(), this.registry1.address);
 
       assert.equal(await this.fundRAX.balanceOf(dan), 800);
+
+      await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
+      const newFund = await buildPrivateFund(
+        this.fundFactory,
+        alice,
+        false,
+        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+        {},
+        [bob, charlie],
+        2
+      );
+
+      await danLocker.approveAndMint(newFund.fundRA.address, { from: dan });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), 800);
     });
   });
 
