@@ -89,7 +89,7 @@ describe('PrivateFundRA', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
-    await this.galtToken.mint(dan, ether(10000000), { from: coreTeam })
+    await this.galtToken.mint(dan, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
     this.fundFactory = await deployFundFactory(
@@ -227,7 +227,7 @@ describe('PrivateFundRA', () => {
       assert.equal(await this.fundRAX.balanceOf(dan), 0);
 
       let res = await this.controller1.mint(dan, { from: minter });
-      let danToken = getEventArg(res, 'Mint', 'tokenId');
+      const danToken = getEventArg(res, 'Mint', 'tokenId');
 
       // HACK
       await this.controller1.setInitialDetails(danToken, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
