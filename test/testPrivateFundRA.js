@@ -263,6 +263,10 @@ describe('PrivateFundRA', () => {
       await danLocker.approveAndMint(newFund.fundRA.address, { from: dan });
 
       assert.equal(await newFund.fundRA.balanceOf(dan), 800);
+
+      await danLocker.burnWithReputation(newFund.fundRA.address, { from: dan });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), 0);
     });
   });
 
