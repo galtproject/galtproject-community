@@ -43,7 +43,7 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 describe('PrivateFundRA', () => {
-  const [minter, alice, bob, charlie, burner, unauthorized, lockerFeeManager] = accounts;
+  const [minter, alice, bob, charlie, dan, burner, unauthorized, lockerFeeManager] = accounts;
   const coreTeam = defaultSender;
 
   const ethFee = ether(10);
@@ -89,6 +89,7 @@ describe('PrivateFundRA', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
+    await this.galtToken.mint(dan, ether(10000000), { from: coreTeam })
 
     // fund factory contracts
     this.fundFactory = await deployFundFactory(
@@ -219,6 +220,36 @@ describe('PrivateFundRA', () => {
     await this.fundRAX.mint(this.aliceLockerAddress, { from: alice });
     await this.fundRAX.mint(this.bobLockerAddress, { from: bob });
     await this.fundRAX.mint(this.charlieLockerAddress, { from: charlie });
+  });
+
+  describe('mint', () => {
+    it('should mint repuation by depositAndMint function', async function() {
+      assert.equal(await this.fundRAX.balanceOf(dan), 0);
+
+      let res = await this.controller1.mint(dan, { from: minter });
+      let danToken = getEventArg(res, 'Mint', 'tokenId');
+
+      // HACK
+      await this.controller1.setInitialDetails(danToken, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
+
+      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: dan });
+      res = await this.ppLockerFactory.build({ from: dan });
+
+      const danLocker = await PPLocker.at(res.logs[0].args.locker);
+
+      // APPROVE SPACE TOKEN
+      await this.registry1.approve(danLocker.address, danToken, { from: dan });
+
+      await danLocker.depositAndMint(this.registry1.address, danToken, this.fundRAX.address, { from: dan });
+
+      assert.equal(await danLocker.reputation(), 800);
+      assert.equal(await danLocker.tokenId(), danToken);
+      assert.equal(await danLocker.tokenContract(), this.registry1.address);
+
+      assert.equal(await this.fundRAX.balanceOf(dan), 800);
+    });
   });
 
   describe('lock', () => {
