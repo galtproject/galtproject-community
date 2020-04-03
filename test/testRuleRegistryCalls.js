@@ -80,7 +80,7 @@ describe('FundRuleRegistry Calls', () => {
   });
 
   it('should handle addRuleType4 s100%/q100% correctly', async function() {
-    const addRuleType3Marker = await this.fundStorageX.customVotingConfigs(
+    const addRuleType3Marker = await this.fundProposalManagerX.customVotingConfigs(
       getDestinationMarker(this.fundRuleRegistryX, 'addRuleType4')
     );
     assert.equal(addRuleType3Marker.support, ether(100));

@@ -31,9 +31,6 @@ contract PrivateFundStorageFactory {
   function build(
     IFundRegistry _globalRegistry,
     bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -44,12 +41,9 @@ contract PrivateFundStorageFactory {
     proxy.upgradeToAndCall(
       implementation,
       abi.encodeWithSignature(
-        "initialize(address,bool,uint256,uint256,uint256,uint256)",
+        "initialize(address,bool,uint256)",
         _globalRegistry,
         _isPrivate,
-        _defaultProposalSupport,
-        _defaultProposalQuorum,
-        _defaultProposalTimeout,
         _periodLength
       )
     );

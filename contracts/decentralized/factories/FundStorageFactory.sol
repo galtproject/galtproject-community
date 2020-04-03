@@ -21,9 +21,6 @@ contract FundStorageFactory is Ownable {
   function build(
     IFundRegistry _fundRegistry,
     bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -36,12 +33,9 @@ contract FundStorageFactory is Ownable {
     proxy.upgradeToAndCall(
       address(fundStorage),
       abi.encodeWithSignature(
-          "initialize(address,bool,uint256,uint256,uint256,uint256)",
+          "initialize(address,bool,uint256)",
           _fundRegistry,
           _isPrivate,
-          _defaultProposalSupport,
-          _defaultProposalQuorum,
-          _defaultProposalTimeout,
           _periodLength
       )
     );

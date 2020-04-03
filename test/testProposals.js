@@ -70,12 +70,12 @@ describe('FundProposalManager', () => {
       it('should allow user who has reputation creating a new proposal', async function() {
         await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        const proposalData = this.fundStorageX.contract.methods
+        const proposalData = this.fundProposalManagerX.contract.methods
           .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(
-          this.fundStorageX.address,
+          this.fundProposalManagerX.address,
           0,
           false,
           false,
@@ -97,14 +97,14 @@ describe('FundProposalManager', () => {
       it('should allow approving proposal if positive votes threshold is reached', async function() {
         await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
-        const marker = getDestinationMarker(this.fundStorageX, 'setProposalConfig');
+        const marker = getDestinationMarker(this.fundProposalManagerX, 'setProposalConfig');
 
-        const proposalData = this.fundStorageX.contract.methods
+        const proposalData = this.fundProposalManagerX.contract.methods
           .setProposalConfig(marker, ether(42), ether(40), 555)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(
-          this.fundStorageX.address,
+          this.fundProposalManagerX.address,
           0,
           false,
           false,
@@ -176,7 +176,7 @@ describe('FundProposalManager', () => {
         res = await this.fundProposalManagerX.proposals(proposalId);
         assert.equal(res.status, ProposalStatus.EXECUTED);
 
-        res = await this.fundStorageX.customVotingConfigs(marker);
+        res = await this.fundProposalManagerX.customVotingConfigs(marker);
         assert.equal(res.support, ether(42));
         assert.equal(res.minAcceptQuorum, ether(40));
         assert.equal(res.timeout, 555);
@@ -195,7 +195,7 @@ describe('FundProposalManager', () => {
 
         // but the new one has a different requirements
         res = await this.fundProposalManagerX.propose(
-          this.fundStorageX.address,
+          this.fundProposalManagerX.address,
           0,
           false,
           false,

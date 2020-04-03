@@ -178,9 +178,6 @@ contract FundFactory is Ownable {
   function buildFirstStep(
     address operator,
     bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
     uint256 _periodLength
   )
     external
@@ -200,9 +197,6 @@ contract FundFactory is Ownable {
     FundStorage fundStorage = fundStorageFactory.build(
       fundRegistry,
       _isPrivate,
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout,
       _periodLength
     );
 
@@ -265,7 +259,14 @@ contract FundFactory is Ownable {
     );
   }
 
-  function buildThirdStep(bytes32 _fundId) external {
+  function buildThirdStep(
+    bytes32 _fundId,
+    uint256 _defaultProposalSupport,
+    uint256 _defaultProposalQuorum,
+    uint256 _defaultProposalTimeout
+  )
+    external
+  {
     FundContracts storage c = fundContracts[_fundId];
     require(msg.sender == c.creator || msg.sender == c.operator, "Only creator/operator allowed");
     require(c.currentStep == Step.THIRD, "Requires third step");
@@ -277,6 +278,22 @@ contract FundFactory is Ownable {
 
     address _fundRA = fundRAFactory.build("initialize2(address)", address(fundRegistry), 2);
     address _fundProposalManager = fundProposalManagerFactory.build(address(fundRegistry), 2 | 4);
+
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      address(this),
+      true
+    );
+    FundProposalManager(_fundProposalManager).setDefaultProposalConfig(
+      _defaultProposalSupport,
+      _defaultProposalQuorum,
+      _defaultProposalTimeout
+    );
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      address(this),
+      false
+    );
 
     ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
     ChargesEthFee(_fundProposalManager).setFeeCollector(owner());
@@ -297,8 +314,16 @@ contract FundFactory is Ownable {
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
-    _fundACL.setRole(_fundStorage.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_PROPOSAL_THRESHOLD_MANAGER(),
+      _fundProposalManager,
+      true
+    );
+    _fundACL.setRole(
+      FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
+      _fundProposalManager,
+      true
+    );
     _fundACL.setRole(_fundStorage.ROLE_COMMUNITY_APPS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_PROPOSAL_MARKERS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), address(c.fundController), true);
@@ -343,14 +368,15 @@ contract FundFactory is Ownable {
     );
 
     FundStorage _fundStorage = c.fundStorage;
+    FundProposalManager _fundProposalManager = FundProposalManager(c.fundRegistry.getProposalManagerAddress());
 
-    c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
+    c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
     for (uint256 i = 0; i < len; i++) {
-      _fundStorage.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
+      _fundProposalManager.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
     }
 
-    c.fundACL.setRole(_fundStorage.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
+    c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
     emit CreateFundFourthStep(_fundId, len);
   }
