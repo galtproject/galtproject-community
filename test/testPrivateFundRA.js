@@ -89,7 +89,6 @@ describe('PrivateFundRA', () => {
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(charlie, ether(10000000), { from: coreTeam });
-    await this.galtToken.mint(dan, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
     this.fundFactory = await deployFundFactory(
@@ -234,8 +233,8 @@ describe('PrivateFundRA', () => {
         from: minter
       });
 
-      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: dan });
-      res = await this.ppLockerFactory.build({ from: dan });
+      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, { from: charlie });
 
       const danLocker = await PPLocker.at(res.logs[0].args.locker);
 
