@@ -43,7 +43,7 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 describe('PrivateFundRA', () => {
-  const [minter, alice, bob, charlie, burner, unauthorized, lockerFeeManager] = accounts;
+  const [minter, alice, bob, charlie, dan, burner, unauthorized, lockerFeeManager] = accounts;
   const coreTeam = defaultSender;
 
   const ethFee = ether(10);
@@ -219,6 +219,55 @@ describe('PrivateFundRA', () => {
     await this.fundRAX.mint(this.aliceLockerAddress, { from: alice });
     await this.fundRAX.mint(this.bobLockerAddress, { from: bob });
     await this.fundRAX.mint(this.charlieLockerAddress, { from: charlie });
+  });
+
+  describe('mint', () => {
+    it('should mint repuation by depositAndMint function', async function() {
+      assert.equal(await this.fundRAX.balanceOf(dan), 0);
+
+      let res = await this.controller1.mint(dan, { from: minter });
+      const danToken = getEventArg(res, 'Mint', 'tokenId');
+
+      // HACK
+      await this.controller1.setInitialDetails(danToken, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
+
+      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, { from: charlie });
+
+      const danLocker = await PPLocker.at(res.logs[0].args.locker);
+
+      // APPROVE SPACE TOKEN
+      await this.registry1.approve(danLocker.address, danToken, { from: dan });
+
+      await danLocker.depositAndMint(this.registry1.address, danToken, this.fundRAX.address, { from: dan });
+
+      assert.equal(await danLocker.reputation(), 800);
+      assert.equal(await danLocker.tokenId(), danToken);
+      assert.equal(await danLocker.tokenContract(), this.registry1.address);
+
+      assert.equal(await this.fundRAX.balanceOf(dan), 800);
+
+      await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
+      const newFund = await buildPrivateFund(
+        this.fundFactory,
+        alice,
+        false,
+        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+        {},
+        [bob, charlie],
+        2
+      );
+
+      await danLocker.approveAndMint(newFund.fundRA.address, { from: dan });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), 800);
+
+      await danLocker.burnWithReputation(newFund.fundRA.address, { from: dan });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), 0);
+    });
   });
 
   describe('lock', () => {

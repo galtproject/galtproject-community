@@ -60,7 +60,7 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
 
     address owner = _tokenLocker.owner();
-    require(msg.sender == owner, "Not owner of the locker");
+    require(msg.sender == owner || msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
 
     uint256 tokenId = _tokenLocker.tokenId();
     address registry = address(_tokenLocker.tokenContract());
@@ -102,7 +102,7 @@ contract PPTokenInputRA is LiquidRA, Initializable {
 
     address owner = _tokenLocker.owner();
 
-    require(msg.sender == owner, "Not owner of the locker");
+    require(msg.sender == owner || msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
 
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
