@@ -28,6 +28,7 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
 
   event TokenMint(address indexed registry, uint256 indexed tokenId);
   event TokenBurn(address indexed registry, uint256 indexed tokenId);
+  event BurnExpelled(address indexed registry, uint256 indexed tokenId, address delegate, address indexed owner, uint256 amount);
 
   struct Checkpoint {
     uint128 fromBlock;
@@ -103,7 +104,9 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
     if (completelyBurned) {
       _cacheTokenDecrement(_owner);
       reputationMinted[_registry][_tokenId] = 0;
+      emit TokenBurn(_registry, _tokenId);
     }
+    emit BurnExpelled(_registry, _tokenId, _delegate, _owner, _amount);
   }
 
   function _creditAccount(address _account, address _owner, uint256 _amount) internal {
