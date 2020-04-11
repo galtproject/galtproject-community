@@ -15,6 +15,7 @@ import "../abstract/interfaces/IAbstractFundStorage.sol";
 
 import "@galtproject/core/contracts/reputation/AbstractProposalManager.sol";
 
+
 contract FundProposalManager is AbstractProposalManager {
 
   uint256 constant VERSION = 2;
