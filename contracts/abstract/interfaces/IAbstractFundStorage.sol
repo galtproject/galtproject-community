@@ -67,8 +67,6 @@ interface IAbstractFundStorage {
   // GETTERS
   function membersIdentification(address _member) external view returns(bytes32);
 
-  function getThresholdMarker(address _destination, bytes calldata _data) external pure returns (bytes32 marker);
-
   function config(bytes32 _key) external view returns (bytes32);
 
   function getCommunityApps() external view returns (address[] memory);

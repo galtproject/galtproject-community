@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxy.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
-import "../../abstract/fees/ChargesEthFee.sol";
+import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
 
 
 contract FundBareFactory {
