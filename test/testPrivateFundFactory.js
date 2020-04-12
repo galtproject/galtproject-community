@@ -152,7 +152,9 @@ describe('Private Fund Factory', () => {
       assert.equal(res.minAcceptQuorum, ether(10));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundProposalManagerX.customVotingConfigs(await fundProposalManagerX.getThresholdMarker(alice, '0x3f554115'));
+      res = await fundProposalManagerX.customVotingConfigs(
+        await fundProposalManagerX.getThresholdMarker(alice, '0x3f554115')
+      );
       assert.equal(res.support, ether(30));
       assert.equal(res.minAcceptQuorum, ether(20));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
@@ -199,7 +201,9 @@ describe('Private Fund Factory', () => {
       assert.equal(res.minAcceptQuorum, ether(30));
       assert.equal(res.timeout, VotingConfig.ONE_WEEK);
 
-      res = await fundProposalManagerX.customVotingConfigs(await fundProposalManagerX.getThresholdMarker(alice, '0x3f554115'));
+      res = await fundProposalManagerX.customVotingConfigs(
+        await fundProposalManagerX.getThresholdMarker(alice, '0x3f554115')
+      );
       assert.equal(res.support, 0);
       assert.equal(res.minAcceptQuorum, 0);
       assert.equal(res.timeout, 0);
