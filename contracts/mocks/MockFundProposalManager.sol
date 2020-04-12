@@ -34,7 +34,7 @@ contract MockFundProposalManager is FundProposalManager {
     p.value = _value;
     p.data = _data;
     p.dataLink = _dataLink;
-    p.marker = _fundStorage().getThresholdMarker(_destination, _data);
+    p.marker = getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;
     _onNewProposal(id);

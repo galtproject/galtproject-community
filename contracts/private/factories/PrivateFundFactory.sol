@@ -21,7 +21,7 @@ import "../../abstract/interfaces/IAbstractFundStorage.sol";
 import "./PrivateFundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 import "../../common/registries/FundRuleRegistryV1.sol";
-import "../../abstract/fees/ChargesEthFee.sol";
+import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
 
 import "./PrivateFundFactoryLib.sol";
 

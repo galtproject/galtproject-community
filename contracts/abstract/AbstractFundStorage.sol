@@ -347,16 +347,6 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
 
   // GETTERS
 
-  function getThresholdMarker(address _destination, bytes memory _data) public pure returns(bytes32 marker) {
-    bytes32 methodName;
-
-    assembly {
-      methodName := and(mload(add(_data, 0x20)), 0xffffffff00000000000000000000000000000000000000000000000000000000)
-    }
-
-    return keccak256(abi.encode(_destination, methodName));
-  }
-
   function getCommunityApps() external view returns (address[] memory) {
     return _communityApps.elements();
   }

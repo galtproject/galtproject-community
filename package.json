@@ -6,7 +6,7 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#0732de5",
+    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#f223511",
     "@galtproject/eslint-config-galt": "1.1.0",
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#8d59d9a",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#41d79b1",

@@ -24,7 +24,7 @@ import "../../common/FundUpgrader.sol";
 import "./FundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
 import "../../common/registries/FundRuleRegistryV1.sol";
-import "../../abstract/fees/ChargesEthFee.sol";
+import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
 
 
 contract FundFactory is Ownable {

@@ -251,19 +251,19 @@ async function buildFund(
 
     switch (contractName) {
       case 'fundStorage':
-        marker = fundStorage.getThresholdMarker(fundStorage.address, signatures[i]);
+        marker = fundProposalManager.getThresholdMarker(fundStorage.address, signatures[i]);
         break;
       case 'fundMultiSig':
-        marker = fundStorage.getThresholdMarker(fundMultiSig.address, signatures[i]);
+        marker = fundProposalManager.getThresholdMarker(fundMultiSig.address, signatures[i]);
         break;
       case 'fundController':
-        marker = fundStorage.getThresholdMarker(fundController.address, signatures[i]);
+        marker = fundProposalManager.getThresholdMarker(fundController.address, signatures[i]);
         break;
       case 'fundRA':
-        marker = fundStorage.getThresholdMarker(fundRA.address, signatures[i]);
+        marker = fundProposalManager.getThresholdMarker(fundRA.address, signatures[i]);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contractName, signatures[i]);
+        marker = fundProposalManager.getThresholdMarker(contractName, signatures[i]);
         break;
     }
 
@@ -387,22 +387,22 @@ async function buildPrivateFund(
 
     switch (contractName) {
       case 'fundStorage':
-        marker = fundStorage.getThresholdMarker(fundStorage.address, config.methodSignature);
+        marker = fundProposalManager.getThresholdMarker(fundStorage.address, config.methodSignature);
         break;
       case 'fundMultiSig':
-        marker = fundStorage.getThresholdMarker(fundMultiSig.address, config.methodSignature);
+        marker = fundProposalManager.getThresholdMarker(fundMultiSig.address, config.methodSignature);
         break;
       case 'fundController':
-        marker = fundStorage.getThresholdMarker(fundController.address, config.methodSignature);
+        marker = fundProposalManager.getThresholdMarker(fundController.address, config.methodSignature);
         break;
       case 'fundRA':
-        marker = fundStorage.getThresholdMarker(fundRA.address, config.methodSignature);
+        marker = fundProposalManager.getThresholdMarker(fundRA.address, config.methodSignature);
         break;
       case 'fundRuleRegistry':
-        marker = fundStorage.getThresholdMarker(fundRuleRegistry.address, config.methodSignature);
+        marker = fundProposalManager.getThresholdMarker(fundRuleRegistry.address, config.methodSignature);
         break;
       default:
-        marker = fundStorage.getThresholdMarker(contractName, config.methodSignature);
+        marker = fundProposalManager.getThresholdMarker(contractName, config.methodSignature);
         break;
     }
 
