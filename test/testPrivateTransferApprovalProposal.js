@@ -161,7 +161,7 @@ describe('PrivateTransferApprovalProposal', () => {
       await approveAndMintLockerProposal(locker, this.fundRAX, { from: alice });
 
       assert.equal(await this.fundStorageX.isTransferToNotOwnedAllowed(charlie), false);
-      await assertRevert(this.fundRAX.delegate(notTokenOwner, charlie, '100'), 'Beneficiary isn\'t a token owner');
+      await assertRevert(this.fundRAX.delegate(notTokenOwner, charlie, '100', {from: charlie}), 'Beneficiary isn\'t a token owner');
 
       // EXPEL
       let proposalData = this.fundStorageX.contract.methods.setTransferNonTokenOwnersAllowed(true).encodeABI();
