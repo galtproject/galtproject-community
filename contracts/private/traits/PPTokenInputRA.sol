@@ -40,14 +40,6 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     globalRegistry = _globalRegistry;
   }
 
-  // @dev Transfer owned reputation
-  // PermissionED
-  function delegate(address _to, address _owner, uint256 _amount) public {
-    require(_tokenOwners.has(_to), "Beneficiary isn't a token owner");
-
-    _transfer(msg.sender, _to, _owner, _amount);
-  }
-
   // @dev Mints reputation for given token to the owner account
   function mint(
     IAbstractLocker _tokenLocker
