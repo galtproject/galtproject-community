@@ -20,13 +20,7 @@ PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getEventArg, assertRevert } = require('./helpers');
-const {
-  validateProposalSuccess,
-  approveBurnLockerProposal,
-  mintLockerProposal,
-  approveAndMintLockerProposal,
-  validateProposalError
-} = require('./proposalHelpers');
+const { approveAndMintLockerProposal } = require('./proposalHelpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -161,15 +155,18 @@ describe('PrivateTransferApprovalProposal', () => {
       await approveAndMintLockerProposal(locker, this.fundRAX, { from: alice });
 
       assert.equal(await this.fundStorageX.isTransferToNotOwnedAllowed(charlie), false);
-      await assertRevert(this.fundRAX.delegate(notTokenOwner, charlie, '100', {from: charlie}), 'Beneficiary isn\'t a token owner');
+      await assertRevert(
+        this.fundRAX.delegate(notTokenOwner, charlie, '100', { from: charlie }),
+        "Beneficiary isn't a token owner"
+      );
 
       // EXPEL
-      let proposalData = this.fundStorageX.contract.methods.setTransferNonTokenOwnersAllowed(true).encodeABI();
+      const proposalData = this.fundStorageX.contract.methods.setTransferNonTokenOwnersAllowed(true).encodeABI();
       res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
         from: charlie
       });
 
-      let proposalId = res.logs[0].args.proposalId.toString(10);
+      const proposalId = res.logs[0].args.proposalId.toString(10);
 
       await this.fundProposalManagerX.aye(proposalId, true, { from: alice });
       await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
@@ -180,7 +177,7 @@ describe('PrivateTransferApprovalProposal', () => {
 
       assert.equal(await this.fundStorageX.isTransferToNotOwnedAllowed(charlie), true);
 
-      await this.fundRAX.delegate(notTokenOwner, charlie, '100', {from: charlie});
+      await this.fundRAX.delegate(notTokenOwner, charlie, '100', { from: charlie });
 
       res = await this.fundRAX.balanceOf(notTokenOwner);
       assert.equal(res.toString(10), '100');
@@ -188,7 +185,7 @@ describe('PrivateTransferApprovalProposal', () => {
       res = await this.fundRAX.balanceOf(charlie);
       assert.equal(res.toString(10), '200');
 
-      await this.fundRAX.revoke(notTokenOwner, '100', {from: charlie});
+      await this.fundRAX.revoke(notTokenOwner, '100', { from: charlie });
 
       res = await this.fundRAX.balanceOf(notTokenOwner);
       assert.equal(res.toString(10), '0');
