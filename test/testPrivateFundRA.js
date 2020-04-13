@@ -30,6 +30,16 @@ const {
   getEventArg
 } = require('./helpers');
 
+const {
+  approveBurnLockerProposal,
+  approveAndMintLockerProposal,
+  burnWithReputationLockerProposal,
+  validateProposalError,
+  burnLockerProposal,
+  withdrawLockerProposal,
+  validateProposalSuccess
+} = require('./proposalHelpers');
+
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -169,10 +179,10 @@ describe('PrivateFundRA', () => {
     await this.controller1.setInitialDetails(this.token1, 2, 1, 800, utf8ToHex('foo'), 'bar', 'buzz', true, {
       from: minter
     });
-    await this.controller2.setInitialDetails(this.token2, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', true, {
+    await this.controller2.setInitialDetails(this.token2, 2, 1, 100, utf8ToHex('foo'), 'bar', 'buzz', true, {
       from: minter
     });
-    await this.controller3.setInitialDetails(this.token3, 2, 1, 0, utf8ToHex('foo'), 'bar', 'buzz', true, {
+    await this.controller3.setInitialDetails(this.token3, 2, 1, 100, utf8ToHex('foo'), 'bar', 'buzz', true, {
       from: minter
     });
 
@@ -199,26 +209,28 @@ describe('PrivateFundRA', () => {
     await this.registry3.approve(this.charlieLockerAddress, this.token3, { from: charlie });
 
     // DEPOSIT SPACE TOKEN
-    await this.aliceLocker.deposit(this.registry1.address, this.token1, { from: alice, value: ether(0.1) });
-    await this.bobLocker.deposit(this.registry2.address, this.token2, { from: bob, value: ether(0.1) });
-    await this.charlieLocker.deposit(this.registry3.address, this.token3, { from: charlie, value: ether(0.1) });
-
-    // APPROVE REPUTATION MINT
-    await this.aliceLocker.approveMint(this.fundRAX.address, { from: alice });
-    await this.bobLocker.approveMint(this.fundRAX.address, { from: bob });
-    await this.charlieLocker.approveMint(this.fundRAX.address, { from: charlie });
-
-    assert.equal(await this.aliceLocker.reputation(), 800);
-    assert.equal(await this.aliceLocker.tokenId(), this.token1);
-    assert.equal(await this.aliceLocker.tokenContract(), this.registry1.address);
-
-    assert.equal(await this.bobLocker.reputation(), 0);
-    assert.equal(await this.bobLocker.tokenId(), this.token2);
-    assert.equal(await this.bobLocker.tokenContract(), this.registry2.address);
-
-    await this.fundRAX.mint(this.aliceLockerAddress, { from: alice });
-    await this.fundRAX.mint(this.bobLockerAddress, { from: bob });
-    await this.fundRAX.mint(this.charlieLockerAddress, { from: charlie });
+    await this.aliceLocker.depositAndMint(
+      this.registry1.address,
+      this.token1,
+      [alice],
+      ['1'],
+      '1',
+      this.fundRAX.address,
+      { from: alice, value: ether(0.1) }
+    );
+    await this.bobLocker.depositAndMint(this.registry2.address, this.token2, [bob], ['1'], '1', this.fundRAX.address, {
+      from: bob,
+      value: ether(0.1)
+    });
+    await this.charlieLocker.depositAndMint(
+      this.registry3.address,
+      this.token3,
+      [charlie],
+      ['1'],
+      '1',
+      this.fundRAX.address,
+      { from: charlie, value: ether(0.1) }
+    );
   });
 
   describe('mint', () => {
@@ -241,9 +253,11 @@ describe('PrivateFundRA', () => {
       // APPROVE SPACE TOKEN
       await this.registry1.approve(danLocker.address, danToken, { from: dan });
 
-      await danLocker.depositAndMint(this.registry1.address, danToken, this.fundRAX.address, { from: dan });
+      await danLocker.depositAndMint(this.registry1.address, danToken, [dan], ['1'], '1', this.fundRAX.address, {
+        from: dan
+      });
 
-      assert.equal(await danLocker.reputation(), 800);
+      assert.equal(await danLocker.totalReputation(), 800);
       assert.equal(await danLocker.tokenId(), danToken);
       assert.equal(await danLocker.tokenContract(), this.registry1.address);
 
@@ -260,11 +274,11 @@ describe('PrivateFundRA', () => {
         2
       );
 
-      await danLocker.approveAndMint(newFund.fundRA.address, { from: dan });
+      await approveAndMintLockerProposal(danLocker, newFund.fundRA, { from: dan });
 
       assert.equal(await newFund.fundRA.balanceOf(dan), 800);
 
-      await danLocker.burnWithReputation(newFund.fundRA.address, { from: dan });
+      await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
 
       assert.equal(await newFund.fundRA.balanceOf(dan), 0);
     });
@@ -306,11 +320,15 @@ describe('PrivateFundRA', () => {
       assert.equal(await this.fundStorageX.isTokenLocked(this.registry1.address, this.token1), true);
       await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice }), 'heck');
 
+      assert.equal(await this.fundRAX.balanceOf(alice), 800);
+
       await increaseTime(ONE_DAY + 2 * ONE_HOUR);
       await this.regularEthFee.pay(this.registry1.address, this.token1, { from: alice, value: ether(4) });
 
       await this.regularEthFee.unlockToken(this.registry1.address, this.token1, { from: unauthorized });
-      this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice });
+      await approveBurnLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+
+      assert.equal(await this.fundRAX.balanceOf(alice), 0);
     });
   });
 
@@ -358,7 +376,7 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 450);
 
       res = await this.fundRAX.balanceOf(bob);
-      assert.equal(res, 350);
+      assert.equal(res, 450);
 
       // TRANSFER #2
       await this.fundRAX.delegate(charlie, alice, 100, { from: bob });
@@ -368,10 +386,10 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 450);
 
       res = await this.fundRAX.balanceOf(bob);
-      assert.equal(res, 250);
+      assert.equal(res, 350);
 
       res = await this.fundRAX.balanceOf(charlie);
-      assert.equal(res, 100);
+      assert.equal(res, 200);
 
       // TRANSFER #3
       await this.fundRAX.delegate(alice, alice, 50, { from: charlie });
@@ -381,10 +399,10 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 500);
 
       res = await this.fundRAX.balanceOf(bob);
-      assert.equal(res, 250);
+      assert.equal(res, 350);
 
       res = await this.fundRAX.balanceOf(charlie);
-      assert.equal(res, 50);
+      assert.equal(res, 150);
 
       // REVOKE #1
       await this.fundRAX.revoke(bob, 200, { from: alice });
@@ -397,17 +415,20 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 700);
 
       res = await this.fundRAX.balanceOf(bob);
-      assert.equal(res, 50);
+      assert.equal(res, 150);
 
       res = await this.fundRAX.balanceOf(charlie);
-      assert.equal(res, 50);
+      assert.equal(res, 150);
 
       // BURN REPUTATION UNSUCCESSFUL ATTEMPTS
-      await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice }));
+      let proposalId = await approveBurnLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+      await validateProposalError(this.aliceLocker, proposalId);
 
       // UNSUCCESSFUL WITHDRAW SPACE TOKEN
-      await assertRevert(this.aliceLocker.burn(this.fundRAX.address, { from: alice }));
-      await assertRevert(this.aliceLocker.withdraw({ from: alice }));
+      proposalId = await burnLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+      await validateProposalError(this.aliceLocker, proposalId);
+      proposalId = await withdrawLockerProposal(this.aliceLocker, alice, alice, { from: alice });
+      await validateProposalError(this.aliceLocker, proposalId);
 
       // REVOKE REPUTATION
       await this.fundRAX.revoke(bob, 50, { from: alice });
@@ -418,27 +439,31 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 800);
 
       res = await this.fundRAX.balanceOf(bob);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
 
       res = await this.fundRAX.balanceOf(charlie);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
 
       // WITHDRAW TOKEN
-      await assertRevert(this.fundRAX.approveBurn(this.aliceLockerAddress, { from: charlie }));
-      await this.fundRAX.approveBurn(this.aliceLockerAddress, { from: alice });
+      await assertRevert(
+        approveBurnLockerProposal(this.aliceLocker, this.fundRAX, { from: charlie }),
+        ' Not the locker owner'
+      );
+      proposalId = await approveBurnLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(this.aliceLocker, proposalId);
       const block6 = (await web3.eth.getBlock('latest')).number;
 
-      await this.aliceLocker.burn(this.fundRAX.address, { from: alice });
-      await this.aliceLocker.withdraw({ from: alice });
+      proposalId = await burnLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(this.aliceLocker, proposalId);
+
+      proposalId = await withdrawLockerProposal(this.aliceLocker, alice, alice, { from: alice });
+      await validateProposalSuccess(this.aliceLocker, proposalId);
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 0);
 
-      res = await this.aliceLocker.reputation();
+      res = await this.aliceLocker.totalReputation();
       assert.equal(res, 0);
-
-      res = await this.aliceLocker.owner();
-      assert.equal(res, alice);
 
       res = await this.aliceLocker.tokenId();
       assert.equal(res, 0);
@@ -453,51 +478,51 @@ describe('PrivateFundRA', () => {
       res = await this.fundRAX.balanceOfAt(alice, block0);
       assert.equal(res, 800);
       res = await this.fundRAX.balanceOfAt(bob, block0);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
       res = await this.fundRAX.balanceOfAt(charlie, block0);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
 
       res = await this.fundRAX.balanceOfAt(alice, block1);
       assert.equal(res, 450);
       res = await this.fundRAX.balanceOfAt(bob, block1);
-      assert.equal(res, 350);
+      assert.equal(res, 450);
       res = await this.fundRAX.balanceOfAt(charlie, block1);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
 
       res = await this.fundRAX.balanceOfAt(alice, block2);
       assert.equal(res, 450);
       res = await this.fundRAX.balanceOfAt(bob, block2);
-      assert.equal(res, 250);
+      assert.equal(res, 350);
       res = await this.fundRAX.balanceOfAt(charlie, block2);
-      assert.equal(res, 100);
+      assert.equal(res, 200);
 
       res = await this.fundRAX.balanceOfAt(alice, block3);
       assert.equal(res, 500);
       res = await this.fundRAX.balanceOfAt(bob, block3);
-      assert.equal(res, 250);
+      assert.equal(res, 350);
       res = await this.fundRAX.balanceOfAt(charlie, block3);
-      assert.equal(res, 50);
+      assert.equal(res, 150);
 
       res = await this.fundRAX.balanceOfAt(alice, block4);
       assert.equal(res, 700);
       res = await this.fundRAX.balanceOfAt(bob, block4);
-      assert.equal(res, 50);
+      assert.equal(res, 150);
       res = await this.fundRAX.balanceOfAt(charlie, block4);
-      assert.equal(res, 50);
+      assert.equal(res, 150);
 
       res = await this.fundRAX.balanceOfAt(alice, block5);
       assert.equal(res, 800);
       res = await this.fundRAX.balanceOfAt(bob, block5);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
       res = await this.fundRAX.balanceOfAt(charlie, block5);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
 
       res = await this.fundRAX.balanceOfAt(alice, block6);
       assert.equal(res, 0);
       res = await this.fundRAX.balanceOfAt(bob, block6);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
       res = await this.fundRAX.balanceOfAt(charlie, block6);
-      assert.equal(res, 0);
+      assert.equal(res, 100);
     });
   });
 });

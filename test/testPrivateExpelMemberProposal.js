@@ -21,6 +21,15 @@ PPTokenRegistry.numberFormat = 'String';
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime } = require('./helpers');
 
+const {
+  approveAndMintLockerProposal,
+  mintLockerProposal,
+  validateProposalError,
+  burnLockerProposal,
+  approveMintLockerProposal,
+  validateProposalSuccess
+} = require('./proposalHelpers');
+
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
 
@@ -163,13 +172,10 @@ describe('PrivateExpelFundMemberProposal', () => {
 
       // DEPOSIT SPACE TOKEN
       await this.registry1.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(this.registry1.address, token1, { from: alice, value: ether(0.1) });
+      await locker.deposit(this.registry1.address, token1, [alice], ['1'], '1', { from: alice, value: ether(0.1) });
 
-      res = await locker.reputation();
+      res = await locker.totalReputation();
       assert.equal(res, 800);
-
-      res = await locker.owner();
-      assert.equal(res, alice);
 
       res = await locker.tokenId();
       assert.equal(res, 1);
@@ -184,9 +190,8 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, true);
 
       // MINT REPUTATION
-      await locker.approveMint(this.fundRAX.address, { from: alice });
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
-      await this.fundRAX.mint(lockerAddress, { from: alice });
+      await assertRevert(approveAndMintLockerProposal(locker, this.fundRAX, { from: minter }), 'Not the locker owner');
+      await approveAndMintLockerProposal(locker, this.fundRAX, { from: alice });
 
       // res = await this.fundRAX.registry1Owners();
       // assert.sameMembers(res, [alice, bob, charlie, dan, eve, frank]);
@@ -252,8 +257,7 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res.minAcceptQuorum, ether(50));
 
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
-      assert.equal(res.isExpelled, true);
-      assert.equal(res.amount, 800);
+      assert.equal(res, true);
 
       res = await this.fundProposalManagerX.proposals(proposalId);
       assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -275,8 +279,7 @@ describe('PrivateExpelFundMemberProposal', () => {
       const blockNumberAfterBurn = await web3.eth.getBlockNumber();
 
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
-      assert.equal(res.isExpelled, true);
-      assert.equal(res.amount, 0);
+      assert.equal(res, true);
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 0);
@@ -310,14 +313,18 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res, 0);
 
       // MINT REPUTATION REJECTED
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
+      let lockerProposalId = await mintLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalError(locker, lockerProposalId);
 
       // BURN
-      await locker.burn(this.fundRAX.address, { from: alice });
+      lockerProposalId = await burnLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(locker, lockerProposalId);
 
       // MINT REPUTATION REJECTED AFTER BURN
-      await locker.approveMint(this.fundRAX.address, { from: alice });
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
+      lockerProposalId = await approveMintLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(locker, lockerProposalId);
+      lockerProposalId = await mintLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalError(locker, lockerProposalId);
 
       const proposalData2 = this.fundStorageX.contract.methods
         .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
@@ -338,7 +345,8 @@ describe('PrivateExpelFundMemberProposal', () => {
 
       // MINT REPUTATION AGAIN
       assert.equal(await this.fundRAX.balanceOf(alice), 0);
-      await this.fundRAX.mint(lockerAddress, { from: alice });
+      lockerProposalId = await mintLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(locker, lockerProposalId);
       assert.equal(await this.fundRAX.balanceOf(alice), 800);
 
       const blockNumberAfterMint = await web3.eth.getBlockNumber();
@@ -415,12 +423,10 @@ describe('PrivateExpelFundMemberProposal', () => {
 
       // DEPOSIT SPACE TOKEN
       await this.registry1.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(this.registry1.address, token1, { from: alice, value: ether(0.1) });
-
-      // MINT REPUTATION
-      await locker.approveMint(this.fundRAX.address, { from: alice });
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
-      await this.fundRAX.mint(lockerAddress, { from: alice });
+      await locker.depositAndMint(this.registry1.address, token1, [alice], ['1'], '1', this.fundRAX.address, {
+        from: alice,
+        value: ether(0.1)
+      });
 
       await this.controller1.initiateTokenBurn(token1, { from: minter });
       await evmIncreaseTime(ONE_HOUR + 1);
@@ -455,16 +461,19 @@ describe('PrivateExpelFundMemberProposal', () => {
       assert.equal(res.status, ProposalStatus.EXECUTED);
 
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
-      assert.equal(res.isExpelled, true);
-      assert.equal(res.amount, 800);
+      assert.equal(res, true);
+      assert.equal(await this.fundRAX.tokenReputationMinted(this.registry1.address, token1), 800);
+      assert.equal(await this.fundRAX.ownerReputationMinted(alice, this.registry1.address, token1), 800);
 
       await this.fundRAX.burnExpelled(this.registry1.address, token1, charlie, alice, 100, { from: unauthorized });
+      assert.equal(await this.fundRAX.ownerReputationMinted(alice, this.registry1.address, token1), 700);
       await this.fundRAX.burnExpelled(this.registry1.address, token1, bob, alice, 200, { from: unauthorized });
+      assert.equal(await this.fundRAX.ownerReputationMinted(alice, this.registry1.address, token1), 500);
       await this.fundRAX.burnExpelled(this.registry1.address, token1, alice, alice, 500, { from: unauthorized });
 
       res = await this.fundStorageX.getExpelledToken(this.registry1.address, token1);
-      assert.equal(res.isExpelled, true);
-      assert.equal(res.amount, 0);
+      assert.equal(res, true);
+      assert.equal(await this.fundRAX.ownerReputationMinted(alice, this.registry1.address, token1), 0);
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 0);

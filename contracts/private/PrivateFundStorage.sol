@@ -14,7 +14,6 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
-import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
 import "../abstract/AbstractFundStorage.sol";
 import "./traits/PPTokenInputRA.sol";
 
@@ -45,8 +44,6 @@ contract PrivateFundStorage is AbstractFundStorage {
   mapping(address => mapping(uint256 => bool)) private _burnApprovals;
   // registry => (tokenId => isExpelled)
   mapping(address => mapping(uint256 => bool)) private _expelledTokens;
-  // registry => (tokenId => availableAmountToBurn)
-  mapping(address => mapping(uint256 => uint256)) private _expelledTokenReputation;
   // registry => (tokenId => isLocked)
   mapping(address => mapping(uint256 => bool)) private _lockedTokens;
 
@@ -108,33 +105,9 @@ contract PrivateFundStorage is AbstractFundStorage {
     _onlyValidToken(_registry);
     require(_expelledTokens[_registry][_tokenId] == false, "Already Expelled");
 
-    uint256 amount = PPTokenInputRA(fundRegistry.getRAAddress()).reputationMinted(_registry, _tokenId);
-
-    assert(amount > 0);
-
     _expelledTokens[_registry][_tokenId] = true;
-    _expelledTokenReputation[_registry][_tokenId] = amount;
 
     emit Expel(_registry, _tokenId);
-  }
-
-  function decrementExpelledTokenReputation(
-    address _registry,
-    uint256 _tokenId,
-    uint256 _amount
-  )
-    external
-    onlyRole(ROLE_DECREMENT_TOKEN_REPUTATION)
-    returns (bool completelyBurned)
-  {
-    _onlyValidToken(_registry);
-    require(_amount > 0 && _amount <= _expelledTokenReputation[_registry][_tokenId], "Invalid reputation amount");
-
-    _expelledTokenReputation[_registry][_tokenId] = _expelledTokenReputation[_registry][_tokenId] - _amount;
-
-    completelyBurned = (_expelledTokenReputation[_registry][_tokenId] == 0);
-
-    emit DecrementExpel(_registry, _tokenId);
   }
 
   function incrementFine(
@@ -232,12 +205,9 @@ contract PrivateFundStorage is AbstractFundStorage {
   )
     external
     view
-    returns (bool isExpelled, uint256 amount)
+    returns (bool)
   {
-    return (
-      _expelledTokens[_registry][_tokenId],
-      _expelledTokenReputation[_registry][_tokenId]
-    );
+    return _expelledTokens[_registry][_tokenId];
   }
 
   function isMintApproved(

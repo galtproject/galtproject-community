@@ -16,7 +16,8 @@ import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPLockerRegistry.sol";
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
-import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
+import "@galtproject/private-property-registry/contracts/abstract/interfaces/IAbstractLocker.sol";
+import "@galtproject/private-property-registry/contracts/abstract/interfaces/IAbstractToken.sol";
 
 
 contract PPTokenInputRA is LiquidRA, Initializable {
@@ -28,16 +29,12 @@ contract PPTokenInputRA is LiquidRA, Initializable {
   // owner => tokenCount
   mapping(address => uint256) public ownerTokenCount;
 
+  // registry => (tokenId => owners)
+  mapping(address => mapping(uint256 => address[])) public tokenOwnersMinted;
   // registry => (tokenId => mintedAmount)
-  mapping(address => mapping(uint256 => uint256)) public reputationMinted;
-
-  modifier onlyTokenOwner(address _registry, uint256 _tokenId, IPPLocker _tokenLocker) {
-    IPPTokenRegistry(globalRegistry.getPPTokenRegistryAddress()).requireValidToken(_registry);
-    require(address(_tokenLocker) == IERC721(_registry).ownerOf(_tokenId), "Invalid sender. Token owner expected.");
-    require(msg.sender == _tokenLocker.owner(), "Not PPLocker owner");
-    tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
-    _;
-  }
+  mapping(address => mapping(uint256 => uint256)) public tokenReputationMinted;
+  // owner => registry => (tokenId => mintedAmount)
+  mapping(address => mapping(address => mapping(uint256 => uint256))) public ownerReputationMinted;
 
   function initializeInternal(IPPGlobalRegistry _globalRegistry) internal {
     globalRegistry = _globalRegistry;
@@ -53,72 +50,89 @@ contract PPTokenInputRA is LiquidRA, Initializable {
 
   // @dev Mints reputation for given token to the owner account
   function mint(
-    IPPLocker _tokenLocker
+    IAbstractLocker _tokenLocker
   )
     public
   {
     tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
 
-    address owner = _tokenLocker.owner();
-    require(msg.sender == owner || msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
+    (
+      address[] memory owners,
+      uint256[] memory ownersReputation,
+      address registry,
+      uint256 tokenId,
+      uint256 totalReputation,
+      ,
+      ,
+    ) = _tokenLocker.getLockerInfo();
 
-    uint256 tokenId = _tokenLocker.tokenId();
-    address registry = address(_tokenLocker.tokenContract());
-    require(reputationMinted[registry][tokenId] == 0, "Reputation already minted");
+    require(tokenReputationMinted[registry][tokenId] == 0, "Reputation already minted");
+    require(msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
 
-    uint256 reputation = _tokenLocker.reputation();
-
-    _cacheTokenOwner(owner, registry, tokenId, reputation);
-    _mint(owner, reputation);
+    _setTokenOwnersReputation(owners, ownersReputation, registry, tokenId, totalReputation);
   }
 
-  function revokeBurnedTokenReputation(IPPLocker _tokenLocker) external {
-
-    tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
-
-    IPPToken tokenContract = _tokenLocker.tokenContract();
+  function revokeBurnedTokenReputation(IAbstractLocker _tokenLocker) external {
+    IAbstractToken tokenContract = _tokenLocker.tokenContract();
     uint256 tokenId = _tokenLocker.tokenId();
-    address tokenContractAddress = address(tokenContract);
 
     require(tokenContract.exists(tokenId) == false, "Token still exists");
-    require(reputationMinted[tokenContractAddress][tokenId] > 0, "Reputation doesn't minted");
-
-    address owner = _tokenLocker.owner();
-
-    _burn(owner, reputationMinted[tokenContractAddress][tokenId]);
-    _cacheTokenDecrement(owner);
-
-    reputationMinted[tokenContractAddress][tokenId] = 0;
+    _burnLockerReputation(_tokenLocker);
   }
 
   // Burn token total reputation
   // Owner should revoke all delegated reputation back to his account before performing this action
   function approveBurn(
-    IPPLocker _tokenLocker
+    IAbstractLocker _tokenLocker
   )
     public
   {
+    require(msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
+    _burnLockerReputation(_tokenLocker);
+  }
+
+  function _burnLockerReputation(IAbstractLocker _tokenLocker) internal {
     tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
-
-    address owner = _tokenLocker.owner();
-
-    require(msg.sender == owner || msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
 
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
 
-    require(reputationMinted[registry][tokenId] > 0, "Reputation doesn't minted");
+    require(tokenReputationMinted[registry][tokenId] > 0, "Reputation doesn't minted");
 
-    _burn(owner, reputationMinted[registry][tokenId]);
-    _cacheTokenDecrement(owner);
+    address[] storage owners = tokenOwnersMinted[registry][tokenId];
 
-    reputationMinted[registry][tokenId] = 0;
+    uint256 len = owners.length;
+    for (uint256 i = 0; i < len; i++) {
+      _burn(owners[i], owners[i], ownerReputationMinted[owners[i]][registry][tokenId]);
+      ownerReputationMinted[owners[i]][registry][tokenId] = 0;
+
+      _cacheTokenDecrement(owners[i]);
+    }
+
+    tokenOwnersMinted[registry][tokenId] = new address[](0);
+    tokenReputationMinted[registry][tokenId] = 0;
   }
 
-  function _cacheTokenOwner(address _owner, address _registry, uint256 _tokenId, uint256 _reputation) internal {
-    _tokenOwners.addSilent(_owner);
-    ownerTokenCount[_owner] = ownerTokenCount[_owner].add(1);
-    reputationMinted[_registry][_tokenId] = _reputation;
+  function _setTokenOwnersReputation(
+    address[] memory owners,
+    uint256[] memory ownersReputation,
+    address _registry,
+    uint256 _tokenId,
+    uint256 _totalReputation
+  )
+    internal
+  {
+    tokenOwnersMinted[_registry][_tokenId] = owners;
+    tokenReputationMinted[_registry][_tokenId] = _totalReputation;
+
+    uint256 len = owners.length;
+    for (uint256 i = 0; i < len; i++) {
+      ownerReputationMinted[owners[i]][_registry][_tokenId] = ownersReputation[i];
+      _mint(owners[i], ownersReputation[i]);
+
+      _tokenOwners.addSilent(owners[i]);
+      ownerTokenCount[owners[i]] = ownerTokenCount[owners[i]].add(1);
+    }
   }
 
   function _cacheTokenDecrement(address _owner) internal {

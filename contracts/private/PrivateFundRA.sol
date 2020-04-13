@@ -12,14 +12,13 @@ pragma solidity ^0.5.13;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
-import "@galtproject/private-property-registry/contracts/interfaces/IPPLocker.sol";
-import "@galtproject/private-property-registry/contracts/interfaces/IPPRA.sol";
+import "@galtproject/private-property-registry/contracts/abstract/interfaces/IAbstractRA.sol";
 import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRA.sol";
 import "./traits/PPTokenInputRA.sol";
 
 
-contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
+contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
 
   uint256 public constant VERSION = 3;
 
@@ -53,7 +52,7 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
   }
 
   function mint(
-    IPPLocker _tokenLocker
+    IAbstractLocker _tokenLocker
   )
     public
   {
@@ -69,7 +68,7 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
   }
 
   function approveBurn(
-    IPPLocker _tokenLocker
+    IAbstractLocker _tokenLocker
   )
     public
   {
@@ -88,22 +87,31 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
   }
 
   function burnExpelled(address _registry, uint256 _tokenId, address _delegate, address _owner, uint256 _amount) external {
-    bool completelyBurned = _fundStorage().decrementExpelledTokenReputation(_registry, _tokenId, _amount);
-
-    _debitAccount(_delegate, _owner, _amount);
+    bool isExpelled = _fundStorage().getExpelledToken(_registry, _tokenId);
 
     require(_ownedBalances[_owner] >= _amount, "Not enough funds to burn");
+    require(isExpelled, "Token not expelled");
 
-    _ownedBalances[_owner] = _ownedBalances[_owner].sub(_amount);
-    totalStakedSpace = totalStakedSpace.sub(_amount);
+    _burn(_delegate, _owner, _amount);
+    ownerReputationMinted[_owner][_registry][_tokenId] = ownerReputationMinted[_owner][_registry][_tokenId].sub(_amount);
 
-    updateValueAtNow(_cachedBalances[_delegate], balanceOf(_delegate));
-    updateValueAtNow(_cachedBalances[_owner], balanceOf(_owner));
-    updateValueAtNow(_cachedTotalSupply, totalSupply());
-
-    if (completelyBurned) {
+    if (ownerReputationMinted[_owner][_registry][_tokenId] == 0) {
       _cacheTokenDecrement(_owner);
-      reputationMinted[_registry][_tokenId] = 0;
+    }
+
+    address[] storage owners = tokenOwnersMinted[_registry][_tokenId];
+
+    uint256 notBurnedAmount = 0;
+    uint256 len = owners.length;
+    for (uint256 i = 0; i < len; i++) {
+      notBurnedAmount = notBurnedAmount.add(ownerReputationMinted[owners[i]][_registry][_tokenId]);
+    }
+
+    updateValueAtNow(_cachedBalances[_owner], balanceOf(_owner));
+
+    if (notBurnedAmount == 0) {
+      tokenOwnersMinted[_registry][_tokenId] = new address[](0);
+      tokenReputationMinted[_registry][_tokenId] = 0;
       emit TokenBurn(_registry, _tokenId);
     }
     emit BurnExpelled(_registry, _tokenId, _delegate, _owner, _amount);
@@ -127,8 +135,8 @@ contract PrivateFundRA is IPPRA, IFundRA, LiquidRA, PPTokenInputRA {
     updateValueAtNow(_cachedTotalSupply, totalSupply());
   }
 
-  function _burn(address _benefactor, uint256 _amount) internal {
-    LiquidRA._burn(_benefactor, _amount);
+  function _burn(address _delegate, address _benefactor, uint256 _amount) internal {
+    LiquidRA._burn(_delegate, _benefactor, _amount);
 
     updateValueAtNow(_cachedTotalSupply, totalSupply());
   }
