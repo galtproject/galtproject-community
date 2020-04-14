@@ -51,6 +51,19 @@ contract FundProposalManager is AbstractProposalManager {
     super.initialize(_feeManager);
   }
 
+  function propose(
+    address _destination,
+    uint256 _value,
+    bool _castVote,
+    bool _executesIfDecided,
+    bytes calldata _data,
+    string calldata _dataLink
+  )
+    external
+  {
+    _propose(_destination, _value, _castVote, _executesIfDecided, _data, _dataLink);
+  }
+
   function _fundStorage() internal view returns (IAbstractFundStorage) {
     return IAbstractFundStorage(fundRegistry.getStorageAddress());
   }

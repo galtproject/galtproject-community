@@ -19,7 +19,14 @@ PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, getEventArg } = require('./helpers');
+const { ether, initHelperWeb3, getEventArg } = require('./helpers');
+const {
+  validateProposalSuccess,
+  approveBurnLockerProposal,
+  mintLockerProposal,
+  approveAndMintLockerProposal,
+  validateProposalError
+} = require('./proposalHelpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -159,12 +166,10 @@ describe('PrivateBurnApprovalProposal', () => {
 
       // DEPOSIT SPACE TOKEN
       await this.registry1.approve(lockerAddress, token1, { from: alice });
-      await locker.deposit(this.registry1.address, token1, { from: alice, value: ether(0.1) });
+      await locker.deposit(this.registry1.address, token1, [alice], ['1'], '1', { from: alice, value: ether(0.1) });
 
       // MINT REPUTATION
-      await locker.approveMint(this.fundRAX.address, { from: alice });
-      await assertRevert(this.fundRAX.mint(lockerAddress, { from: minter }));
-      await this.fundRAX.mint(lockerAddress, { from: alice });
+      await approveAndMintLockerProposal(locker, this.fundRAX, { from: alice });
 
       assert.equal(await this.fundStorageX.burnLocked(), false);
       assert.equal(await this.fundStorageX.isBurnApproved(this.registry1.address, token1), true);
@@ -187,7 +192,8 @@ describe('PrivateBurnApprovalProposal', () => {
       assert.equal(await this.fundStorageX.burnLocked(), true);
       assert.equal(await this.fundStorageX.isBurnApproved(this.registry1.address, token1), false);
 
-      await assertRevert(this.fundRAX.approveBurn(lockerAddress, { from: alice }));
+      const lockerProposalId = await approveBurnLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalError(locker, lockerProposalId);
 
       proposalData = this.fundStorageX.contract.methods
         .setBurnApprovalAll([this.registry1.address], [token1.toString()], true)
@@ -208,9 +214,11 @@ describe('PrivateBurnApprovalProposal', () => {
       assert.equal(await this.fundStorageX.burnLocked(), true);
       assert.equal(await this.fundStorageX.isBurnApproved(this.registry1.address, token1), true);
 
-      await this.fundRAX.approveBurn(lockerAddress, { from: alice });
+      proposalId = await approveBurnLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(locker, proposalId);
 
-      await this.fundRAX.mint(lockerAddress, { from: alice });
+      proposalId = await mintLockerProposal(locker, this.fundRAX, { from: alice });
+      await validateProposalSuccess(locker, proposalId);
     });
   });
 });

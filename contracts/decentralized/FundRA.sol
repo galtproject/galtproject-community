@@ -111,7 +111,7 @@ contract FundRA is IRA, IFundRA, LiquidRA, SpaceInputRA {
   }
 
   function _burn(address _benefactor, uint256 _amount) internal {
-    LiquidRA._burn(_benefactor, _amount);
+    LiquidRA._burn(_benefactor, _benefactor, _amount);
 
     updateValueAtNow(_cachedTotalSupply, totalSupply());
   }

@@ -19,6 +19,7 @@ const MockBar = contract.fromArtifact('MockBar');
 const galt = require('@galtproject/utils');
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
+const { mintLockerProposal } = require('./proposalHelpers');
 
 const ProposalStatus = {
   NULL: 0,
@@ -122,9 +123,9 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       const locker = await PPLocker.at(lockerAddress);
       await this.registry1.approve(lockerAddress, token, { from: owner });
-      await locker.deposit(this.registry1.address, token, { from: owner });
-
-      await locker.approveMint(fundRa.address, { from: owner });
+      await locker.depositAndApproveMint(this.registry1.address, token, [owner], ['1'], '1', fundRa.address, {
+        from: owner
+      });
       return locker;
     };
   });
@@ -161,7 +162,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       const locker = await this.tokenLock(bob, token1, this.fundRAX);
 
-      await this.fundRAX.mint(locker.address, { from: bob });
+      await mintLockerProposal(locker, this.fundRAX, { from: bob });
     });
 
     it('should approve mint by multisig', async function() {
@@ -169,11 +170,8 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       const locker = await this.tokenLock(alice, token1, this.fundRAX);
 
-      let res = await locker.reputation();
+      let res = await locker.totalReputation();
       assert.equal(res, 800);
-
-      res = await locker.owner();
-      assert.equal(res, alice);
 
       res = await locker.tokenDeposited();
       assert.equal(res, true);
@@ -202,7 +200,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
       res = await this.fundStorageX.isMintApproved(this.registry1.address, token1);
       assert.equal(res, true);
 
-      await this.fundRAX.mint(locker.address, { from: alice });
+      await mintLockerProposal(locker, this.fundRAX, { from: alice });
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);

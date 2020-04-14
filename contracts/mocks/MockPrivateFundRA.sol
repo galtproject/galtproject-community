@@ -17,8 +17,13 @@ contract MockPrivateFundRA is PrivateFundRA {
   using Counters for Counters.Counter;
 
   function mintHack(address _beneficiary, uint256 _amount, address _registry, uint256 _tokenId) external {
-    _mint(_beneficiary, _amount);
-    _cacheTokenOwner(_beneficiary, _registry, _tokenId, _amount);
+    uint256[] memory tokenReputations = new uint256[](1);
+    tokenReputations[0] = _amount;
+
+    address[] memory tokenOwners = new address[](1);
+    tokenOwners[0] = _beneficiary;
+
+    _setTokenOwnersReputation(tokenOwners, tokenReputations, _registry, _tokenId, _amount);
 
     emit TokenMint(_registry, _tokenId);
   }
@@ -33,11 +38,15 @@ contract MockPrivateFundRA is PrivateFundRA {
     uint256[] calldata _tokenIds,
     uint256 _amount
   )
-  external
+    external
   {
+    uint256[] memory tokenReputations = new uint256[](1);
+    tokenReputations[0] = _amount;
+
     for (uint256 i = 0; i < _addresses.length; i++) {
-      _mint(_addresses[i], _amount);
-      _cacheTokenOwner(_addresses[i], _registries[i], _tokenIds[i], _amount);
+      address[] memory tokenOwners = new address[](1);
+      tokenOwners[0] = _addresses[i];
+      _setTokenOwnersReputation(tokenOwners, tokenReputations, _registries[i], _tokenIds[i], _amount);
 
       emit TokenMint(_registries[i], _tokenIds[i]);
     }
