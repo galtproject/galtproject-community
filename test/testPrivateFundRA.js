@@ -53,7 +53,7 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 describe('PrivateFundRA', () => {
-  const [minter, alice, bob, charlie, dan, lola, nana, tonya, burner, unauthorized, lockerFeeManager] = accounts;
+  const [minter, alice, bob, charlie, dan, lola, nana, burner, unauthorized, lockerFeeManager] = accounts;
   const coreTeam = defaultSender;
 
   const ethFee = ether(10);
@@ -302,19 +302,55 @@ describe('PrivateFundRA', () => {
       // APPROVE SPACE TOKEN
       await this.registry1.approve(danLocker.address, danToken, { from: dan });
 
-      await assertRevert(danLocker.depositAndMint(this.registry1.address, danToken, [dan, lola, nana], ['1', '1', '1'], '2', this.fundRAX.address, {
-        from: dan
-      }), 'Calculated shares and total shares does not equal');
+      await assertRevert(
+        danLocker.depositAndMint(
+          this.registry1.address,
+          danToken,
+          [dan, lola, nana],
+          ['1', '1', '1'],
+          '2',
+          this.fundRAX.address,
+          {
+            from: dan
+          }
+        ),
+        'Calculated shares and total shares does not equal'
+      );
 
-      await assertRevert(danLocker.depositAndMint(this.registry1.address, danToken, [dan, lola, nana], ['1', '1'], '3', this.fundRAX.address, {
-        from: dan
-      }), 'Calculated shares and total shares does not equal');
+      await assertRevert(
+        danLocker.depositAndMint(
+          this.registry1.address,
+          danToken,
+          [dan, lola, nana],
+          ['1', '1'],
+          '3',
+          this.fundRAX.address,
+          {
+            from: dan
+          }
+        ),
+        'Calculated shares and total shares does not equal'
+      );
 
-      await danLocker.depositAndMint(this.registry1.address, danToken, [dan, lola, nana], ['1', '1', '1'], '3', this.fundRAX.address, {
-        from: dan
-      });
+      await danLocker.depositAndMint(
+        this.registry1.address,
+        danToken,
+        [dan, lola, nana],
+        ['1', '1', '1'],
+        '3',
+        this.fundRAX.address,
+        {
+          from: dan
+        }
+      );
 
-      assert.equal(await danLocker.totalReputation(), new BN(ether(100)).div(new BN(3)).mul(new BN(3)).toString(10));
+      assert.equal(
+        await danLocker.totalReputation(),
+        new BN(ether(100))
+          .div(new BN(3))
+          .mul(new BN(3))
+          .toString(10)
+      );
       assert.equal(await danLocker.tokenId(), danToken);
       assert.equal(await danLocker.tokenContract(), this.registry1.address);
 
@@ -324,7 +360,13 @@ describe('PrivateFundRA', () => {
 
       await this.fundRAX.delegate(nana, dan, await this.fundRAX.balanceOf(dan), { from: dan });
       assert.equal(await this.fundRAX.balanceOf(dan), '0');
-      assert.equal(await this.fundRAX.balanceOf(nana), new BN(ether(100)).div(new BN(3)).mul(new BN(2)).toString(10));
+      assert.equal(
+        await this.fundRAX.balanceOf(nana),
+        new BN(ether(100))
+          .div(new BN(3))
+          .mul(new BN(2))
+          .toString(10)
+      );
 
       await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
       const newFund = await buildPrivateFund(
