@@ -27,6 +27,9 @@ contract PrivateFundStorage is AbstractFundStorage {
   event SetBurnApproval(address indexed registry, uint256 indexed tokenId, bool value);
   event BurnLockedChange(bool indexed burnLocked);
 
+  event SetTransferNonTokenOwnersAllowed(bool indexed allowed);
+  event SetTransferNonTokenOwnersItemApproval(address tokenOwner, bool indexed burnLocked);
+
   event Expel(address indexed registry, uint256 indexed tokenId);
   event DecrementExpel(address indexed registry, uint256 indexed tokenId);
 
@@ -35,6 +38,7 @@ contract PrivateFundStorage is AbstractFundStorage {
   event LockChange(bool indexed isLock, address indexed registry, uint256 indexed tokenId);
 
   bool public burnLocked;
+  bool public transferNonTokenOwnersAllowed;
 
   // registry => (tokenId => details)
   mapping(address => mapping(uint256 => MemberFines)) private _fines;
@@ -42,6 +46,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   mapping(address => mapping(uint256 => bool)) private _mintApprovals;
   // registry => (tokenId => isBurnApproved)
   mapping(address => mapping(uint256 => bool)) private _burnApprovals;
+  // address => isTransferApproved
+  mapping(address => bool) private _transferNonTokenOwnersApprovals;
   // registry => (tokenId => isExpelled)
   mapping(address => mapping(uint256 => bool)) private _expelledTokens;
   // registry => (tokenId => isLocked)
@@ -96,6 +102,29 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     burnLocked = _value;
     emit BurnLockedChange(_value);
+  }
+
+  function setTransferNonTokenOwnersListAllowed(
+    address[] calldata _addresses,
+    bool _value
+  )
+    external
+    onlyRole(ROLE_TRANSFER_REPUTATION_MANAGER)
+  {
+    uint256 len = _addresses.length;
+
+    for (uint256 i = 0; i < len; i++) {
+      _transferNonTokenOwnersApprovals[_addresses[i]] = _value;
+      emit SetTransferNonTokenOwnersItemApproval(_addresses[i], burnLocked);
+    }
+  }
+
+  function setTransferNonTokenOwnersAllowed(bool _value)
+    external
+    onlyRole(ROLE_TRANSFER_REPUTATION_MANAGER)
+  {
+    transferNonTokenOwnersAllowed = _value;
+    emit SetTransferNonTokenOwnersAllowed(_value);
   }
 
   function expel(address _registry, uint256 _tokenId)
@@ -233,11 +262,21 @@ contract PrivateFundStorage is AbstractFundStorage {
     address _registry,
     uint256 _tokenId
   )
-  external
-  view
-  returns (bool)
+    external
+    view
+    returns (bool)
   {
     return !burnLocked || _burnApprovals[_registry][_tokenId];
+  }
+
+  function isTransferToNotOwnedAllowed(
+    address _tokenOwner
+  )
+    external
+    view
+    returns (bool)
+  {
+    return transferNonTokenOwnersAllowed || _transferNonTokenOwnersApprovals[_tokenOwner];
   }
 
   function isTokenLocked(

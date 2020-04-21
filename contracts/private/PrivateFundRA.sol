@@ -117,6 +117,17 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
     emit BurnExpelled(_registry, _tokenId, _delegate, _owner, _amount);
   }
 
+  // @dev Transfer owned reputation
+  // PermissionED
+  function delegate(address _to, address _owner, uint256 _amount) public {
+    require(
+      _tokenOwners.has(_to) || _fundStorage().isTransferToNotOwnedAllowed(_owner),
+      "Beneficiary isn't a token owner"
+    );
+
+    _transfer(msg.sender, _to, _owner, _amount);
+  }
+
   function _creditAccount(address _account, address _owner, uint256 _amount) internal {
     LiquidRA._creditAccount(_account, _owner, _amount);
 

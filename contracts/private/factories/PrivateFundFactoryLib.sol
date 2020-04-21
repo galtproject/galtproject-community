@@ -32,6 +32,7 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_CONFIG_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_BURN_LOCK_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_TRANSFER_REPUTATION_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
@@ -73,6 +74,7 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_CONFIG_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_NEW_MEMBER_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_BURN_LOCK_MANAGER(), _fundMultiSig, true);
+    _fundACL.setRole(_fundStorage.ROLE_TRANSFER_REPUTATION_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_EXPEL_MEMBER_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundMultiSig, true);

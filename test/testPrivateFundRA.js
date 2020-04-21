@@ -40,7 +40,7 @@ const {
   validateProposalSuccess
 } = require('./proposalHelpers');
 
-const { utf8ToHex } = web3.utils;
+const { utf8ToHex, BN } = web3.utils;
 const bytes32 = utf8ToHex;
 
 initHelperWeb3(web3);
@@ -53,7 +53,7 @@ const ONE_DAY = 86400;
 const ONE_MONTH = 2592000;
 
 describe('PrivateFundRA', () => {
-  const [minter, alice, bob, charlie, dan, burner, unauthorized, lockerFeeManager] = accounts;
+  const [minter, alice, bob, charlie, dan, lola, nana, burner, unauthorized, lockerFeeManager] = accounts;
   const coreTeam = defaultSender;
 
   const ethFee = ether(10);
@@ -234,7 +234,7 @@ describe('PrivateFundRA', () => {
   });
 
   describe('mint', () => {
-    it('should mint repuation by depositAndMint function', async function() {
+    it('should mint reputation by depositAndMint function', async function() {
       assert.equal(await this.fundRAX.balanceOf(dan), 0);
 
       let res = await this.controller1.mint(dan, { from: minter });
@@ -281,6 +281,113 @@ describe('PrivateFundRA', () => {
       await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
 
       assert.equal(await newFund.fundRA.balanceOf(dan), 0);
+    });
+
+    it('should mint reputation to shared owners by depositAndMint function', async function() {
+      assert.equal(await this.fundRAX.balanceOf(dan), 0);
+
+      let res = await this.controller1.mint(dan, { from: minter });
+      const danToken = getEventArg(res, 'Mint', 'tokenId');
+
+      // HACK
+      await this.controller1.setInitialDetails(danToken, 2, 1, ether(100), utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
+
+      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, { from: charlie });
+
+      const danLocker = await PPLocker.at(res.logs[0].args.locker);
+
+      // APPROVE SPACE TOKEN
+      await this.registry1.approve(danLocker.address, danToken, { from: dan });
+
+      await assertRevert(
+        danLocker.depositAndMint(
+          this.registry1.address,
+          danToken,
+          [dan, lola, nana],
+          ['1', '1', '1'],
+          '2',
+          this.fundRAX.address,
+          {
+            from: dan
+          }
+        ),
+        'Calculated shares and total shares does not equal'
+      );
+
+      await assertRevert(
+        danLocker.depositAndMint(
+          this.registry1.address,
+          danToken,
+          [dan, lola, nana],
+          ['1', '1'],
+          '3',
+          this.fundRAX.address,
+          {
+            from: dan
+          }
+        ),
+        'Calculated shares and total shares does not equal'
+      );
+
+      await danLocker.depositAndMint(
+        this.registry1.address,
+        danToken,
+        [dan, lola, nana],
+        ['1', '1', '1'],
+        '3',
+        this.fundRAX.address,
+        {
+          from: dan
+        }
+      );
+
+      assert.equal(
+        await danLocker.totalReputation(),
+        new BN(ether(100))
+          .div(new BN(3))
+          .mul(new BN(3))
+          .toString(10)
+      );
+      assert.equal(await danLocker.tokenId(), danToken);
+      assert.equal(await danLocker.tokenContract(), this.registry1.address);
+
+      assert.equal(await this.fundRAX.balanceOf(dan), new BN(ether(100)).div(new BN(3)).toString(10));
+      assert.equal(await this.fundRAX.balanceOf(nana), new BN(ether(100)).div(new BN(3)).toString(10));
+      assert.equal(await this.fundRAX.balanceOf(lola), new BN(ether(100)).div(new BN(3)).toString(10));
+
+      await this.fundRAX.delegate(nana, dan, await this.fundRAX.balanceOf(dan), { from: dan });
+      assert.equal(await this.fundRAX.balanceOf(dan), '0');
+      assert.equal(
+        await this.fundRAX.balanceOf(nana),
+        new BN(ether(100))
+          .div(new BN(3))
+          .mul(new BN(2))
+          .toString(10)
+      );
+
+      await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
+      const newFund = await buildPrivateFund(
+        this.fundFactory,
+        alice,
+        false,
+        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+        {},
+        [bob, charlie],
+        2
+      );
+
+      await approveAndMintLockerProposal(danLocker, newFund.fundRA, { from: dan });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), new BN(ether(100)).div(new BN(3)).toString(10));
+
+      await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), 0);
+      assert.equal(await newFund.fundRA.balanceOf(nana), 0);
+      assert.equal(await newFund.fundRA.balanceOf(lola), 0);
     });
   });
 
