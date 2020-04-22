@@ -7,6 +7,7 @@ const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
 const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
 const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
 const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
+const LockerProposalManagerFactory = contract.fromArtifact('LockerProposalManagerFactory');
 const PPLocker = contract.fromArtifact('PPLocker');
 const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
 const PPTokenController = contract.fromArtifact('PPTokenController');
@@ -18,9 +19,6 @@ PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
-const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime } = require('./helpers');
-
 const {
   approveAndMintLockerProposal,
   mintLockerProposal,
@@ -28,7 +26,9 @@ const {
   burnLockerProposal,
   approveMintLockerProposal,
   validateProposalSuccess
-} = require('./proposalHelpers');
+} = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
+const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime } = require('./helpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -68,7 +68,8 @@ describe('PrivateExpelFundMemberProposal', () => {
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, 0, 0);
+    const lockerProposalManagerFactory = await LockerProposalManagerFactory.new();
+    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, lockerProposalManagerFactory.address, 0, 0);
 
     // PPGR setup
     await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);
@@ -423,7 +424,7 @@ describe('PrivateExpelFundMemberProposal', () => {
 
       // DEPOSIT SPACE TOKEN
       await this.registry1.approve(lockerAddress, token1, { from: alice });
-      await locker.depositAndMint(this.registry1.address, token1, [alice], ['1'], '1', this.fundRAX.address, {
+      await locker.depositAndMint(this.registry1.address, token1, [alice], ['1'], '1', this.fundRAX.address, true, {
         from: alice,
         value: ether(0.1)
       });

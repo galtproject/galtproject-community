@@ -59,7 +59,10 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     ) = _tokenLocker.getLockerInfo();
 
     require(tokenReputationMinted[registry][tokenId] == 0, "Reputation already minted");
-    require(msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
+    require(
+      msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
+      "Not the locker or proposalManager of locker"
+    );
 
     _setTokenOwnersReputation(owners, ownersReputation, registry, tokenId, totalReputation);
   }
@@ -79,7 +82,10 @@ contract PPTokenInputRA is LiquidRA, Initializable {
   )
     public
   {
-    require(msg.sender == address(_tokenLocker), "Not owner of the locker or not locker");
+    require(
+      msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
+      "Not the locker or proposalManager of locker"
+    );
     _burnLockerReputation(_tokenLocker);
   }
 
