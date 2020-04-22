@@ -6,6 +6,7 @@ const GaltToken = contract.fromArtifact('GaltToken');
 const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
 const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
 const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
+const LockerProposalManagerFactory = contract.fromArtifact('LockerProposalManagerFactory');
 const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
 const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
 const PPTokenController = contract.fromArtifact('PPTokenController');
@@ -36,9 +37,13 @@ const {
   burnWithReputationLockerProposal,
   validateProposalError,
   burnLockerProposal,
+  ayeLockerProposal,
+  nayLockerProposal,
+  abstainLockerProposal,
+  getLockerProposal,
   withdrawLockerProposal,
   validateProposalSuccess
-} = require('./proposalHelpers');
+} = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 
 const { utf8ToHex, BN } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -49,6 +54,8 @@ initHelperWeb3(web3);
 const ONE_HOUR = 3600;
 // 60 * 60 * 24
 const ONE_DAY = 86400;
+// 60 * 60 * 24 * 7
+const ONE_WEEK = 86400 * 7;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
 
@@ -75,7 +82,8 @@ describe('PrivateFundRA', () => {
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, 0, 0);
+    const lockerProposalManagerFactory = await LockerProposalManagerFactory.new();
+    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, lockerProposalManagerFactory.address, 0, 0);
 
     // PPGR setup
     await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);
@@ -216,9 +224,10 @@ describe('PrivateFundRA', () => {
       ['1'],
       '1',
       this.fundRAX.address,
+      true,
       { from: alice, value: ether(0.1) }
     );
-    await this.bobLocker.depositAndMint(this.registry2.address, this.token2, [bob], ['1'], '1', this.fundRAX.address, {
+    await this.bobLocker.depositAndMint(this.registry2.address, this.token2, [bob], ['1'], '1', this.fundRAX.address, true, {
       from: bob,
       value: ether(0.1)
     });
@@ -229,6 +238,7 @@ describe('PrivateFundRA', () => {
       ['1'],
       '1',
       this.fundRAX.address,
+      true,
       { from: charlie, value: ether(0.1) }
     );
   });
@@ -246,14 +256,14 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, { from: charlie });
 
       const danLocker = await PPLocker.at(res.logs[0].args.locker);
 
       // APPROVE SPACE TOKEN
       await this.registry1.approve(danLocker.address, danToken, { from: dan });
 
-      await danLocker.depositAndMint(this.registry1.address, danToken, [dan], ['1'], '1', this.fundRAX.address, {
+      await danLocker.depositAndMint(this.registry1.address, danToken, [dan], ['1'], '1', this.fundRAX.address, true, {
         from: dan
       });
 
@@ -295,7 +305,7 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, { from: charlie });
 
       const danLocker = await PPLocker.at(res.logs[0].args.locker);
 
@@ -310,6 +320,7 @@ describe('PrivateFundRA', () => {
           ['1', '1', '1'],
           '2',
           this.fundRAX.address,
+          true,
           {
             from: dan
           }
@@ -325,6 +336,7 @@ describe('PrivateFundRA', () => {
           ['1', '1'],
           '3',
           this.fundRAX.address,
+          true,
           {
             from: dan
           }
@@ -339,6 +351,7 @@ describe('PrivateFundRA', () => {
         ['1', '1', '1'],
         '3',
         this.fundRAX.address,
+        true,
         {
           from: dan
         }
@@ -379,11 +392,34 @@ describe('PrivateFundRA', () => {
         2
       );
 
-      await approveAndMintLockerProposal(danLocker, newFund.fundRA, { from: dan });
+      let proposalId = await approveAndMintLockerProposal(danLocker, newFund.fundRA, { from: dan });
+      let proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await ayeLockerProposal(danLocker, proposalId, { from: lola });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await ayeLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 2);
 
       assert.equal(await newFund.fundRA.balanceOf(dan), new BN(ether(100)).div(new BN(3)).toString(10));
 
-      await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
+      proposalId = await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await ayeLockerProposal(danLocker, proposalId, { from: lola });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+
+      await nayLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await abstainLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await ayeLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 2);
 
       assert.equal(await newFund.fundRA.balanceOf(dan), 0);
       assert.equal(await newFund.fundRA.balanceOf(nana), 0);

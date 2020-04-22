@@ -8,6 +8,7 @@ const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
 const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
 const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
 const PPLocker = contract.fromArtifact('PPLocker');
+const LockerProposalManagerFactory = contract.fromArtifact('LockerProposalManagerFactory');
 const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
 const PPTokenController = contract.fromArtifact('PPTokenController');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
@@ -20,7 +21,7 @@ PPTokenRegistry.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getEventArg, assertRevert } = require('./helpers');
-const { approveAndMintLockerProposal } = require('./proposalHelpers');
+const { approveAndMintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -59,7 +60,8 @@ describe('PrivateTransferApprovalProposal', () => {
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, 0, 0);
+    const lockerProposalManagerFactory = await LockerProposalManagerFactory.new();
+    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, lockerProposalManagerFactory.address, 0, 0);
 
     // PPGR setup
     await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);

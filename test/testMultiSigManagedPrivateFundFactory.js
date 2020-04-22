@@ -8,6 +8,7 @@ const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
 const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
 const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
 const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
+const LockerProposalManagerFactory = contract.fromArtifact('LockerProposalManagerFactory');
 const PPLocker = contract.fromArtifact('PPLocker');
 const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
 const PPTokenController = contract.fromArtifact('PPTokenController');
@@ -19,7 +20,7 @@ const MockBar = contract.fromArtifact('MockBar');
 const galt = require('@galtproject/utils');
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
-const { mintLockerProposal } = require('./proposalHelpers');
+const { mintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 
 const ProposalStatus = {
   NULL: 0,
@@ -61,7 +62,8 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, 0, 0);
+    const lockerProposalManagerFactory = await LockerProposalManagerFactory.new();
+    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, lockerProposalManagerFactory.address, 0, 0);
 
     // PPGR setup
     await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);
@@ -123,7 +125,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       const locker = await PPLocker.at(lockerAddress);
       await this.registry1.approve(lockerAddress, token, { from: owner });
-      await locker.depositAndApproveMint(this.registry1.address, token, [owner], ['1'], '1', fundRa.address, {
+      await locker.depositAndMint(this.registry1.address, token, [owner], ['1'], '1', fundRa.address, false, {
         from: owner
       });
       return locker;

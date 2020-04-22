@@ -7,6 +7,7 @@ const PPLockerRegistry = contract.fromArtifact('PPLockerRegistry');
 const PPTokenRegistry = contract.fromArtifact('PPTokenRegistry');
 const PPLockerFactory = contract.fromArtifact('PPLockerFactory');
 const PPTokenFactory = contract.fromArtifact('PPTokenFactory');
+const LockerProposalManagerFactory = contract.fromArtifact('LockerProposalManagerFactory');
 const PPLocker = contract.fromArtifact('PPLocker');
 const PPTokenControllerFactory = contract.fromArtifact('PPTokenControllerFactory');
 const PPTokenController = contract.fromArtifact('PPTokenController');
@@ -26,7 +27,7 @@ const {
   mintLockerProposal,
   approveAndMintLockerProposal,
   validateProposalError
-} = require('./proposalHelpers');
+} = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -65,7 +66,8 @@ describe('PrivateBurnApprovalProposal', () => {
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
-    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, 0, 0);
+    const lockerProposalManagerFactory = await LockerProposalManagerFactory.new();
+    this.ppLockerFactory = await PPLockerFactory.new(this.ppgr.address, lockerProposalManagerFactory.address, 0, 0);
 
     // PPGR setup
     await this.ppgr.setContract(await this.ppgr.PPGR_ACL(), this.acl.address);
