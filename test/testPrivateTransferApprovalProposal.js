@@ -19,9 +19,12 @@ PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 PPTokenRegistry.numberFormat = 'String';
 
+const { approveAndMintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(
+  contract
+);
+
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getEventArg, assertRevert } = require('./helpers');
-const { approveAndMintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;

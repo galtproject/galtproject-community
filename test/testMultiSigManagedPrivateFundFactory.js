@@ -18,9 +18,9 @@ const MultiSigManagedPrivateFundFactory = contract.fromArtifact('MultiSigManaged
 const MockBar = contract.fromArtifact('MockBar');
 
 const galt = require('@galtproject/utils');
+const { mintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
-const { mintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 
 const ProposalStatus = {
   NULL: 0,

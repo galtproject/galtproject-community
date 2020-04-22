@@ -20,17 +20,6 @@ const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
-const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const {
-  ether,
-  assertRevert,
-  initHelperWeb3,
-  lastBlockTimestamp,
-  increaseTime,
-  evmIncreaseTime,
-  getEventArg
-} = require('./helpers');
-
 const {
   approveBurnLockerProposal,
   approveAndMintLockerProposal,
@@ -44,6 +33,17 @@ const {
   withdrawLockerProposal,
   validateProposalSuccess
 } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
+
+const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
+const {
+  ether,
+  assertRevert,
+  initHelperWeb3,
+  lastBlockTimestamp,
+  increaseTime,
+  evmIncreaseTime,
+  getEventArg
+} = require('./helpers');
 
 const { utf8ToHex, BN } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -227,10 +227,19 @@ describe('PrivateFundRA', () => {
       true,
       { from: alice, value: ether(0.1) }
     );
-    await this.bobLocker.depositAndMint(this.registry2.address, this.token2, [bob], ['1'], '1', this.fundRAX.address, true, {
-      from: bob,
-      value: ether(0.1)
-    });
+    await this.bobLocker.depositAndMint(
+      this.registry2.address,
+      this.token2,
+      [bob],
+      ['1'],
+      '1',
+      this.fundRAX.address,
+      true,
+      {
+        from: bob,
+        value: ether(0.1)
+      }
+    );
     await this.charlieLocker.depositAndMint(
       this.registry3.address,
       this.token3,
