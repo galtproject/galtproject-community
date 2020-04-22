@@ -68,10 +68,9 @@ contract PPTokenInputRA is LiquidRA, Initializable {
       require(ownersReputation[i] > 0, "Owner does not have reputation in locker");
     }
 
+    require(_tokenLocker.isMinted(address(this)), "Sra does not added to locker");
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
-
-    require(tokenReputationMinted[registry][tokenId] == 0, "Reputation already minted");
 
     _setTokenOwnersReputation(_owners, ownersReputation, registry, tokenId);
   }
@@ -175,6 +174,14 @@ contract PPTokenInputRA is LiquidRA, Initializable {
 
   function tokenOwnersCount() public view returns (uint256) {
     return _tokenOwners.size();
+  }
+
+  function getTokenOwnersMintedByToken(address _registry, uint256 _tokenId) public view returns (address[] memory) {
+    return tokenOwnersMinted[_registry][_tokenId];
+  }
+
+  function getTokenOwnersMintedCountByToken(address _registry, uint256 _tokenId) public view returns (uint256) {
+    return tokenOwnersMinted[_registry][_tokenId].length;
   }
 
   function isMember(address _owner) public view returns (bool) {
