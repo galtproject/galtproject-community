@@ -51,8 +51,14 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
     fundRegistry = _fundRegistry;
   }
 
-  function mint(
-    IAbstractLocker _tokenLocker
+  function mint(IAbstractLocker _tokenLocker) public {
+    (address[] memory owners, , , , , , ,) = _tokenLocker.getLockerInfo();
+    mintForOwners(_tokenLocker, owners);
+  }
+
+  function mintForOwners(
+    IAbstractLocker _tokenLocker,
+    address[] memory _owners
   )
     public
   {
@@ -62,16 +68,17 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
     onlyValidToken(registry);
 
     require(_fundStorage().isMintApproved(registry, tokenId), "No mint permissions");
-    super.mint(_tokenLocker);
+    super.mintForOwners(_tokenLocker, _owners);
 
     emit TokenMint(registry, tokenId);
   }
 
-  function approveBurn(
-    IAbstractLocker _tokenLocker
-  )
-    public
-  {
+  function approveBurn(IAbstractLocker _tokenLocker) public {
+    (address[] memory owners, , , , , , ,) = _tokenLocker.getLockerInfo();
+    approveBurnForOwners(_tokenLocker, owners);
+  }
+
+  function approveBurnForOwners(IAbstractLocker _tokenLocker, address[] memory _owners) public {
     address registry = address(_tokenLocker.tokenContract());
     uint256 tokenId = _tokenLocker.tokenId();
 
@@ -81,7 +88,7 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
     require(_fundStorage().getTotalFineAmount(registry, tokenId) == 0, "There are pending fines");
     require(_fundStorage().isTokenLocked(registry, tokenId) == false, "Token is locked by a fee contract");
 
-    super.approveBurn(_tokenLocker);
+    super.approveBurnForOwners(_tokenLocker, _owners);
 
     emit TokenBurn(registry, tokenId);
   }
