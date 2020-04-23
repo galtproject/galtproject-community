@@ -276,7 +276,7 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], {
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], [], {
         from: charlie
       });
 
@@ -327,7 +327,7 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], {
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], [], {
         from: charlie
       });
 
@@ -450,7 +450,7 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], {
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], [], {
         from: charlie
       });
 
