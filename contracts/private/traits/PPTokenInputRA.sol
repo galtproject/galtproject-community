@@ -41,30 +41,38 @@ contract PPTokenInputRA is LiquidRA, Initializable {
   }
 
   // @dev Mints reputation for given token to the owner account
-  function mint(
-    IAbstractLocker _tokenLocker
+  function mintForOwners(
+    IAbstractLocker _tokenLocker,
+    address[] memory _owners
   )
     public
   {
     tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
 
-    (
-      address[] memory owners,
-      uint256[] memory ownersReputation,
-      address registry,
-      uint256 tokenId,
-      uint256 totalReputation,
-      ,
-      ,
-    ) = _tokenLocker.getLockerInfo();
+    uint256 ownersLen = _owners.length;
+    if (ownersLen == 1) {
+      require(
+        msg.sender == _owners[0] || msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
+        "Not the owner, locker or proposalManager of locker"
+      );
+    } else {
+      require(
+        msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
+        "Not the locker or proposalManager of locker"
+      );
+    }
 
-    require(tokenReputationMinted[registry][tokenId] == 0, "Reputation already minted");
-    require(
-      msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
-      "Not the locker or proposalManager of locker"
-    );
+    uint256[] memory ownersReputation = new uint256[](ownersLen);
+    for (uint256 i = 0; i < ownersLen; i++) {
+      ownersReputation[i] = _tokenLocker.reputationOf(_owners[i]);
+      require(ownersReputation[i] > 0, "Owner does not have reputation in locker");
+    }
 
-    _setTokenOwnersReputation(owners, ownersReputation, registry, tokenId, totalReputation);
+    require(_tokenLocker.isMinted(address(this)), "Sra does not added to locker");
+    address registry = address(_tokenLocker.tokenContract());
+    uint256 tokenId = _tokenLocker.tokenId();
+
+    _setTokenOwnersReputation(_owners, ownersReputation, registry, tokenId);
   }
 
   function revokeBurnedTokenReputation(IAbstractLocker _tokenLocker) external {
@@ -72,65 +80,81 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     uint256 tokenId = _tokenLocker.tokenId();
 
     require(tokenContract.exists(tokenId) == false, "Token still exists");
-    _burnLockerReputation(_tokenLocker);
+    _burnLockerOwnersReputation(_tokenLocker, tokenOwnersMinted[address(tokenContract)][tokenId]);
   }
 
   // Burn token total reputation
   // Owner should revoke all delegated reputation back to his account before performing this action
-  function approveBurn(
-    IAbstractLocker _tokenLocker
-  )
-    public
-  {
-    require(
-      msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
-      "Not the locker or proposalManager of locker"
-    );
-    _burnLockerReputation(_tokenLocker);
+  function approveBurnForOwners(IAbstractLocker _tokenLocker, address[] memory _owners) public {
+    if (_owners.length == 1) {
+      require(
+        msg.sender == _owners[0] || msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
+        "Not the owner, locker or proposalManager of locker"
+      );
+    } else {
+      require(
+        msg.sender == _tokenLocker.proposalManager() || msg.sender == address(_tokenLocker),
+        "Not the locker or proposalManager of locker"
+      );
+    }
+
+    _burnLockerOwnersReputation(_tokenLocker, _owners);
   }
 
-  function _burnLockerReputation(IAbstractLocker _tokenLocker) internal {
+  function _burnLockerOwnersReputation(IAbstractLocker _tokenLocker, address[] memory _burnOwners) internal {
     tokenLockerRegistry().requireValidLocker(address(_tokenLocker));
 
-    address registry = address(_tokenLocker.tokenContract());
-    uint256 tokenId = _tokenLocker.tokenId();
+    (address[] memory allLockerOwners, , address registry, uint256 tokenId, , , ,) = _tokenLocker.getLockerInfo();
 
     require(tokenReputationMinted[registry][tokenId] > 0, "Reputation doesn't minted");
 
-    address[] storage owners = tokenOwnersMinted[registry][tokenId];
-
-    uint256 len = owners.length;
+    uint256 totalReputationMinted = tokenReputationMinted[registry][tokenId];
+    uint256 len = _burnOwners.length;
     for (uint256 i = 0; i < len; i++) {
-      _burn(owners[i], owners[i], ownerReputationMinted[owners[i]][registry][tokenId]);
-      ownerReputationMinted[owners[i]][registry][tokenId] = 0;
+      require(ownerReputationMinted[_burnOwners[i]][registry][tokenId] > 0, "Reputation doesn't minted for owner");
+      _burn(_burnOwners[i], _burnOwners[i], ownerReputationMinted[_burnOwners[i]][registry][tokenId]);
+      totalReputationMinted -= ownerReputationMinted[_burnOwners[i]][registry][tokenId];
+      ownerReputationMinted[_burnOwners[i]][registry][tokenId] = 0;
 
-      _cacheTokenDecrement(owners[i]);
+      _cacheTokenDecrement(_burnOwners[i]);
     }
 
     tokenOwnersMinted[registry][tokenId] = new address[](0);
-    tokenReputationMinted[registry][tokenId] = 0;
+
+    uint256 allLockerOwnersLen = allLockerOwners.length;
+    for (uint256 i = 0; i < allLockerOwnersLen; i++) {
+      if (ownerReputationMinted[allLockerOwners[i]][registry][tokenId] > 0) {
+        tokenOwnersMinted[registry][tokenId].push(allLockerOwners[i]);
+      }
+    }
+
+    tokenReputationMinted[registry][tokenId] = totalReputationMinted;
   }
 
   function _setTokenOwnersReputation(
-    address[] memory owners,
-    uint256[] memory ownersReputation,
+    address[] memory _owners,
+    uint256[] memory _ownersReputation,
     address _registry,
-    uint256 _tokenId,
-    uint256 _totalReputation
+    uint256 _tokenId
   )
     internal
   {
-    tokenOwnersMinted[_registry][_tokenId] = owners;
-    tokenReputationMinted[_registry][_tokenId] = _totalReputation;
-
-    uint256 len = owners.length;
+    uint256 totalReputationMinted = tokenReputationMinted[_registry][_tokenId];
+    uint256 len = _owners.length;
     for (uint256 i = 0; i < len; i++) {
-      ownerReputationMinted[owners[i]][_registry][_tokenId] = ownersReputation[i];
-      _mint(owners[i], ownersReputation[i]);
+      require(ownerReputationMinted[_owners[i]][_registry][_tokenId] == 0, "Reputation already minted for owner");
+      ownerReputationMinted[_owners[i]][_registry][_tokenId] = _ownersReputation[i];
+      _mint(_owners[i], _ownersReputation[i]);
 
-      _tokenOwners.addSilent(owners[i]);
-      ownerTokenCount[owners[i]] = ownerTokenCount[owners[i]].add(1);
+      totalReputationMinted += _ownersReputation[i];
+
+      _tokenOwners.addSilent(_owners[i]);
+      ownerTokenCount[_owners[i]] = ownerTokenCount[_owners[i]].add(1);
+
+      tokenOwnersMinted[_registry][_tokenId].push(_owners[i]);
     }
+
+    tokenReputationMinted[_registry][_tokenId] = totalReputationMinted;
   }
 
   function _cacheTokenDecrement(address _owner) internal {
@@ -150,6 +174,14 @@ contract PPTokenInputRA is LiquidRA, Initializable {
 
   function tokenOwnersCount() public view returns (uint256) {
     return _tokenOwners.size();
+  }
+
+  function getTokenOwnersMintedByToken(address _registry, uint256 _tokenId) public view returns (address[] memory) {
+    return tokenOwnersMinted[_registry][_tokenId];
+  }
+
+  function getTokenOwnersMintedCountByToken(address _registry, uint256 _tokenId) public view returns (uint256) {
+    return tokenOwnersMinted[_registry][_tokenId].length;
   }
 
   function isMember(address _owner) public view returns (bool) {

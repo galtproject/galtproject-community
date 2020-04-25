@@ -23,7 +23,7 @@ contract MockPrivateFundRA is PrivateFundRA {
     address[] memory tokenOwners = new address[](1);
     tokenOwners[0] = _beneficiary;
 
-    _setTokenOwnersReputation(tokenOwners, tokenReputations, _registry, _tokenId, _amount);
+    _setTokenOwnersReputation(tokenOwners, tokenReputations, _registry, _tokenId);
 
     emit TokenMint(_registry, _tokenId);
   }
@@ -46,7 +46,7 @@ contract MockPrivateFundRA is PrivateFundRA {
     for (uint256 i = 0; i < _addresses.length; i++) {
       address[] memory tokenOwners = new address[](1);
       tokenOwners[0] = _addresses[i];
-      _setTokenOwnersReputation(tokenOwners, tokenReputations, _registries[i], _tokenIds[i], _amount);
+      _setTokenOwnersReputation(tokenOwners, tokenReputations, _registries[i], _tokenIds[i]);
 
       emit TokenMint(_registries[i], _tokenIds[i]);
     }

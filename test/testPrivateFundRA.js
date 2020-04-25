@@ -22,6 +22,7 @@ PPLocker.numberFormat = 'String';
 
 const {
   approveBurnLockerProposal,
+  approveMintLockerProposal,
   approveAndMintLockerProposal,
   burnWithReputationLockerProposal,
   validateProposalError,
@@ -58,6 +59,16 @@ const ONE_DAY = 86400;
 const ONE_WEEK = 86400 * 7;
 // 60 * 60 * 24 * 30
 const ONE_MONTH = 2592000;
+
+const ether33 = new BN(ether(100)).div(new BN(3)).toString(10);
+const ether66 = new BN(ether(100))
+  .div(new BN(3))
+  .mul(new BN(2))
+  .toString(10);
+const ether99 = new BN(ether(100))
+  .div(new BN(3))
+  .mul(new BN(3))
+  .toString(10);
 
 describe('PrivateFundRA', () => {
   const [minter, alice, bob, charlie, dan, lola, nana, burner, unauthorized, lockerFeeManager] = accounts;
@@ -265,7 +276,9 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], [], {
+        from: charlie
+      });
 
       const danLocker = await PPLocker.at(res.logs[0].args.locker);
 
@@ -314,7 +327,9 @@ describe('PrivateFundRA', () => {
       });
 
       await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
-      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], [], {
+        from: charlie
+      });
 
       const danLocker = await PPLocker.at(res.logs[0].args.locker);
 
@@ -366,29 +381,17 @@ describe('PrivateFundRA', () => {
         }
       );
 
-      assert.equal(
-        await danLocker.totalReputation(),
-        new BN(ether(100))
-          .div(new BN(3))
-          .mul(new BN(3))
-          .toString(10)
-      );
+      assert.equal(await danLocker.totalReputation(), ether99);
       assert.equal(await danLocker.tokenId(), danToken);
       assert.equal(await danLocker.tokenContract(), this.registry1.address);
 
-      assert.equal(await this.fundRAX.balanceOf(dan), new BN(ether(100)).div(new BN(3)).toString(10));
-      assert.equal(await this.fundRAX.balanceOf(nana), new BN(ether(100)).div(new BN(3)).toString(10));
-      assert.equal(await this.fundRAX.balanceOf(lola), new BN(ether(100)).div(new BN(3)).toString(10));
+      assert.equal(await this.fundRAX.balanceOf(dan), ether33);
+      assert.equal(await this.fundRAX.balanceOf(nana), ether33);
+      assert.equal(await this.fundRAX.balanceOf(lola), ether33);
 
       await this.fundRAX.delegate(nana, dan, await this.fundRAX.balanceOf(dan), { from: dan });
       assert.equal(await this.fundRAX.balanceOf(dan), '0');
-      assert.equal(
-        await this.fundRAX.balanceOf(nana),
-        new BN(ether(100))
-          .div(new BN(3))
-          .mul(new BN(2))
-          .toString(10)
-      );
+      assert.equal(await this.fundRAX.balanceOf(nana), ether66);
 
       await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
       const newFund = await buildPrivateFund(
@@ -411,7 +414,7 @@ describe('PrivateFundRA', () => {
       proposal = await getLockerProposal(danLocker, proposalId);
       assert.equal(proposal.status, 2);
 
-      assert.equal(await newFund.fundRA.balanceOf(dan), new BN(ether(100)).div(new BN(3)).toString(10));
+      assert.equal(await newFund.fundRA.balanceOf(dan), ether33);
 
       proposalId = await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
       proposal = await getLockerProposal(danLocker, proposalId);
@@ -433,6 +436,224 @@ describe('PrivateFundRA', () => {
       assert.equal(await newFund.fundRA.balanceOf(dan), 0);
       assert.equal(await newFund.fundRA.balanceOf(nana), 0);
       assert.equal(await newFund.fundRA.balanceOf(lola), 0);
+    });
+
+    it('should mint and burn reputation for each owner by shared locker', async function() {
+      assert.equal(await this.fundRAX.balanceOf(dan), 0);
+
+      let res = await this.controller1.mint(dan, { from: minter });
+      const danToken = getEventArg(res, 'Mint', 'tokenId');
+
+      // HACK
+      await this.controller1.setInitialDetails(danToken, 2, 1, ether(100), utf8ToHex('foo'), 'bar', 'buzz', true, {
+        from: minter
+      });
+
+      await this.galtToken.approve(this.ppLockerFactory.address, ether(20), { from: charlie });
+      res = await this.ppLockerFactory.buildForOwner(dan, ether(100), ether(100), ONE_WEEK, [], [], [], [], {
+        from: charlie
+      });
+
+      const danLocker = await PPLocker.at(res.logs[0].args.locker);
+
+      // APPROVE SPACE TOKEN
+      await this.registry1.approve(danLocker.address, danToken, { from: dan });
+
+      await assertRevert(
+        danLocker.depositAndMint(
+          this.registry1.address,
+          danToken,
+          [dan, lola, nana],
+          ['1', '1', '1'],
+          '2',
+          this.fundRAX.address,
+          false,
+          {
+            from: dan
+          }
+        ),
+        'Calculated shares and total shares does not equal'
+      );
+
+      await assertRevert(
+        danLocker.depositAndMint(
+          this.registry1.address,
+          danToken,
+          [dan, lola, nana],
+          ['1', '1'],
+          '3',
+          this.fundRAX.address,
+          false,
+          {
+            from: dan
+          }
+        ),
+        'Calculated shares and total shares does not equal'
+      );
+
+      await danLocker.depositAndMint(
+        this.registry1.address,
+        danToken,
+        [dan, lola, nana],
+        ['1', '1', '1'],
+        '3',
+        this.fundRAX.address,
+        false,
+        {
+          from: dan
+        }
+      );
+
+      assert.equal(await danLocker.totalReputation(), ether99);
+      assert.equal(await danLocker.tokenId(), danToken);
+      assert.equal(await danLocker.tokenContract(), this.registry1.address);
+
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [nana], { from: dan }),
+        'Not the owner, locker or proposalManager of locker'
+      );
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [dan, nana], { from: dan }),
+        'Not the locker or proposalManager of locker'
+      );
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [dan, nana, lola], { from: dan }),
+        'Not the locker or proposalManager of locker'
+      );
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [bob], { from: dan }),
+        'Owner does not have reputation in locker'
+      );
+      await this.fundRAX.mintForOwners(danLocker.address, [dan], { from: dan });
+
+      assert.equal(await this.fundRAX.balanceOf(dan), ether33);
+      assert.equal(await this.fundRAX.balanceOf(nana), '0');
+      assert.equal(await this.fundRAX.balanceOf(lola), '0');
+      assert.equal(await this.fundRAX.tokenReputationMinted(this.registry1.address, danToken), ether33);
+      assert.sameMembers(await this.fundRAX.getTokenOwnersMintedByToken(this.registry1.address, danToken), [dan]);
+
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [dan], { from: dan }),
+        'Reputation already minted for owner'
+      );
+
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [lola], { from: nana }),
+        'Not the owner, locker or proposalManager of locker'
+      );
+      await assertRevert(
+        this.fundRAX.mintForOwners(danLocker.address, [nana, lola], { from: nana }),
+        'Not the locker or proposalManager of locker'
+      );
+      await this.fundRAX.mintForOwners(danLocker.address, [nana], { from: nana });
+
+      assert.equal(await this.fundRAX.balanceOf(dan), ether33);
+      assert.equal(await this.fundRAX.balanceOf(nana), ether33);
+      assert.equal(await this.fundRAX.balanceOf(lola), '0');
+      assert.equal(await this.fundRAX.tokenReputationMinted(this.registry1.address, danToken), ether66);
+      assert.sameMembers(await this.fundRAX.getTokenOwnersMintedByToken(this.registry1.address, danToken), [dan, nana]);
+
+      await assertRevert(
+        this.fundRAX.approveBurnForOwners(danLocker.address, [dan], { from: nana }),
+        'Not the owner, locker or proposalManager of locker'
+      );
+      await assertRevert(
+        this.fundRAX.approveBurnForOwners(danLocker.address, [dan, nana], { from: nana }),
+        'Not the locker or proposalManager of locker'
+      );
+      await assertRevert(
+        this.fundRAX.approveBurnForOwners(danLocker.address, [nana, dan], { from: nana }),
+        'Not the locker or proposalManager of locker'
+      );
+      await this.fundRAX.approveBurnForOwners(danLocker.address, [nana], { from: nana });
+
+      assert.equal(await this.fundRAX.balanceOf(dan), ether33);
+      assert.equal(await this.fundRAX.balanceOf(nana), '0');
+      assert.equal(await this.fundRAX.balanceOf(lola), '0');
+      assert.equal(await this.fundRAX.tokenReputationMinted(this.registry1.address, danToken), ether33);
+      assert.sameMembers(await this.fundRAX.getTokenOwnersMintedByToken(this.registry1.address, danToken), [dan]);
+
+      await this.fundRAX.mintForOwners(danLocker.address, [nana], { from: nana });
+
+      assert.equal(await this.fundRAX.balanceOf(dan), ether33);
+      assert.equal(await this.fundRAX.balanceOf(nana), ether33);
+      assert.equal(await this.fundRAX.balanceOf(lola), '0');
+      assert.equal(await this.fundRAX.tokenReputationMinted(this.registry1.address, danToken), ether66);
+      assert.sameMembers(await this.fundRAX.getTokenOwnersMintedByToken(this.registry1.address, danToken), [dan, nana]);
+
+      await this.fundRAX.mintForOwners(danLocker.address, [lola], { from: lola });
+
+      assert.equal(await this.fundRAX.balanceOf(dan), ether33);
+      assert.equal(await this.fundRAX.balanceOf(nana), ether33);
+      assert.equal(await this.fundRAX.balanceOf(lola), ether33);
+      assert.equal(await this.fundRAX.tokenReputationMinted(this.registry1.address, danToken), ether99);
+      assert.sameMembers(await this.fundRAX.getTokenOwnersMintedByToken(this.registry1.address, danToken), [
+        dan,
+        nana,
+        lola
+      ]);
+
+      await this.fundRAX.delegate(nana, dan, await this.fundRAX.balanceOf(dan), { from: dan });
+      assert.equal(await this.fundRAX.balanceOf(dan), '0');
+      assert.equal(await this.fundRAX.balanceOf(nana), ether66);
+
+      await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
+      const newFund = await buildPrivateFund(
+        this.fundFactory,
+        alice,
+        false,
+        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+        {},
+        [bob, charlie],
+        2
+      );
+
+      await assertRevert(
+        newFund.fundRA.mintForOwners(danLocker.address, [dan], { from: dan }),
+        'Sra does not added to locker'
+      );
+
+      let proposalId = await approveMintLockerProposal(danLocker, newFund.fundRA, { from: dan });
+      await ayeLockerProposal(danLocker, proposalId, { from: lola });
+      await ayeLockerProposal(danLocker, proposalId, { from: nana });
+      let proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 2);
+
+      await newFund.fundRA.mintForOwners(danLocker.address, [dan], { from: dan });
+      await newFund.fundRA.mintForOwners(danLocker.address, [nana], { from: nana });
+      await newFund.fundRA.mintForOwners(danLocker.address, [lola], { from: lola });
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), ether33);
+      assert.equal(await newFund.fundRA.balanceOf(nana), ether33);
+      assert.equal(await newFund.fundRA.balanceOf(lola), ether33);
+      assert.sameMembers(await newFund.fundRA.getTokenOwnersMintedByToken(this.registry1.address, danToken), [
+        dan,
+        nana,
+        lola
+      ]);
+
+      proposalId = await burnWithReputationLockerProposal(danLocker, newFund.fundRA, { from: dan });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await ayeLockerProposal(danLocker, proposalId, { from: lola });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+
+      await nayLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await abstainLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 1);
+      await ayeLockerProposal(danLocker, proposalId, { from: nana });
+      proposal = await getLockerProposal(danLocker, proposalId);
+      assert.equal(proposal.status, 2);
+
+      assert.equal(await newFund.fundRA.balanceOf(dan), 0);
+      assert.equal(await newFund.fundRA.balanceOf(nana), 0);
+      assert.equal(await newFund.fundRA.balanceOf(lola), 0);
+      assert.equal(await newFund.fundRA.tokenReputationMinted(this.registry1.address, danToken), '0');
+      assert.sameMembers(await newFund.fundRA.getTokenOwnersMintedByToken(this.registry1.address, danToken), []);
     });
   });
 
