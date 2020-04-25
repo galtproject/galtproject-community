@@ -241,8 +241,8 @@ contract PrivateFundStorage is AbstractFundStorage {
   }
 
   function isFundMemberOrMultiSigOwner(address _addr) external view returns (bool) {
-    uint256 tokensCount = PPTokenInputRA(fundRegistry.getRAAddress()).ownerTokenCount(_addr);
-    if (tokensCount > 0) {
+    bool isRaMember = PPTokenInputRA(fundRegistry.getRAAddress()).isMember(_addr);
+    if (isRaMember) {
       return true;
     }
     return IFundMultiSig(fundRegistry.getMultiSigAddress()).isOwner(_addr);
