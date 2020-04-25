@@ -17,6 +17,7 @@ interface IFundRuleRegistry {
   event DisableFundRule(uint256 indexed id);
 
   struct Meeting {
+    bool active;
     address creator;
     uint256 id;
     uint256 meetingId;

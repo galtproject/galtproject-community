@@ -23,7 +23,7 @@ const ProposalStatus = {
 };
 
 describe('FundRuleRegistry Calls', () => {
-  const [alice, bob, charlie, fakeRegistry] = accounts;
+  const [alice, multisigOwner1, multisigOwner2, fakeRegistry] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -56,8 +56,8 @@ describe('FundRuleRegistry Calls', () => {
       alice,
       false,
       new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
-      [new CustomVotingConfig('fundRuleRegistry', '0xf442380a', ether(100), ether(100), VotingConfig.ONE_WEEK)],
-      [bob, charlie],
+      [new CustomVotingConfig('fundRuleRegistry', '0xc9e5d096', ether(100), ether(100), VotingConfig.ONE_WEEK)],
+      [multisigOwner1, multisigOwner2],
       2
     );
 
@@ -71,7 +71,7 @@ describe('FundRuleRegistry Calls', () => {
     this.fundRuleRegistryX = fund.fundRuleRegistry;
 
     this.registries = [fakeRegistry];
-    this.beneficiaries = [bob];
+    this.beneficiaries = [multisigOwner1];
     this.benefeciarSpaceTokens = ['1'];
 
     await this.fundRAX.mintAllHack(this.beneficiaries, this.registries, this.benefeciarSpaceTokens, 300, {
@@ -88,10 +88,10 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(addRuleType3Marker.timeout, VotingConfig.ONE_WEEK);
 
     const calldata = this.fundRuleRegistryX.contract.methods
-      .addRuleType4('0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
+      .addRuleType4('0', '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
     let res = await this.fundProposalManagerX.propose(this.fundRuleRegistryX.address, 0, true, true, calldata, 'blah', {
-      from: bob
+      from: multisigOwner1
     });
 
     const proposalId = res.logs[0].args.proposalId.toString(10);

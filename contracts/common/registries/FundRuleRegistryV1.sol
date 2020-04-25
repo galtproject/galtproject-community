@@ -29,6 +29,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     Meeting storage meeting = meetings[_id];
 
     meeting.id = _id;
+    meeting.active = true;
     meeting.dataLink = _dataLink;
     meeting.creator = msg.sender;
     meeting.createdAt = block.timestamp;
@@ -40,20 +41,20 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     emit AddMeeting(_id);
   }
 
-  function addRuleType1(bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
-    _addRule(_ipfsHash, 1, _dataLink);
+  function addRuleType1(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
+    _addRule(_meetingId, _ipfsHash, 1, _dataLink);
   }
 
-  function addRuleType2(bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
-    _addRule(_ipfsHash, 2, _dataLink);
+  function addRuleType2(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
+    _addRule(_meetingId, _ipfsHash, 2, _dataLink);
   }
 
-  function addRuleType3(bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
-    _addRule(_ipfsHash, 3, _dataLink);
+  function addRuleType3(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
+    _addRule(_meetingId, _ipfsHash, 3, _dataLink);
   }
 
-  function addRuleType4(bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
-    _addRule(_ipfsHash, 4, _dataLink);
+  function addRuleType4(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
+    _addRule(_meetingId, _ipfsHash, 4, _dataLink);
   }
 
   function disableRuleType1(uint256 _id) external onlyRole(ROLE_DEACTIVATE_FUND_RULE_MANAGER) {
@@ -74,13 +75,10 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   // INTERNAL HELPERS
 
-  function _addRule(
-    bytes32 _ipfsHash,
-    uint256 _typeId,
-    string memory _dataLink
-  )
-    internal
-  {
+  function _addRule(uint256 _meetingId, bytes32 _ipfsHash, uint256 _typeId, string memory _dataLink) internal {
+    if (_meetingId > 0) {
+      require(meetings[_meetingId].active, "Meeting not active");
+    }
     fundRuleCounter.increment();
     uint256 _id = fundRuleCounter.current();
 
@@ -89,6 +87,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     fundRule.active = true;
     fundRule.id = _id;
     fundRule.typeId = _typeId;
+    fundRule.meetingId = _meetingId;
     fundRule.ipfsHash = _ipfsHash;
     fundRule.dataLink = _dataLink;
     fundRule.manager = msg.sender;
@@ -99,12 +98,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     emit AddFundRule(_id);
   }
 
-  function _disableFundRule(
-    uint256 _id,
-    uint256 _typeId
-  )
-    internal
-  {
+  function _disableFundRule(uint256 _id, uint256 _typeId) internal {
     FundRule storage fundRule = fundRules[_id];
 
     require(fundRule.active == true, "Can disable an active rule only");
