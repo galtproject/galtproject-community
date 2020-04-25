@@ -18,6 +18,7 @@ import "../abstract/AbstractFundStorage.sol";
 import "./traits/PPTokenInputRA.sol";
 import "../common/interfaces/IFundMultiSig.sol";
 
+
 contract PrivateFundStorage is AbstractFundStorage {
 
   uint256 public constant VERSION = 3;
@@ -241,7 +242,7 @@ contract PrivateFundStorage is AbstractFundStorage {
 
   function isFundMemberOrMultiSigOwner(address _addr) external view returns (bool) {
     uint256 tokensCount = PPTokenInputRA(fundRegistry.getRAAddress()).ownerTokenCount(_addr);
-    if(tokensCount > 0) {
+    if (tokensCount > 0) {
       return true;
     }
     return IFundMultiSig(fundRegistry.getMultiSigAddress()).isOwner(_addr);
