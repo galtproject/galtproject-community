@@ -11,14 +11,27 @@ pragma solidity ^0.5.13;
 
 
 interface IFundRuleRegistry {
+  event AddMeeting(uint256 indexed id);
+
   event AddFundRule(uint256 indexed id);
   event DisableFundRule(uint256 indexed id);
+
+  struct Meeting {
+    address creator;
+    uint256 id;
+    uint256 meetingId;
+    string dataLink;
+    uint256 createdAt;
+    uint256 startOn;
+    uint256 endOn;
+  }
 
   struct FundRule {
     bool active;
     address manager;
     uint256 id;
     uint256 typeId;
+    uint256 meetingId;
     bytes32 ipfsHash;
     string dataLink;
     uint256 createdAt;
@@ -27,4 +40,7 @@ interface IFundRuleRegistry {
 
   function getActiveFundRules() external view returns (uint256[] memory);
   function getActiveFundRulesCount() external view returns (uint256);
+
+  function getMeetings() external view returns (uint256[] memory);
+  function getMeetingsCount() external view returns (uint256);
 }

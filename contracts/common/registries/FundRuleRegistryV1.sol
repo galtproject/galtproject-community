@@ -23,6 +23,23 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   // EXTERNAL INTERFACE
 
+  function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn) external onlyMemberOrMultiSigOwner {
+    uint256 _id = _meetings.length + 1;
+
+    Meeting storage meeting = meetings[_id];
+
+    meeting.id = _id;
+    meeting.dataLink = _dataLink;
+    meeting.creator = msg.sender;
+    meeting.createdAt = block.timestamp;
+    meeting.startOn = _startOn;
+    meeting.endOn = _endOn;
+
+    _meetings.push(_id);
+
+    emit AddMeeting(_id);
+  }
+
   function addRuleType1(bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
     _addRule(_ipfsHash, 1, _dataLink);
   }
