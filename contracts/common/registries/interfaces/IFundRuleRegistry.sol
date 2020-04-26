@@ -20,7 +20,6 @@ interface IFundRuleRegistry {
     bool active;
     address creator;
     uint256 id;
-    uint256 meetingId;
     string dataLink;
     uint256 createdAt;
     uint256 startOn;
