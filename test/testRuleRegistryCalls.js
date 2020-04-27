@@ -12,7 +12,7 @@ PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getDestinationMarker } = require('./helpers');
+const { ether, initHelperWeb3, getDestinationMarker, assertRevert } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -23,7 +23,7 @@ const ProposalStatus = {
 };
 
 describe('FundRuleRegistry Calls', () => {
-  const [alice, bob, charlie, fakeRegistry] = accounts;
+  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -56,8 +56,8 @@ describe('FundRuleRegistry Calls', () => {
       alice,
       false,
       new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
-      [new CustomVotingConfig('fundRuleRegistry', '0xf442380a', ether(100), ether(100), VotingConfig.ONE_WEEK)],
-      [bob, charlie],
+      [new CustomVotingConfig('fundRuleRegistry', '0xc9e5d096', ether(100), ether(100), VotingConfig.ONE_WEEK)],
+      [multisigOwner1, multisigOwner2],
       2
     );
 
@@ -80,15 +80,15 @@ describe('FundRuleRegistry Calls', () => {
   });
 
   it('should handle addRuleType4 s100%/q100% correctly', async function() {
-    const addRuleType3Marker = await this.fundProposalManagerX.customVotingConfigs(
+    const addRuleType4Marker = await this.fundProposalManagerX.customVotingConfigs(
       getDestinationMarker(this.fundRuleRegistryX, 'addRuleType4')
     );
-    assert.equal(addRuleType3Marker.support, ether(100));
-    assert.equal(addRuleType3Marker.minAcceptQuorum, ether(100));
-    assert.equal(addRuleType3Marker.timeout, VotingConfig.ONE_WEEK);
+    assert.equal(addRuleType4Marker.support, ether(100));
+    assert.equal(addRuleType4Marker.minAcceptQuorum, ether(100));
+    assert.equal(addRuleType4Marker.timeout, VotingConfig.ONE_WEEK);
 
     const calldata = this.fundRuleRegistryX.contract.methods
-      .addRuleType4('0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
+      .addRuleType4('0', '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
     let res = await this.fundProposalManagerX.propose(this.fundRuleRegistryX.address, 0, true, true, calldata, 'blah', {
       from: bob
@@ -110,5 +110,42 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.active, true);
     assert.equal(res.typeId, 4);
     assert.equal(res.dataLink, 'blah');
+  });
+
+  it('meetings should working correctly', async function() {
+    await assertRevert(
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: charlie }),
+      'Not member or multiSig owner'
+    );
+
+    let res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: bob });
+    const meetingId = res.logs[0].args.id.toString(10);
+    assert.equal(meetingId, '1');
+
+    res = await this.fundRuleRegistryX.meetings(meetingId);
+    assert.equal(res.active, true);
+    assert.equal(res.dataLink, 'meetingLink');
+
+    const calldata = this.fundRuleRegistryX.contract.methods
+      .addRuleType4(meetingId, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
+      .encodeABI();
+
+    res = await this.fundProposalManagerX.propose(this.fundRuleRegistryX.address, 0, true, true, calldata, 'blah', {
+      from: bob
+    });
+
+    const proposalId = res.logs[0].args.proposalId.toString(10);
+
+    res = await this.fundProposalManagerX.proposals(proposalId);
+    assert.equal(res.status, ProposalStatus.EXECUTED);
+
+    res = await this.fundRuleRegistryX.fundRules(1);
+    assert.equal(res.active, true);
+    assert.equal(res.typeId, 4);
+    assert.equal(res.meetingId, meetingId);
+    assert.equal(res.dataLink, 'blah');
+
+    res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 });
+    assert.equal(res.logs[0].args.id.toString(10), '2');
   });
 });

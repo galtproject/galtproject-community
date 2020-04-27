@@ -12,4 +12,6 @@ pragma solidity ^0.5.13;
 
 interface IFundMultiSig {
   function ROLE_OWNER_MANAGER() external returns (bytes32);
+
+  function isOwner(address _addr) external view returns (bool);
 }

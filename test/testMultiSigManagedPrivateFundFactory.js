@@ -210,7 +210,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
     it('should add/deactivate a rule by proposal manager', async function() {
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
-      let proposalData = this.fundRuleRegistryX.contract.methods.addRuleType2(ipfsHash, 'Do that').encodeABI();
+      let proposalData = this.fundRuleRegistryX.contract.methods.addRuleType2('0', ipfsHash, 'Do that').encodeABI();
 
       let res = await this.fundProposalManagerX.propose(
         this.fundRuleRegistryX.address,

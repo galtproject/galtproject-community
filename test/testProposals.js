@@ -236,7 +236,7 @@ describe('FundProposalManager', () => {
       await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
       const ipfsHash = galt.ipfsHashToBytes32('QmSrPmbaUKA3ZodhzPWZnpFgcPMFWF4QsxXbkWfEptTBJd');
-      let proposalData = this.fundRuleRegistryX.contract.methods.addRuleType3(ipfsHash, 'Do that').encodeABI();
+      let proposalData = this.fundRuleRegistryX.contract.methods.addRuleType3('0', ipfsHash, 'Do that').encodeABI();
 
       let res = await this.fundProposalManagerX.propose(
         this.fundRuleRegistryX.address,

@@ -14,6 +14,7 @@ import "../interfaces/IFundRegistry.sol";
 import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@openzeppelin/contracts/drafts/Counters.sol";
 import "./interfaces/IFundRuleRegistry.sol";
+import "../interfaces/IFundStorage.sol";
 
 
 contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
@@ -27,14 +28,27 @@ contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
 
   IFundRegistry public fundRegistry;
   ArraySet.Uint256Set internal _activeFundRules;
+  uint256[] internal _meetings;
 
   Counters.Counter internal fundRuleCounter;
 
   // FRP => fundRuleDetails
   mapping(uint256 => FundRule) public fundRules;
 
+  // ID => meetingDetails
+  mapping(uint256 => Meeting) public meetings;
+
   modifier onlyRole(bytes32 _role) {
     require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
+
+    _;
+  }
+
+  modifier onlyMemberOrMultiSigOwner() {
+    require(
+      IFundStorage(fundRegistry.getStorageAddress()).isFundMemberOrMultiSigOwner(msg.sender),
+      "Not member or multiSig owner"
+    );
 
     _;
   }
@@ -54,5 +68,13 @@ contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
 
   function getActiveFundRulesCount() external view returns (uint256) {
     return _activeFundRules.size();
+  }
+
+  function getMeetings() external view returns (uint256[] memory) {
+    return _meetings;
+  }
+
+  function getMeetingsCount() external view returns (uint256) {
+    return _meetings.length;
   }
 }

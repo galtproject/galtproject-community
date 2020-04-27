@@ -16,6 +16,7 @@ import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalReg
 import "@galtproject/private-property-registry/contracts/interfaces/IPPTokenRegistry.sol";
 import "../abstract/AbstractFundStorage.sol";
 import "./traits/PPTokenInputRA.sol";
+import "../common/interfaces/IFundMultiSig.sol";
 
 
 contract PrivateFundStorage is AbstractFundStorage {
@@ -237,6 +238,14 @@ contract PrivateFundStorage is AbstractFundStorage {
     returns (bool)
   {
     return _expelledTokens[_registry][_tokenId];
+  }
+
+  function isFundMemberOrMultiSigOwner(address _addr) external view returns (bool) {
+    bool isRaMember = PPTokenInputRA(fundRegistry.getRAAddress()).isMember(_addr);
+    if (isRaMember) {
+      return true;
+    }
+    return IFundMultiSig(fundRegistry.getMultiSigAddress()).isOwner(_addr);
   }
 
   function isMintApproved(
