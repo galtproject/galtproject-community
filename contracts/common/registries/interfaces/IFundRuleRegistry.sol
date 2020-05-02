@@ -12,6 +12,7 @@ pragma solidity ^0.5.13;
 
 interface IFundRuleRegistry {
   event AddMeeting(uint256 indexed id);
+  event EditMeeting(uint256 indexed id);
 
   event AddFundRule(uint256 indexed id);
   event DisableFundRule(uint256 indexed id);

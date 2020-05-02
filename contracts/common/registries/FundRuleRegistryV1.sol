@@ -41,6 +41,28 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     emit AddMeeting(_id);
   }
 
+  function editMeeting(
+    uint256 _id,
+    string calldata _dataLink,
+    uint256 _startOn,
+    uint256 _endOn,
+    bool _active
+  )
+    external
+    onlyMemberOrMultiSigOwner
+  {
+    Meeting storage meeting = meetings[_id];
+
+    require(meetings[_id].creator == msg.sender, "Not meeting creator");
+
+    meeting.active = _active;
+    meeting.dataLink = _dataLink;
+    meeting.startOn = _startOn;
+    meeting.endOn = _endOn;
+
+    emit EditMeeting(_id);
+  }
+
   function addRuleType1(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
     _addRule(_meetingId, _ipfsHash, 1, _dataLink);
   }
