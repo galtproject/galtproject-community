@@ -788,6 +788,77 @@ describe('PrivateFundRA', () => {
 
       assert.equal(await this.fundRAX.totalSupply(), '200');
     });
+
+    it.only('should allow expel transferred reputation in locker', async function() {
+      assert.equal(await this.fundRAX.totalSupply(), '1000');
+
+      await burnWithReputationLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+
+      let res = await this.fundRAX.balanceOf(alice);
+      assert.equal(res, 0);
+
+      await changeOwnersLockerProposal(this.aliceLocker, [alice, lola, nana, dan], [1, 1, 1, 1], '4', { from: alice });
+
+      let proposalId = await approveMintLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
+      await ayeLockerProposal(this.aliceLocker, proposalId, { from: lola });
+      await ayeLockerProposal(this.aliceLocker, proposalId, { from: nana });
+      await ayeLockerProposal(this.aliceLocker, proposalId, { from: dan });
+
+      assert.equal(await this.fundRAX.totalSupply(), '200');
+
+      await this.fundRAX.mintForOwners(this.aliceLocker.address, [alice], { from: alice });
+
+      assert.equal(await this.aliceLocker.reputationByOwner(alice), '200');
+      assert.equal(await this.fundRAX.balanceOf(alice), '200');
+
+      assert.equal(await this.fundRAX.totalSupply(), '400');
+
+      await this.aliceLocker.transferShare(alice, { from: lola });
+
+      assert.equal(await this.aliceLocker.reputationByOwner(alice), '400');
+      assert.equal(await this.fundRAX.balanceOf(alice), '200');
+
+      assert.equal(await this.fundRAX.totalSupply(), '400');
+
+      const proposalData = this.fundStorageX.contract.methods
+        .expel(this.registry1.address, parseInt(this.token1, 10))
+        .encodeABI();
+      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'blah', {
+        from: alice
+      });
+
+      const blockNumberBeforeBurn = await web3.eth.getBlockNumber();
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+      res = await this.fundRAX.totalSupplyAt(blockNumberBeforeBurn);
+      assert.equal(res, '400');
+
+      res = await this.fundRAX.tokenOwnersCount();
+      assert.equal(res, 3);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, true);
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: bob });
+
+      res = await this.fundStorageX.getExpelledToken(this.registry1.address, this.token1);
+      assert.equal(res, true);
+
+      await assertRevert(
+        this.fundRAX.mintForOwners(this.aliceLocker.address, [nana], { from: nana }),
+        'No mint permissions'
+      );
+
+      // BURNING LOCKED REPUTATION FOR EXPELLED TOKEN
+      await assertRevert(
+        this.fundRAX.burnExpelled(this.registry1.address, this.token1, alice, alice, '400', { from: unauthorized })
+      );
+      await this.fundRAX.burnExpelled(this.registry1.address, this.token1, alice, alice, '200', { from: unauthorized });
+
+      res = await this.fundRAX.tokenOwnersCount();
+      assert.equal(res, 2);
+      res = await this.fundRAX.isMember(alice);
+      assert.equal(res, false);
+    });
   });
 
   describe('reputation burn when token was burned', () => {

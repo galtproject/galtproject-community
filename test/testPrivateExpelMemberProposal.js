@@ -268,14 +268,17 @@ describe('PrivateExpelFundMemberProposal', () => {
         this.fundRAX.burnExpelled(this.registry1.address, token1, charlie, alice, 101, { from: unauthorized })
       );
       await this.fundRAX.burnExpelled(this.registry1.address, token1, charlie, alice, 100, { from: unauthorized });
+      assert.equal(await this.fundRAX.totalSupply(), 2200); // 300 * 5 + 800 - 100
       await assertRevert(
         this.fundRAX.burnExpelled(this.registry1.address, token1, bob, alice, 201, { from: unauthorized })
       );
       await this.fundRAX.burnExpelled(this.registry1.address, token1, bob, alice, 200, { from: unauthorized });
+      assert.equal(await this.fundRAX.totalSupply(), 2000); // 300 * 5 + 800 - 300
       await assertRevert(
         this.fundRAX.burnExpelled(this.registry1.address, token1, alice, alice, 501, { from: unauthorized })
       );
       await this.fundRAX.burnExpelled(this.registry1.address, token1, alice, alice, 500, { from: unauthorized });
+      assert.equal(await this.fundRAX.totalSupply(), 1500); // 300 * 5 + 800 - 800
 
       const blockNumberAfterBurn = await web3.eth.getBlockNumber();
 
