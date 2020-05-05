@@ -789,7 +789,7 @@ describe('PrivateFundRA', () => {
       assert.equal(await this.fundRAX.totalSupply(), '200');
     });
 
-    it.only('should allow expel transferred reputation in locker', async function() {
+    it('should allow expel transferred reputation in locker', async function() {
       assert.equal(await this.fundRAX.totalSupply(), '1000');
 
       await burnWithReputationLockerProposal(this.aliceLocker, this.fundRAX, { from: alice });
