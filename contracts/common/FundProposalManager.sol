@@ -60,6 +60,7 @@ contract FundProposalManager is AbstractProposalManager {
     string calldata _dataLink
   )
     external
+    payable
   {
     _propose(_destination, _value, _castVote, _executesIfDecided, _data, _dataLink);
   }

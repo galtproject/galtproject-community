@@ -489,7 +489,7 @@ describe('Proposal Manager', () => {
         }),
         'Fee and msg.value not equal.'
       );
-      this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
         from: bob,
         value: ether(0.001)
       });

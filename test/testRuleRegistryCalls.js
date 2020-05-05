@@ -146,6 +146,22 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'blah');
 
     res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 });
-    assert.equal(res.logs[0].args.id.toString(10), '2');
+    const meeting2Id = res.logs[0].args.id.toString(10);
+    assert.equal(meeting2Id, '2');
+
+    res = await this.fundRuleRegistryX.meetings(meeting2Id);
+    assert.equal(res.active, true);
+    assert.equal(res.dataLink, 'meetingLink');
+    assert.equal(res.startOn, '0');
+    assert.equal(res.endOn, '1');
+
+    await assertRevert(this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: bob }));
+    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: multisigOwner1 });
+
+    res = await this.fundRuleRegistryX.meetings(meeting2Id);
+    assert.equal(res.active, false);
+    assert.equal(res.dataLink, 'meetingLink1');
+    assert.equal(res.startOn, '1');
+    assert.equal(res.endOn, '2');
   });
 });
