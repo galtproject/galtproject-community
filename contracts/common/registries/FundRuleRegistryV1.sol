@@ -25,7 +25,11 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   // EXTERNAL INTERFACE
 
-  function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn) external onlyMemberOrMultiSigOwner {
+  function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn)
+    external
+    payable
+    onlyMemberOrMultiSigOwner
+  {
     _acceptPayment(ADD_MEETING_FEE_KEY);
     uint256 _id = _meetings.length + 1;
 
@@ -52,6 +56,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     bool _active
   )
     external
+    payable
     onlyMemberOrMultiSigOwner
   {
     _acceptPayment(EDIT_MEETING_FEE_KEY);

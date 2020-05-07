@@ -46,6 +46,7 @@ describe('FundRuleRegistry Calls', () => {
       ether(10),
       ether(20)
     );
+    await this.fundFactory.setFeeManager(coreTeam, { from: alice });
   });
 
   beforeEach(async function() {
@@ -145,7 +146,15 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.meetingId, meetingId);
     assert.equal(res.dataLink, 'blah');
 
-    res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 });
+    await this.fundRuleRegistryX.setEthFee(await this.fundRuleRegistryX.ADD_MEETING_FEE_KEY(), ether(0.002), {
+      from: coreTeam
+    });
+
+    await assertRevert(
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 }),
+      "Fee and msg.value not equal"
+    );
+    res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1, value: ether(0.002) });
     const meeting2Id = res.logs[0].args.id.toString(10);
     assert.equal(meeting2Id, '2');
 
@@ -156,6 +165,7 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.endOn, '1');
 
     await assertRevert(this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: bob }));
+
     await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: multisigOwner1 });
 
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
@@ -163,5 +173,22 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'meetingLink1');
     assert.equal(res.startOn, '1');
     assert.equal(res.endOn, '2');
+
+    await this.fundRuleRegistryX.setEthFee(await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY(), ether(0.001), {
+      from: coreTeam
+    });
+
+    await assertRevert(
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, { from: multisigOwner1 }),
+      "Fee and msg.value not equal"
+    );
+
+    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, {
+      from: multisigOwner1,
+      value: ether(0.001)
+    });
+
+    res = await this.fundRuleRegistryX.meetings(meeting2Id);
+    assert.equal(res.dataLink, 'meetingLink2');
   });
 });

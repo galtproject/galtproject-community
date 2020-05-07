@@ -28,6 +28,8 @@ import "./PrivateFundFactoryLib.sol";
 
 contract PrivateFundFactory is ChargesFee {
   bytes32 public constant PROPOSAL_MANAGER_FEE = "PROPOSAL_MANAGER_FEE";
+  bytes32 public constant RULE_MEETING_ADD_FEE = "RULE_MEETING_ADD_FEE";
+  bytes32 public constant RULE_MEETING_EDIT_FEE = "RULE_MEETING_EDIT_FEE";
 
   event CreateFundFirstStep(
     bytes32 fundId,
@@ -324,8 +326,18 @@ contract PrivateFundFactory is ChargesFee {
       _fundMultiSig
     );
 
-    FundRuleRegistryV1(_fundRuleRegistry).setFeeCollector(owner());
-    FundRuleRegistryV1(_fundRuleRegistry).setFeeManager(owner());
+    FundRuleRegistryV1(_fundRuleRegistry).setEthFee(
+      FundRuleRegistryV1(_fundRuleRegistry).ADD_MEETING_FEE_KEY(),
+      fundEthFees[RULE_MEETING_ADD_FEE]
+    );
+
+    FundRuleRegistryV1(_fundRuleRegistry).setEthFee(
+      FundRuleRegistryV1(_fundRuleRegistry).EDIT_MEETING_FEE_KEY(),
+      fundEthFees[RULE_MEETING_EDIT_FEE]
+    );
+
+    FundRuleRegistryV1(_fundRuleRegistry).setFeeCollector(feeCollector);
+    FundRuleRegistryV1(_fundRuleRegistry).setFeeManager(feeManager);
 
     c.fundACL.setRole(c.fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
     c.fundACL.setRole(c.fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);
