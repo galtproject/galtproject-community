@@ -458,7 +458,9 @@ describe('Proposal Manager', () => {
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.setEthFee(ether(0.001), { from: coreTeam });
+      await this.fundProposalManagerX.setEthFee(await this.fundProposalManagerX.VOTE_FEE_KEY(), ether(0.001), {
+        from: coreTeam
+      });
     });
 
     it('should accept fee for voting and creating proposals', async function() {

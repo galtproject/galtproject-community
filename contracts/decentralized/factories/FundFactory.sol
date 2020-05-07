@@ -237,7 +237,7 @@ contract FundFactory is Ownable {
 
     address _fundUpgrader = fundUpgraderFactory.build(address(fundRegistry), 2);
     address _fundController = fundControllerFactory.build(address(fundRegistry), 2);
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(fundRegistry), 2 | 4);
 
     fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
@@ -249,6 +249,9 @@ contract FundFactory is Ownable {
     c.fundUpgrader = FundUpgrader(_fundUpgrader);
     c.fundController = FundController(_fundController);
     c.fundRuleRegistry = FundRuleRegistryV1(_fundRuleRegistry);
+
+    c.fundRuleRegistry.setFeeCollector(owner());
+    c.fundRuleRegistry.setFeeManager(owner());
 
     emit CreateFundSecondStep(
       _fundId,
@@ -295,7 +298,10 @@ contract FundFactory is Ownable {
       false
     );
 
-    ChargesEthFee(_fundProposalManager).setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
+    ChargesEthFee(_fundProposalManager).setEthFee(
+      FundProposalManager(_fundProposalManager).VOTE_FEE_KEY(),
+      fundEthFees[PROPOSAL_MANAGER_FEE]
+    );
     ChargesEthFee(_fundProposalManager).setFeeCollector(owner());
     ChargesEthFee(_fundProposalManager).setFeeManager(owner());
 

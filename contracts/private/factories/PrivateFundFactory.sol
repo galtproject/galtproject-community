@@ -293,7 +293,7 @@ contract PrivateFundFactory is ChargesFee {
     c.fundProposalManager = FundProposalManager(
       fundProposalManagerFactory.build(address(c.fundRegistry), 2 | 4)
     );
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(c.fundRegistry), 2);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(c.fundRegistry), 2 | 4);
 
     c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
     c.fundProposalManager.setDefaultProposalConfig(
@@ -303,7 +303,10 @@ contract PrivateFundFactory is ChargesFee {
     );
     c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
-    c.fundProposalManager.setEthFee(fundEthFees[PROPOSAL_MANAGER_FEE]);
+    c.fundProposalManager.setEthFee(
+      c.fundProposalManager.VOTE_FEE_KEY(),
+      fundEthFees[PROPOSAL_MANAGER_FEE]
+    );
     c.fundProposalManager.setFeeCollector(feeCollector);
     c.fundProposalManager.setFeeManager(feeManager);
 
@@ -320,6 +323,9 @@ contract PrivateFundFactory is ChargesFee {
       FundRuleRegistryV1(_fundRuleRegistry),
       _fundMultiSig
     );
+
+    FundRuleRegistryV1(_fundRuleRegistry).setFeeCollector(owner());
+    FundRuleRegistryV1(_fundRuleRegistry).setFeeManager(owner());
 
     c.fundACL.setRole(c.fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
     c.fundACL.setRole(c.fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);

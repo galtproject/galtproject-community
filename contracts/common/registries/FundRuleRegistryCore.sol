@@ -15,9 +15,10 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@openzeppelin/contracts/drafts/Counters.sol";
 import "./interfaces/IFundRuleRegistry.sol";
 import "../interfaces/IFundStorage.sol";
+import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
 
 
-contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
+contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable {
   using Counters for Counters.Counter;
   using ArraySet for ArraySet.Uint256Set;
 
@@ -56,8 +57,9 @@ contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
   constructor() public {
   }
 
-  function initialize(address _fundRegistry) external isInitializer {
+  function initialize(address _fundRegistry, address _feeManager) external isInitializer {
     fundRegistry = IFundRegistry(_fundRegistry);
+    feeManager = _feeManager;
   }
 
   // GETTERS
