@@ -4,8 +4,9 @@ const { ether, assertRevert, evmIncreaseTime } = require('@galtproject/solidity-
 
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
-const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
+const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
 
@@ -18,20 +19,31 @@ const ProposalStatus = {
 };
 
 describe('Proposal Manager', () => {
-  const [alice, bob, charlie, dan, eve, frank] = accounts;
+  const [alice, bob, charlie, dan, eve, frank, feeManager] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
-    this.ggr = await GaltGlobalRegistry.new({ from: coreTeam });
+    this.ppgr = await PPGlobalRegistry.new();
     this.bar = await MockBar.new();
+    this.ppFeeRegistry = await EthFeeRegistry.new();
 
-    await this.ggr.setContract(await this.ggr.GALT_TOKEN(), this.galtToken.address, { from: coreTeam });
+    await this.ppFeeRegistry.initialize(feeManager, feeManager, [], []);
+
+    await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
+    await this.ppgr.setContract(await this.ppgr.PPGR_FEE_REGISTRY(), this.ppFeeRegistry.address);
 
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
-    this.fundFactory = await deployFundFactory(PrivateFundFactory, this.ggr.address, alice, true, ether(10), ether(20));
+    this.fundFactory = await deployFundFactory(
+      PrivateFundFactory,
+      this.ppgr.address,
+      alice,
+      true,
+      ether(10),
+      ether(20)
+    );
 
     await this.fundFactory.setFeeManager(coreTeam, { from: alice });
   });
@@ -458,9 +470,11 @@ describe('Proposal Manager', () => {
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
-      await this.fundProposalManagerX.setEthFee(await this.fundProposalManagerX.VOTE_FEE_KEY(), ether(0.001), {
-        from: coreTeam
-      });
+      await this.ppFeeRegistry.setEthFeeKeysAndValues(
+        [await this.fundProposalManagerX.VOTE_FEE_KEY()],
+        [ether(0.001)],
+        { from: feeManager }
+      );
     });
 
     it('should accept fee for voting and creating proposals', async function() {

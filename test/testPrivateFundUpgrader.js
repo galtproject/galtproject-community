@@ -11,6 +11,7 @@ const MockUpgradeScript2 = contract.fromArtifact('MockUpgradeScript2');
 const MockFundProposalManagerV2 = contract.fromArtifact('MockFundProposalManagerV2');
 const IOwnedUpgradeabilityProxy = contract.fromArtifact('IOwnedUpgradeabilityProxy');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -28,7 +29,7 @@ const ProposalStatus = {
 };
 
 describe('PrivateFundUpgrader', () => {
-  const [alice, bob, charlie, dan, eve, frank, fakeRegistry] = accounts;
+  const [alice, bob, charlie, dan, eve, frank, feeManager, fakeRegistry] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -36,10 +37,13 @@ describe('PrivateFundUpgrader', () => {
 
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
+    this.ppFeeRegistry = await EthFeeRegistry.new();
 
     await this.ppgr.initialize();
+    await this.ppFeeRegistry.initialize(feeManager, feeManager, [], []);
 
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
+    await this.ppgr.setContract(await this.ppgr.PPGR_FEE_REGISTRY(), this.ppFeeRegistry.address);
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts

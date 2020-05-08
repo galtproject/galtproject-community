@@ -7,6 +7,7 @@ const PPLocker = contract.fromArtifact('PPLocker');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PPACL = contract.fromArtifact('PPACL');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -23,7 +24,7 @@ const ProposalStatus = {
 };
 
 describe('FundRuleRegistry Calls', () => {
-  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry] = accounts;
+  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry, feeManager] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -31,10 +32,13 @@ describe('FundRuleRegistry Calls', () => {
 
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
+    this.ppFeeRegistry = await EthFeeRegistry.new();
 
     await this.ppgr.initialize();
+    await this.ppFeeRegistry.initialize(feeManager, feeManager, [], []);
 
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
+    await this.ppgr.setContract(await this.ppgr.PPGR_FEE_REGISTRY(), this.ppFeeRegistry.address);
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
@@ -146,9 +150,11 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.meetingId, meetingId);
     assert.equal(res.dataLink, 'blah');
 
-    await this.fundRuleRegistryX.setEthFee(await this.fundRuleRegistryX.ADD_MEETING_FEE_KEY(), ether(0.002), {
-      from: coreTeam
-    });
+    await this.ppFeeRegistry.setEthFeeKeysAndValues(
+      [await this.fundRuleRegistryX.ADD_MEETING_FEE_KEY()],
+      [ether(0.002)],
+      { from: feeManager }
+    );
 
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 }),
@@ -174,9 +180,11 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.startOn, '1');
     assert.equal(res.endOn, '2');
 
-    await this.fundRuleRegistryX.setEthFee(await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY(), ether(0.001), {
-      from: coreTeam
-    });
+    await this.ppFeeRegistry.setEthFeeKeysAndValues(
+      [await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
+      [ether(0.001)],
+      { from: feeManager }
+    );
 
     await assertRevert(
       this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, { from: multisigOwner1 }),
