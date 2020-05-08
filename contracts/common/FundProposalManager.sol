@@ -46,9 +46,17 @@ contract FundProposalManager is PPAbstractProposalManager {
   constructor() public {
   }
 
-  function initialize(IFundRegistry _fundRegistry) public isInitializer {
-    fundRegistry = _fundRegistry;
-    globalRegistry = IPPGlobalRegistry(fundRegistry.getPPGRAddress());
+  function initialize(address _fundRegistry) public isInitializer {
+    fundRegistry = IFundRegistry(_fundRegistry);
+    globalRegistry = IPPGlobalRegistry(fundRegistry.getContract(fundRegistry.PPGR()));
+  }
+
+  function feeRegistry() public returns(address) {
+    // TODO: support feeRegistry for GGR too with fundFactory too
+    if (address(globalRegistry) == address(0)) {
+      return address(0);
+    }
+    return globalRegistry.getPPFeeRegistryAddress();
   }
 
   function propose(

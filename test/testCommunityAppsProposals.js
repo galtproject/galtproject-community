@@ -11,7 +11,7 @@ const { ether, initHelperWeb3, hex, evmIncreaseTime } = require('./helpers');
 
 initHelperWeb3(web3);
 
-describe.only('Community Apps Proposals', () => {
+describe('Community Apps Proposals', () => {
   const [alice, bob, charlie, dan, eve, frank, customContract] = accounts;
   const coreTeam = defaultSender;
 

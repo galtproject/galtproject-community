@@ -13,6 +13,8 @@ import "@galtproject/core/contracts/interfaces/IACL.sol";
 
 
 interface IFundRegistry {
+  function PPGR() external returns(bytes32);
+
   function setContract(bytes32 _key, address _value) external;
 
   // GETTERS
