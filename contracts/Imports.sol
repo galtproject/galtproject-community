@@ -29,6 +29,7 @@ import "@galtproject/private-property-registry/contracts/PPLockerFactory.sol";
 import "@galtproject/private-property-registry/contracts/LockerProposalManagerFactory.sol";
 
 import "@galtproject/libs/contracts/proxy/unstructured-storage/factories/OwnedUpgradeabilityProxyFactory.sol";
+import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
 
 
 // solium-disable-next-line no-empty-blocks
