@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxyFactory.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/interfaces/IOwnedUpgradeabilityProxy.sol";
 import "@galtproject/libs/contracts/proxy/unstructured-storage/OwnedUpgradeabilityProxy.sol";
-import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
 
 
 contract FundBareFactory {
@@ -92,11 +91,6 @@ contract FundBareFactory {
     // Transfer proxy ownership
     if (_additionalOperations & 2 == 2) {
       proxy.transferProxyOwnership(msg.sender);
-    }
-
-    // Transfer fee manager
-    if (_additionalOperations & 4 == 4) {
-      ChargesEthFee(address(proxy)).setFeeManager(msg.sender);
     }
 
     return address(proxy);

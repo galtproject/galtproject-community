@@ -106,7 +106,6 @@ contract PrivateFundFactory is ChargesFee {
   FundBareFactory public fundUpgraderFactory;
   FundBareFactory public fundRuleRegistryFactory;
 
-  mapping(bytes32 => uint256) internal fundEthFees;
   mapping(bytes32 => address) internal managerFactories;
   mapping(bytes32 => FundContracts) public fundContracts;
 
@@ -227,15 +226,6 @@ contract PrivateFundFactory is ChargesFee {
     emit SetDefaultConfigValues(len);
   }
 
-  function setFundEthFees(bytes32[] calldata _feeNames, uint256[] calldata _feeValues) external onlyOwner {
-    uint256 len = _feeNames.length;
-    require(len == _feeValues.length, "Fee key and value array lengths mismatch");
-
-    for (uint256 i = 0; i < _feeNames.length; i++) {
-      fundEthFees[_feeNames[i]] = _feeValues[_feeValues[i]];
-    }
-  }
-
   // USER INTERFACE
 
   function buildFirstStep(
@@ -293,9 +283,9 @@ contract PrivateFundFactory is ChargesFee {
     address _fundController = fundControllerFactory.build(address(c.fundRegistry), 2);
     address _fundRA = fundRAFactory.build(address(c.fundRegistry), 2);
     c.fundProposalManager = FundProposalManager(
-      fundProposalManagerFactory.build(address(c.fundRegistry), 2 | 4)
+      fundProposalManagerFactory.build(address(c.fundRegistry), 2)
     );
-    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(c.fundRegistry), 2 | 4);
+    address _fundRuleRegistry = fundRuleRegistryFactory.build(address(c.fundRegistry), 2);
 
     c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
     c.fundProposalManager.setDefaultProposalConfig(
@@ -304,13 +294,6 @@ contract PrivateFundFactory is ChargesFee {
       _defaultProposalTimeout
     );
     c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
-
-    c.fundProposalManager.setEthFee(
-      c.fundProposalManager.VOTE_FEE_KEY(),
-      fundEthFees[PROPOSAL_MANAGER_FEE]
-    );
-    c.fundProposalManager.setFeeCollector(feeCollector);
-    c.fundProposalManager.setFeeManager(feeManager);
 
     c.fundRegistry.setContract(c.fundRegistry.MULTISIG(), _fundMultiSig);
     c.fundRegistry.setContract(c.fundRegistry.CONTROLLER(), _fundController);
@@ -325,19 +308,6 @@ contract PrivateFundFactory is ChargesFee {
       FundRuleRegistryV1(_fundRuleRegistry),
       _fundMultiSig
     );
-
-    FundRuleRegistryV1(_fundRuleRegistry).setEthFee(
-      FundRuleRegistryV1(_fundRuleRegistry).ADD_MEETING_FEE_KEY(),
-      fundEthFees[RULE_MEETING_ADD_FEE]
-    );
-
-    FundRuleRegistryV1(_fundRuleRegistry).setEthFee(
-      FundRuleRegistryV1(_fundRuleRegistry).EDIT_MEETING_FEE_KEY(),
-      fundEthFees[RULE_MEETING_EDIT_FEE]
-    );
-
-    FundRuleRegistryV1(_fundRuleRegistry).setFeeCollector(feeCollector);
-    FundRuleRegistryV1(_fundRuleRegistry).setFeeManager(feeManager);
 
     c.fundACL.setRole(c.fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundController, true);
     c.fundACL.setRole(c.fundStorage.ROLE_DECREMENT_TOKEN_REPUTATION(), _fundRA, true);

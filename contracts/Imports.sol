@@ -15,6 +15,7 @@ import "@galtproject/core/contracts/ACL.sol";
 import "@galtproject/core/contracts/factories/SpaceLockerFactory.sol";
 import "@galtproject/core/contracts/registries/LockerRegistry.sol";
 import "@galtproject/core/contracts/registries/FeeRegistry.sol";
+import "@galtproject/core/contracts/registries/EthFeeRegistry.sol";
 
 import "@galtproject/private-property-registry/contracts/PPGlobalRegistry.sol";
 import "@galtproject/private-property-registry/contracts/PPACL.sol";

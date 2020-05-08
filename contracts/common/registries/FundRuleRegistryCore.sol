@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/drafts/Counters.sol";
 import "./interfaces/IFundRuleRegistry.sol";
 import "../interfaces/IFundStorage.sol";
 import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
+import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 
 
 contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable {
@@ -57,9 +58,12 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
   constructor() public {
   }
 
-  function initialize(address _fundRegistry, address _feeManager) external isInitializer {
+  function initialize(address _fundRegistry) external isInitializer {
     fundRegistry = IFundRegistry(_fundRegistry);
-    feeManager = _feeManager;
+  }
+
+  function feeRegistry() public returns(address) {
+    return IPPGlobalRegistry(fundRegistry.getPPGRAddress()).getPPFeeRegistryAddress();
   }
 
   // GETTERS
