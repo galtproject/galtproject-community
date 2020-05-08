@@ -7,9 +7,13 @@ const PPLocker = contract.fromArtifact('PPLocker');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PPACL = contract.fromArtifact('PPACL');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
+const OwnedUpgradeabilityProxy = contract.fromArtifact('OwnedUpgradeabilityProxy');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
+
+const { BN } = require('web3-utils');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 const { ether, initHelperWeb3, getDestinationMarker, assertRevert } = require('./helpers');
@@ -23,7 +27,7 @@ const ProposalStatus = {
 };
 
 describe('FundRuleRegistry Calls', () => {
-  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry] = accounts;
+  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry, feeManager, unauthorized] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -31,10 +35,17 @@ describe('FundRuleRegistry Calls', () => {
 
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
+    const ppFeeRegistryImpl = await EthFeeRegistry.new();
+    await ppFeeRegistryImpl.initialize(feeManager, feeManager, [], []);
+    const initializeData = ppFeeRegistryImpl.contract.methods.initialize(feeManager, feeManager, [], []).encodeABI();
+    const ppFeeRegistryProxy = await OwnedUpgradeabilityProxy.new();
+    await ppFeeRegistryProxy.upgradeToAndCall(ppFeeRegistryImpl.address, initializeData);
+    this.ppFeeRegistry = await EthFeeRegistry.at(ppFeeRegistryProxy.address);
 
     await this.ppgr.initialize();
 
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
+    await this.ppgr.setContract(await this.ppgr.PPGR_FEE_REGISTRY(), this.ppFeeRegistry.address);
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
@@ -46,6 +57,7 @@ describe('FundRuleRegistry Calls', () => {
       ether(10),
       ether(20)
     );
+    await this.fundFactory.setFeeManager(coreTeam, { from: alice });
   });
 
   beforeEach(async function() {
@@ -145,9 +157,26 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.meetingId, meetingId);
     assert.equal(res.dataLink, 'blah');
 
-    res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 });
+    await this.ppFeeRegistry.setEthFeeKeysAndValues(
+      [await this.fundRuleRegistryX.ADD_MEETING_FEE_KEY()],
+      [ether(0.002)],
+      { from: feeManager }
+    );
+
+    await assertRevert(
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 }),
+      'Fee and msg.value not equal'
+    );
+
+    res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1, value: ether(0.002) });
     const meeting2Id = res.logs[0].args.id.toString(10);
     assert.equal(meeting2Id, '2');
+
+    const unauthorizedBalanceBefore = await web3.eth.getBalance(unauthorized);
+    await this.ppFeeRegistry.withdrawEth(unauthorized, { from: feeManager });
+    assert.equal(await web3.eth.getBalance(this.ppFeeRegistry.address), '0');
+    const unauthorizedBalanceAfter = await web3.eth.getBalance(unauthorized);
+    assert.equal(new BN(unauthorizedBalanceAfter).sub(new BN(unauthorizedBalanceBefore)), ether(0.002));
 
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
     assert.equal(res.active, true);
@@ -156,6 +185,7 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.endOn, '1');
 
     await assertRevert(this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: bob }));
+
     await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: multisigOwner1 });
 
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
@@ -163,5 +193,24 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'meetingLink1');
     assert.equal(res.startOn, '1');
     assert.equal(res.endOn, '2');
+
+    await this.ppFeeRegistry.setEthFeeKeysAndValues(
+      [await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
+      [ether(0.001)],
+      { from: feeManager }
+    );
+
+    await assertRevert(
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, { from: multisigOwner1 }),
+      'Fee and msg.value not equal'
+    );
+
+    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, {
+      from: multisigOwner1,
+      value: ether(0.001)
+    });
+
+    res = await this.fundRuleRegistryX.meetings(meeting2Id);
+    assert.equal(res.dataLink, 'meetingLink2');
   });
 });

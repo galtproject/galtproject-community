@@ -14,6 +14,7 @@ const PPTokenController = contract.fromArtifact('PPTokenController');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PPACL = contract.fromArtifact('PPACL');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
+const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
@@ -59,10 +60,12 @@ describe('PrivateBurnApprovalProposal', () => {
     this.acl = await PPACL.new();
     this.ppTokenRegistry = await PPTokenRegistry.new();
     this.ppLockerRegistry = await PPLockerRegistry.new();
+    this.ppFeeRegistry = await EthFeeRegistry.new();
 
     await this.ppgr.initialize();
     await this.ppTokenRegistry.initialize(this.ppgr.address);
     await this.ppLockerRegistry.initialize(this.ppgr.address);
+    await this.ppFeeRegistry.initialize(lockerFeeManager, lockerFeeManager, [], []);
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
@@ -74,6 +77,7 @@ describe('PrivateBurnApprovalProposal', () => {
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
     await this.ppgr.setContract(await this.ppgr.PPGR_TOKEN_REGISTRY(), this.ppTokenRegistry.address);
     await this.ppgr.setContract(await this.ppgr.PPGR_LOCKER_REGISTRY(), this.ppLockerRegistry.address);
+    await this.ppgr.setContract(await this.ppgr.PPGR_FEE_REGISTRY(), this.ppFeeRegistry.address);
 
     // ACL setup
     await this.acl.setRole(bytes32('TOKEN_REGISTRAR'), this.ppTokenFactory.address, true);

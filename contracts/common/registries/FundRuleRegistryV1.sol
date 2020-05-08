@@ -17,13 +17,20 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   bytes32 public constant ROLE_ADD_FUND_RULE_MANAGER = bytes32("ADD_FUND_RULE_MANAGER");
   bytes32 public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = bytes32("DEACTIVATE_FUND_RULE_MANAGER");
+  bytes32 public constant ADD_MEETING_FEE_KEY = bytes32("ADD_MEETING");
+  bytes32 public constant EDIT_MEETING_FEE_KEY = bytes32("EDIT_MEETING");
 
   constructor() public FundRuleRegistryCore() {
   }
 
   // EXTERNAL INTERFACE
 
-  function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn) external onlyMemberOrMultiSigOwner {
+  function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn)
+    external
+    payable
+    onlyMemberOrMultiSigOwner
+  {
+    _acceptPayment(ADD_MEETING_FEE_KEY);
     uint256 _id = _meetings.length + 1;
 
     Meeting storage meeting = meetings[_id];
@@ -49,8 +56,10 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     bool _active
   )
     external
+    payable
     onlyMemberOrMultiSigOwner
   {
+    _acceptPayment(EDIT_MEETING_FEE_KEY);
     Meeting storage meeting = meetings[_id];
 
     require(meetings[_id].creator == msg.sender, "Not meeting creator");

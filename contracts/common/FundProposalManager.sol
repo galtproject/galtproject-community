@@ -13,10 +13,10 @@ import "./interfaces/IFundRegistry.sol";
 import "../common/interfaces/IFundRA.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 
-import "@galtproject/core/contracts/reputation/AbstractProposalManager.sol";
+import "@galtproject/private-property-registry/contracts/abstract/PPAbstractProposalManager.sol";
 
 
-contract FundProposalManager is AbstractProposalManager {
+contract FundProposalManager is PPAbstractProposalManager {
 
   uint256 constant VERSION = 2;
 
@@ -46,9 +46,17 @@ contract FundProposalManager is AbstractProposalManager {
   constructor() public {
   }
 
-  function initialize(IFundRegistry _fundRegistry, address _feeManager) external {
-    fundRegistry = _fundRegistry;
-    super.initialize(_feeManager);
+  function initialize(address _fundRegistry) public isInitializer {
+    fundRegistry = IFundRegistry(_fundRegistry);
+    globalRegistry = IPPGlobalRegistry(fundRegistry.getContract(fundRegistry.PPGR()));
+  }
+
+  function feeRegistry() public returns(address) {
+    // TODO: support feeRegistry for GGR too with fundFactory too
+    if (address(globalRegistry) == address(0)) {
+      return address(0);
+    }
+    return globalRegistry.getPPFeeRegistryAddress();
   }
 
   function propose(

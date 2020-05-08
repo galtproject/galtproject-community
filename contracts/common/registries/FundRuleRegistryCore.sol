@@ -15,9 +15,11 @@ import "@galtproject/libs/contracts/collections/ArraySet.sol";
 import "@openzeppelin/contracts/drafts/Counters.sol";
 import "./interfaces/IFundRuleRegistry.sol";
 import "../interfaces/IFundStorage.sol";
+import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
+import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 
 
-contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
+contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable {
   using Counters for Counters.Counter;
   using ArraySet for ArraySet.Uint256Set;
 
@@ -58,6 +60,10 @@ contract FundRuleRegistryCore is IFundRuleRegistry, Initializable {
 
   function initialize(address _fundRegistry) external isInitializer {
     fundRegistry = IFundRegistry(_fundRegistry);
+  }
+
+  function feeRegistry() public returns(address) {
+    return IPPGlobalRegistry(fundRegistry.getPPGRAddress()).getPPFeeRegistryAddress();
   }
 
   // GETTERS
