@@ -152,7 +152,7 @@ describe('FundRuleRegistry Calls', () => {
 
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1 }),
-      "Fee and msg.value not equal"
+      'Fee and msg.value not equal'
     );
     res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1, value: ether(0.002) });
     const meeting2Id = res.logs[0].args.id.toString(10);
@@ -180,7 +180,7 @@ describe('FundRuleRegistry Calls', () => {
 
     await assertRevert(
       this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, { from: multisigOwner1 }),
-      "Fee and msg.value not equal"
+      'Fee and msg.value not equal'
     );
 
     await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, {
