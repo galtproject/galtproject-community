@@ -27,7 +27,7 @@ const ProposalStatus = {
 };
 
 describe('FundRuleRegistry Calls', () => {
-  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry, feeManager, unauthorized] = accounts;
+  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry, feeManager, feeReceiver] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -36,8 +36,8 @@ describe('FundRuleRegistry Calls', () => {
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
     const ppFeeRegistryImpl = await EthFeeRegistry.new();
-    await ppFeeRegistryImpl.initialize(feeManager, feeManager, [], []);
-    const initializeData = ppFeeRegistryImpl.contract.methods.initialize(feeManager, feeManager, [], []).encodeABI();
+    await ppFeeRegistryImpl.initialize(feeManager, feeReceiver, [], []);
+    const initializeData = ppFeeRegistryImpl.contract.methods.initialize(feeManager, feeReceiver, [], []).encodeABI();
     const ppFeeRegistryProxy = await OwnedUpgradeabilityProxy.new();
     await ppFeeRegistryProxy.upgradeToAndCall(ppFeeRegistryImpl.address, initializeData);
     this.ppFeeRegistry = await EthFeeRegistry.at(ppFeeRegistryProxy.address);
@@ -168,15 +168,15 @@ describe('FundRuleRegistry Calls', () => {
       'Fee and msg.value not equal'
     );
 
+    const feeReceiverBalanceBefore = await web3.eth.getBalance(feeReceiver);
+
     res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1, value: ether(0.002) });
     const meeting2Id = res.logs[0].args.id.toString(10);
     assert.equal(meeting2Id, '2');
 
-    const unauthorizedBalanceBefore = await web3.eth.getBalance(unauthorized);
-    await this.ppFeeRegistry.withdrawEth(unauthorized, { from: feeManager });
     assert.equal(await web3.eth.getBalance(this.ppFeeRegistry.address), '0');
-    const unauthorizedBalanceAfter = await web3.eth.getBalance(unauthorized);
-    assert.equal(new BN(unauthorizedBalanceAfter).sub(new BN(unauthorizedBalanceBefore)), ether(0.002));
+    const feeReceiverBalanceAfter = await web3.eth.getBalance(feeReceiver);
+    assert.equal(new BN(feeReceiverBalanceAfter).sub(new BN(feeReceiverBalanceBefore)), ether(0.002));
 
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
     assert.equal(res.active, true);
