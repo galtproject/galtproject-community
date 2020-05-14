@@ -925,9 +925,9 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 200);
 
       await this.ppFeeRegistry.setEthFeeKeysAndValues(
-        [utf8ToHex("DELEGATE_REPUTATION"), utf8ToHex("REVOKE_REPUTATION")],
+        [utf8ToHex('DELEGATE_REPUTATION'), utf8ToHex('REVOKE_REPUTATION')],
         [ether(0.001), ether(0.002)],
-        {from: feeManager}
+        { from: feeManager }
       );
 
       // TRANSFER #3
