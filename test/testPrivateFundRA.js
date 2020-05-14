@@ -73,7 +73,7 @@ const ether99 = new BN(ether(100))
   .toString(10);
 
 describe('PrivateFundRA', () => {
-  const [minter, alice, bob, charlie, dan, lola, nana, burner, unauthorized, lockerFeeManager] = accounts;
+  const [minter, alice, bob, charlie, dan, lola, nana, burner, unauthorized, feeReceiver, feeManager] = accounts;
   const coreTeam = defaultSender;
 
   const ethFee = ether(10);
@@ -93,7 +93,7 @@ describe('PrivateFundRA', () => {
     await this.ppgr.initialize();
     await this.ppTokenRegistry.initialize(this.ppgr.address);
     await this.ppLockerRegistry.initialize(this.ppgr.address);
-    await this.ppFeeRegistry.initialize(lockerFeeManager, lockerFeeManager, [], []);
+    await this.ppFeeRegistry.initialize(feeManager, feeReceiver, [], []);
 
     this.ppTokenControllerFactory = await PPTokenControllerFactory.new();
     this.ppTokenFactory = await PPTokenFactory.new(this.ppTokenControllerFactory.address, this.ppgr.address, 0, 0);
@@ -112,13 +112,13 @@ describe('PrivateFundRA', () => {
     await this.acl.setRole(bytes32('LOCKER_REGISTRAR'), this.ppLockerFactory.address, true);
 
     // Fees setup
-    await this.ppTokenFactory.setFeeManager(lockerFeeManager);
-    await this.ppTokenFactory.setEthFee(ethFee, { from: lockerFeeManager });
-    await this.ppTokenFactory.setGaltFee(galtFee, { from: lockerFeeManager });
+    await this.ppTokenFactory.setFeeManager(feeManager);
+    await this.ppTokenFactory.setEthFee(ethFee, { from: feeManager });
+    await this.ppTokenFactory.setGaltFee(galtFee, { from: feeManager });
 
-    await this.ppLockerFactory.setFeeManager(lockerFeeManager);
-    await this.ppLockerFactory.setEthFee(ethFee, { from: lockerFeeManager });
-    await this.ppLockerFactory.setGaltFee(galtFee, { from: lockerFeeManager });
+    await this.ppLockerFactory.setFeeManager(feeManager);
+    await this.ppLockerFactory.setEthFee(ethFee, { from: feeManager });
+    await this.ppLockerFactory.setGaltFee(galtFee, { from: feeManager });
 
     await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
     await this.galtToken.mint(bob, ether(10000000), { from: coreTeam });
@@ -895,7 +895,7 @@ describe('PrivateFundRA', () => {
   });
 
   describe('transfer', () => {
-    it('should handle basic reputation transfer case', async function() {
+    it.only('should handle basic reputation transfer case', async function() {
       let res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 
@@ -924,8 +924,16 @@ describe('PrivateFundRA', () => {
       res = await this.fundRAX.balanceOf(charlie);
       assert.equal(res, 200);
 
+      await this.ppFeeRegistry.setEthFeeKeysAndValues(
+        [utf8ToHex("DELEGATE_REPUTATION"), utf8ToHex("REVOKE_REPUTATION")],
+        [ether(0.001), ether(0.002)],
+        {from: feeManager}
+      );
+
       // TRANSFER #3
-      await this.fundRAX.delegate(alice, alice, 50, { from: charlie });
+      await assertRevert(this.fundRAX.delegate(alice, alice, 50, { from: charlie }), 'Fee and msg.value not equal');
+
+      await this.fundRAX.delegate(alice, alice, 50, { from: charlie, value: ether(0.001) });
       const block3 = (await web3.eth.getBlock('latest')).number;
 
       res = await this.fundRAX.balanceOf(alice);
@@ -938,11 +946,13 @@ describe('PrivateFundRA', () => {
       assert.equal(res, 150);
 
       // REVOKE #1
-      await this.fundRAX.revoke(bob, 200, { from: alice });
+      await assertRevert(this.fundRAX.revoke(bob, 200, { from: alice }), 'Fee and msg.value not equal');
+
+      await this.fundRAX.revoke(bob, 200, { from: alice, value: ether(0.002) });
       const block4 = (await web3.eth.getBlock('latest')).number;
 
-      await assertRevert(this.fundRAX.revoke(bob, 200, { from: charlie }));
-      await assertRevert(this.fundRAX.revoke(alice, 200, { from: charlie }));
+      await assertRevert(this.fundRAX.revoke(bob, 200, { from: charlie, value: ether(0.002) }));
+      await assertRevert(this.fundRAX.revoke(alice, 200, { from: charlie, value: ether(0.002) }));
 
       res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 700);
@@ -964,8 +974,8 @@ describe('PrivateFundRA', () => {
       await validateProposalError(this.aliceLocker, proposalId);
 
       // REVOKE REPUTATION
-      await this.fundRAX.revoke(bob, 50, { from: alice });
-      await this.fundRAX.revoke(charlie, 50, { from: alice });
+      await this.fundRAX.revoke(bob, 50, { from: alice, value: ether(0.002) });
+      await this.fundRAX.revoke(charlie, 50, { from: alice, value: ether(0.002) });
       const block5 = (await web3.eth.getBlock('latest')).number;
 
       res = await this.fundRAX.balanceOf(alice);

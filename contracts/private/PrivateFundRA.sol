@@ -13,14 +13,19 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@galtproject/core/contracts/reputation/components/LiquidRA.sol";
 import "@galtproject/core/contracts/reputation/interfaces/IRA.sol";
 import "@galtproject/private-property-registry/contracts/abstract/interfaces/IAbstractRA.sol";
+import "@galtproject/core/contracts/traits/ChargesEthFee.sol";
 import "./PrivateFundStorage.sol";
 import "../common/interfaces/IFundRA.sol";
 import "./traits/PPTokenInputRA.sol";
+import "@galtproject/private-property-registry/contracts/interfaces/IPPGlobalRegistry.sol";
 
 
-contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
+contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA, ChargesEthFee {
 
   uint256 public constant VERSION = 3;
+
+  bytes32 public constant DELEGATE_REPUTATION_FEE_KEY = bytes32("DELEGATE_REPUTATION");
+  bytes32 public constant REVOKE_REPUTATION_FEE_KEY = bytes32("REVOKE_REPUTATION");
 
   using SafeMath for uint256;
   using ArraySet for ArraySet.AddressSet;
@@ -49,6 +54,10 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
   function initialize(IFundRegistry _fundRegistry) external isInitializer {
     super.initializeInternal(IPPGlobalRegistry(_fundRegistry.getPPGRAddress()));
     fundRegistry = _fundRegistry;
+  }
+
+  function feeRegistry() public view returns(address) {
+    return IPPGlobalRegistry(fundRegistry.getPPGRAddress()).getPPFeeRegistryAddress();
   }
 
   function mint(IAbstractLocker _tokenLocker) public {
@@ -126,13 +135,19 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA {
 
   // @dev Transfer owned reputation
   // PermissionED
-  function delegate(address _to, address _owner, uint256 _amount) public {
+  function delegate(address _to, address _owner, uint256 _amount) public payable {
+    _acceptPayment(DELEGATE_REPUTATION_FEE_KEY);
     require(
       _tokenOwners.has(_to) || _fundStorage().isTransferToNotOwnedAllowed(_owner),
       "Beneficiary isn't a token owner"
     );
 
     _transfer(msg.sender, _to, _owner, _amount);
+  }
+
+  function revoke(address _from, uint256 _amount) public payable {
+    _acceptPayment(REVOKE_REPUTATION_FEE_KEY);
+    _revokeDelegated(_from, _amount);
   }
 
   function _creditAccount(address _account, address _owner, uint256 _amount) internal {

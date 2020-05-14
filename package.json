@@ -6,11 +6,11 @@
     "test": "test"
   },
   "devDependencies": {
-    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#b4d83f7",
+    "@galtproject/core": "git+ssh://git@github.com/galtproject/galtproject-core.git#f80bed7",
     "@galtproject/eslint-config-galt": "1.1.0",
     "@galtproject/libs": "git+ssh://git@github.com/galtproject/galtproject-libs.git#8d59d9a",
     "@galtproject/multisig": "git+ssh://git@github.com/galtproject/galtproject-multisig.git#41d79b1",
-    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#0eca669",
+    "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#2e92d7c",
     "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest#898238d",
     "@galtproject/utils": "^0.9.1",
     "@openzeppelin/contracts": "2.4.0",

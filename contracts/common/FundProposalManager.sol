@@ -51,7 +51,7 @@ contract FundProposalManager is PPAbstractProposalManager {
     globalRegistry = IPPGlobalRegistry(fundRegistry.getContract(fundRegistry.PPGR()));
   }
 
-  function feeRegistry() public returns(address) {
+  function feeRegistry() public view returns(address) {
     // TODO: support feeRegistry for GGR too with fundFactory too
     if (address(globalRegistry) == address(0)) {
       return address(0);
