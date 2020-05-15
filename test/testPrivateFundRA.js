@@ -895,7 +895,7 @@ describe('PrivateFundRA', () => {
   });
 
   describe('transfer', () => {
-    it.only('should handle basic reputation transfer case', async function() {
+    it('should handle basic reputation transfer case', async function() {
       let res = await this.fundRAX.balanceOf(alice);
       assert.equal(res, 800);
 
