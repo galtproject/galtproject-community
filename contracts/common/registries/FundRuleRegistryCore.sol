@@ -62,7 +62,7 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
     fundRegistry = IFundRegistry(_fundRegistry);
   }
 
-  function feeRegistry() public returns(address) {
+  function feeRegistry() public view returns(address) {
     return IPPGlobalRegistry(fundRegistry.getPPGRAddress()).getPPFeeRegistryAddress();
   }
 
