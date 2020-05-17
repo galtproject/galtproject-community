@@ -14,4 +14,6 @@ interface IFundMultiSig {
   function ROLE_OWNER_MANAGER() external returns (bytes32);
 
   function isOwner(address _addr) external view returns (bool);
+
+  function owners() external view returns (address[] memory);
 }
