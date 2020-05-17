@@ -194,6 +194,17 @@ describe('Private Fund Factory', () => {
       const fundControllerX = fund.fundController;
       const fundProposalManagerX = fund.fundProposalManager;
 
+      const bobManager = await fundStorageX.multiSigManagers(bob);
+      assert.equal(bobManager.active, true);
+      assert.equal(bobManager.name, '');
+
+      const charlieManager = await fundStorageX.multiSigManagers(charlie);
+      assert.equal(charlieManager.active, true);
+      assert.equal(charlieManager.name, '');
+
+      const aliceNotManager = await fundStorageX.multiSigManagers(alice);
+      assert.equal(aliceNotManager.active, false);
+
       let res = await fundProposalManagerX.customVotingConfigs(
         await fundProposalManagerX.getThresholdMarker(fundStorageX.address, '0x8d996c0d')
       );

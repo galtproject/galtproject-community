@@ -17,6 +17,7 @@ import "../../common/FundProposalManager.sol";
 import "../../common/FundRegistry.sol";
 import "../../common/FundUpgrader.sol";
 import "../../abstract/interfaces/IAbstractFundStorage.sol";
+import "../../common/interfaces/IFundMultiSig.sol";
 
 import "./PrivateFundStorageFactory.sol";
 import "../../common/factories/FundBareFactory.sol";
@@ -278,6 +279,12 @@ contract PrivateFundFactory is ChargesFee {
         )
       )
     );
+
+    c.fundACL.setRole(c.fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), address(this), true);
+    for (uint256 i = 0; i < _initialMultiSigOwners.length; i++) {
+      c.fundStorage.setMultiSigManager(true, _initialMultiSigOwners[i], "", "");
+    }
+    c.fundACL.setRole(c.fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), address(this), false);
 
     address _fundUpgrader = fundUpgraderFactory.build(address(c.fundRegistry), 2);
     address _fundController = fundControllerFactory.build(address(c.fundRegistry), 2);
