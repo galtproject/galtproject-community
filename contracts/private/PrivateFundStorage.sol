@@ -173,7 +173,7 @@ contract PrivateFundStorage is AbstractFundStorage {
     // _fines[_registry][_tokenId].tokenFines[_contract].amount -= _amount;
     _fines[_registry][_tokenId].tokenFines[_contract].amount = _fines[_registry][_tokenId].tokenFines[_contract].amount.sub(_amount);
     // _fines[_registry][_tokenId].total -= _amount;
-    _fines[_registry][_tokenId].total -= _fines[_registry][_tokenId].total.sub(_amount);
+    _fines[_registry][_tokenId].total = _fines[_registry][_tokenId].total.sub(_amount);
 
     emit ChangeFine(false, _registry, _tokenId, _contract);
   }
