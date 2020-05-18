@@ -31,7 +31,7 @@
     "eslint": "eslint .",
     "eslint-fix": "eslint . --fix",
     "ethlint": "solium --dir .",
-    "test": "npx mocha --exit --timeout 10000 --recursive test"
+    "test": "npx mocha --exit --timeout 30000 --recursive test"
   },
   "engines": {
     "node": ">=10.15.3"

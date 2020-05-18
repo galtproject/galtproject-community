@@ -113,7 +113,7 @@ contract PPTokenInputRA is LiquidRA, Initializable {
     for (uint256 i = 0; i < len; i++) {
       require(ownerReputationMinted[_burnOwners[i]][registry][tokenId] > 0, "Reputation doesn't minted for owner");
       _burn(_burnOwners[i], _burnOwners[i], ownerReputationMinted[_burnOwners[i]][registry][tokenId]);
-      totalReputationMinted -= ownerReputationMinted[_burnOwners[i]][registry][tokenId];
+      totalReputationMinted = totalReputationMinted.sub(ownerReputationMinted[_burnOwners[i]][registry][tokenId]);
       ownerReputationMinted[_burnOwners[i]][registry][tokenId] = 0;
 
       _cacheTokenDecrement(_burnOwners[i]);
@@ -146,7 +146,7 @@ contract PPTokenInputRA is LiquidRA, Initializable {
       ownerReputationMinted[_owners[i]][_registry][_tokenId] = _ownersReputation[i];
       _mint(_owners[i], _ownersReputation[i]);
 
-      totalReputationMinted += _ownersReputation[i];
+      totalReputationMinted = totalReputationMinted.add(_ownersReputation[i]);
 
       _tokenOwners.addSilent(_owners[i]);
       ownerTokenCount[_owners[i]] = ownerTokenCount[_owners[i]].add(1);
