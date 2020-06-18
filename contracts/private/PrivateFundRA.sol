@@ -137,6 +137,9 @@ contract PrivateFundRA is IAbstractRA, IFundRA, LiquidRA, PPTokenInputRA, Charge
   // PermissionED
   function delegate(address _to, address _owner, uint256 _amount) public payable {
     _acceptPayment(DELEGATE_REPUTATION_FEE_KEY);
+
+    require(!_fundStorage().transferLocked(), "Transfer locked");
+
     require(
       _tokenOwners.has(_to) || _fundStorage().isTransferToNotOwnedAllowed(_owner),
       "Beneficiary isn't a token owner"

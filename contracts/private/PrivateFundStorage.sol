@@ -30,6 +30,7 @@ contract PrivateFundStorage is AbstractFundStorage {
 
   event SetTransferNonTokenOwnersAllowed(bool indexed allowed);
   event SetTransferNonTokenOwnersItemApproval(address tokenOwner, bool indexed burnLocked);
+  event SetTransferLocked(bool indexed disabled);
 
   event Expel(address indexed registry, uint256 indexed tokenId);
   event DecrementExpel(address indexed registry, uint256 indexed tokenId);
@@ -40,6 +41,7 @@ contract PrivateFundStorage is AbstractFundStorage {
 
   bool public burnLocked;
   bool public transferNonTokenOwnersAllowed;
+  bool public transferLocked;
 
   // registry => (tokenId => details)
   mapping(address => mapping(uint256 => MemberFines)) private _fines;
@@ -126,6 +128,14 @@ contract PrivateFundStorage is AbstractFundStorage {
   {
     transferNonTokenOwnersAllowed = _value;
     emit SetTransferNonTokenOwnersAllowed(_value);
+  }
+
+  function setTransferLocked(bool _value)
+    external
+    onlyRole(ROLE_TRANSFER_REPUTATION_MANAGER)
+  {
+    transferLocked = _value;
+    emit SetTransferLocked(_value);
   }
 
   function expel(address _registry, uint256 _tokenId)
