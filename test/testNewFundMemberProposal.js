@@ -77,7 +77,7 @@ describe('NewFundMemberProposal', () => {
       this.fundFactory,
       alice,
       true,
-      new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -135,9 +135,18 @@ describe('NewFundMemberProposal', () => {
       await assertRevert(this.fundRAX.mint(lockerAddress, { from: alice }));
 
       const calldata = this.fundStorageX.contract.methods.approveMint(token1).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const { proposalId } = res.logs[0].args;
 

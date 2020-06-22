@@ -42,7 +42,7 @@ describe('Fee Proposals', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -64,9 +64,18 @@ describe('Fee Proposals', () => {
 
       const feeContract = alice;
       const calldata = this.fundStorageX.contract.methods.addFeeContract(feeContract).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 

@@ -116,7 +116,7 @@ describe('PrivateExpelFundMemberProposal', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -213,9 +213,18 @@ describe('PrivateExpelFundMemberProposal', () => {
       const proposalData = this.fundStorageX.contract.methods
         .expel(this.registry1.address, parseInt(token1, 10))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: charlie
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       const blockNumberBeforeBurn = await web3.eth.getBlockNumber();
 
@@ -337,9 +346,18 @@ describe('PrivateExpelFundMemberProposal', () => {
       const proposalData2 = this.fundStorageX.contract.methods
         .approveMintAll([this.registry1.address], [parseInt(token1, 10)])
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData2, 'blah', {
-        from: charlie
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData2,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       const proposalId2 = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(proposalId2, true, { from: bob });
@@ -451,9 +469,18 @@ describe('PrivateExpelFundMemberProposal', () => {
       const proposalData = this.fundStorageX.contract.methods
         .expel(this.registry1.address, parseInt(token1, 10))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: charlie
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 

@@ -37,7 +37,7 @@ contract MockFundProposalManager is FundProposalManager {
     p.marker = getThresholdMarker(_destination, _data);
 
     p.status = ProposalStatus.ACTIVE;
-    _onNewProposal(id);
+    _onNewProposal(id, false);
 
     _proposalVotings[id].timeoutAt = block.timestamp - 1;
 

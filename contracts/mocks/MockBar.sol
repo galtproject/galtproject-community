@@ -17,6 +17,10 @@ contract MockBar {
     number = _newNumber;
   }
 
+  function setAnotherNumber(uint256 _newNumber) external {
+    number = _newNumber;
+  }
+
   function getString(uint256 _newNumber) external returns (string memory) {
     return "buzz";
   }

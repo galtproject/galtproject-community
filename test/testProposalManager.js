@@ -1,6 +1,6 @@
 const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
-const { ether, assertRevert, evmIncreaseTime } = require('@galtproject/solidity-test-chest')(web3);
+const { ether, assertRevert, evmIncreaseTime, increaseTime } = require('@galtproject/solidity-test-chest')(web3);
 
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
@@ -8,7 +8,7 @@ const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 
-const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
+const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 
 MockBar.numberFormat = 'String';
 
@@ -17,6 +17,15 @@ const ProposalStatus = {
   ACTIVE: 1,
   EXECUTED: 2
 };
+
+const Choice = {
+  PENDING: 0,
+  AYE: 1,
+  NAY: 2,
+  ABSTAIN: 3
+};
+
+const { keccak256 } = web3.utils;
 
 describe('Proposal Manager', () => {
   const [alice, bob, charlie, dan, eve, frank, feeManager] = accounts;
@@ -56,8 +65,17 @@ describe('Proposal Manager', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
-      {},
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
+      {
+        foo: new CustomVotingConfig(
+          this.bar.address,
+          '0x3f203935',
+          ether(60),
+          ether(40),
+          VotingConfig.ONE_WEEK,
+          VotingConfig.THREE_DAYS
+        )
+      },
       [bob, charlie, dan],
       2
     );
@@ -80,7 +98,7 @@ describe('Proposal Manager', () => {
   describe('proposal creation', () => {
     it('should create a new proposal by default', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, calldata, 'blah', {
         from: bob
       });
 
@@ -97,7 +115,7 @@ describe('Proposal Manager', () => {
 
     it('should count a vote if the castVote flag is true', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, false, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, false, false, calldata, 'blah', {
         from: bob
       });
 
@@ -119,7 +137,7 @@ describe('Proposal Manager', () => {
 
     it('should only count a vote if both cast/execute flags are true w/o enough support', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -151,7 +169,7 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(bob), 1200);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -187,7 +205,7 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 200);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: charlie
       });
 
@@ -217,6 +235,201 @@ describe('Proposal Manager', () => {
 
       assert.equal(await this.bar.number(), 42);
     });
+
+    it('should deny creating commitReveal vote when missing commitmentTimeout', async function() {
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      await assertRevert(
+        this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, calldata, 'blah', {
+          from: charlie
+        }),
+        'Missing committing timeout'
+      );
+    });
+
+    it('should create commitReveal type proposal when specified', async function() {
+      await this.fundRAX.delegate(bob, charlie, 300, { from: charlie });
+      await this.fundRAX.delegate(bob, dan, 300, { from: dan });
+      await this.fundRAX.delegate(bob, eve, 100, { from: eve });
+      await this.fundRAX.delegate(charlie, dan, 200, { from: bob });
+
+      const calldata = this.bar.contract.methods.setAnotherNumber(42).encodeABI();
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, calldata, 'blah', {
+        from: charlie
+      });
+
+      const proposalId = res.logs[0].args.proposalId.toString(10);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.equal(res.isCommitReveal, true);
+    });
+  });
+
+  describe('commitReveal proposals', () => {
+    let proposalId;
+    const str0 = '0-foo';
+    const str1 = '1-bar';
+    const str2 = '2-bar';
+    const str3 = '3-bar';
+    const hash0 = keccak256(web3.eth.abi.encodeParameter('string', str0));
+    const hash1 = keccak256(web3.eth.abi.encodeParameter('string', str1));
+    const hash2 = keccak256(web3.eth.abi.encodeParameter('string', str2));
+    const hash3 = keccak256(web3.eth.abi.encodeParameter('string', str3));
+
+    beforeEach(async function() {
+      await this.fundRAX.delegate(bob, charlie, 300, { from: charlie });
+      await this.fundRAX.delegate(bob, dan, 300, { from: dan });
+      await this.fundRAX.delegate(bob, eve, 100, { from: eve });
+      await this.fundRAX.delegate(charlie, dan, 200, { from: bob });
+
+      const calldata = this.bar.contract.methods.setAnotherNumber(42).encodeABI();
+      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, calldata, 'blah', {
+        from: charlie
+      });
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+    });
+
+    it('should allow committing for proposal type several times until committingTimeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash0, { from: charlie });
+      assert.equal(await this.fundProposalManagerX.getCommitmentOf(proposalId, charlie), hash0);
+
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      assert.equal(await this.fundProposalManagerX.getCommitmentOf(proposalId, charlie), hash1);
+    });
+
+    it('should allow revealing ayes after committingTimeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+
+      assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.PENDING);
+      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
+      assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.AYE);
+    });
+
+    it('should allow revealing nays after committingTimeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash2, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+
+      assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.PENDING);
+      await this.fundProposalManagerX.nayReveal(proposalId, str2, { from: charlie });
+      assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.NAY);
+    });
+
+    it('should allow revealing abstain after committingTimeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash3, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+
+      assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.PENDING);
+      await this.fundProposalManagerX.abstainReveal(proposalId, true, str3, { from: charlie });
+      assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.ABSTAIN);
+    });
+
+    it('should deny committing after committingTimeout', async function() {
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await assertRevert(
+        this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie }),
+        'Committing is closed'
+      );
+    });
+
+    it('should deny revealing until committingTimeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash0, { from: charlie });
+      await assertRevert(
+        this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie }),
+        "Revealing isn't open"
+      );
+    });
+
+    it('should deny aye revealing with non aye (1) choice', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash2, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await assertRevert(
+        this.fundProposalManagerX.ayeReveal(proposalId, false, str2, { from: charlie }),
+        'Invalid choice decoded'
+      );
+    });
+
+    it('should deny nay revealing with non nay (2) choice', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await assertRevert(
+        this.fundProposalManagerX.nayReveal(proposalId, str1, { from: charlie }),
+        'Invalid choice decoded'
+      );
+    });
+
+    it('should deny abstain revealing with non abstain (3) choice', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await assertRevert(
+        this.fundProposalManagerX.abstainReveal(proposalId, false, str1, { from: charlie }),
+        'Invalid choice decoded'
+      );
+    });
+
+    it('should deny revealing twice', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
+      await assertRevert(
+        this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie }),
+        'Already revealed'
+      );
+    });
+
+    it('should deny committing for commitReveal proposal type', async function() {
+      const calldata = this.bar.contract.methods.setAnotherNumber(42).encodeABI();
+      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, calldata, 'blah', {
+        from: charlie
+      });
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+
+      await assertRevert(
+        this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie }),
+        'Not a commit-reveal vote'
+      );
+    });
+
+    it('should allow executing proposals after committingTimeout before timeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: bob });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
+      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: bob });
+
+      let res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.currentSupport, ether(100));
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      await this.fundProposalManagerX.executeProposal(proposalId, 0);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+    });
+
+    it('should allow executing proposals after timeout', async function() {
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
+      await this.fundProposalManagerX.commit(proposalId, hash1, { from: bob });
+      await increaseTime(VotingConfig.THREE_DAYS + 5);
+      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
+      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: bob });
+
+      let res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
+      assert.equal(res.currentSupport, ether(100));
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+
+      await increaseTime(VotingConfig.ONE_WEEK + 3);
+      await this.fundProposalManagerX.executeProposal(proposalId, 0);
+
+      res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+    });
   });
 
   describe('execution before timeout', () => {
@@ -229,7 +442,7 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 301);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -307,7 +520,7 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 301);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -425,7 +638,7 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(eve), 100);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -464,7 +677,7 @@ describe('Proposal Manager', () => {
 
     beforeEach(async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -500,16 +713,16 @@ describe('Proposal Manager', () => {
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       await assertRevert(
-        this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+        this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
           from: bob
         }),
         'Fee and msg.value not equal.'
       );
-      await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob,
         value: ether(0.001)
       });
-      await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, calldata, 'blah', {
+      await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, calldata, 'blah', {
         from: bob
       });
     });

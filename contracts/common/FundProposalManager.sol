@@ -64,13 +64,14 @@ contract FundProposalManager is PPAbstractProposalManager {
     uint256 _value,
     bool _castVote,
     bool _executesIfDecided,
+    bool _isCommitReveal,
     bytes calldata _data,
     string calldata _dataLink
   )
     external
     payable
   {
-    _propose(_destination, _value, _castVote, _executesIfDecided, _data, _dataLink);
+    _propose(_destination, _value, _castVote, _executesIfDecided, _isCommitReveal, _data, _dataLink);
   }
 
   function _fundStorage() internal view returns (IAbstractFundStorage) {
