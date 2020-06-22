@@ -543,7 +543,13 @@ contract PrivateFundFactory is ChargesFee {
     c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
     for (uint256 i = 0; i < len; i++) {
-      _fundProposalManager.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i], _commitmentTimeoutValues[i]);
+      _fundProposalManager.setProposalConfig(
+        _markers[i],
+        _supportValues[i],
+        _quorumValues[i],
+        _timeoutValues[i],
+        _commitmentTimeoutValues[i]
+      );
     }
 
     c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
