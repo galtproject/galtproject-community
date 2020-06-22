@@ -123,6 +123,7 @@ describe('Private Fund Factory', () => {
         [ether(20), ether(30), ether(20)],
         [ether(10), ether(20), ether(10)],
         [VotingConfig.ONE_WEEK, VotingConfig.ONE_WEEK, VotingConfig.ONE_WEEK],
+        [0, 0, 0],
         { from: alice }
       );
     });
@@ -134,7 +135,7 @@ describe('Private Fund Factory', () => {
         this.fundFactory,
         alice,
         false,
-        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
         {},
         [bob, charlie],
         2
@@ -181,10 +182,10 @@ describe('Private Fund Factory', () => {
         this.fundFactory,
         alice,
         false,
-        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+        new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
         [
           // fundStorage.setPeriodLimit()
-          new CustomVotingConfig('fundStorage', '0x8d996c0d', ether(50), ether(30), VotingConfig.ONE_WEEK)
+          new CustomVotingConfig('fundStorage', '0x8d996c0d', ether(50), ether(30), VotingConfig.ONE_WEEK, 0)
         ],
         [bob, charlie],
         2

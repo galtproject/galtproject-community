@@ -115,6 +115,7 @@ contract PrivateFundFactory is ChargesFee {
   uint256[] internal defaultSupportValues;
   uint256[] internal defaultQuorumValues;
   uint256[] internal defaultTimeoutValues;
+  uint256[] internal defaultCommittingTimeoutValues;
 
   bytes4[] internal proposalMarkersSignatures;
   bytes32[] internal proposalMarkersNames;
@@ -207,14 +208,19 @@ contract PrivateFundFactory is ChargesFee {
     bytes32[] calldata _markersSignatures,
     uint256[] calldata _supportValues,
     uint256[] calldata _quorumValues,
-    uint256[] calldata _timeoutValues
+    uint256[] calldata _timeoutValues,
+    uint256[] calldata _committingTimeoutValues
   )
     external
     onlyOwner
   {
     uint256 len = _markersContracts.length;
     require(
-      len == _markersSignatures.length && len == _supportValues.length && len == _quorumValues.length && len == _timeoutValues.length,
+      len == _markersSignatures.length &&
+      len == _supportValues.length &&
+      len == _quorumValues.length &&
+      len == _timeoutValues.length &&
+      len == _committingTimeoutValues.length,
       "Thresholds key and value array lengths mismatch"
     );
 
@@ -223,6 +229,7 @@ contract PrivateFundFactory is ChargesFee {
     defaultSupportValues = _supportValues;
     defaultQuorumValues = _quorumValues;
     defaultTimeoutValues = _timeoutValues;
+    defaultCommittingTimeoutValues = _committingTimeoutValues;
 
     emit SetDefaultConfigValues(len);
   }
@@ -232,12 +239,14 @@ contract PrivateFundFactory is ChargesFee {
   function buildFirstStep(
     address operator,
     bool _isPrivate,
-    uint256 _defaultProposalSupport,
-    uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout,
-    uint256 _periodLength,
-    address[] calldata _initialMultiSigOwners,
-    uint256 _initialMultiSigRequired
+    //  0 - uint256 _defaultProposalSupport,
+    //  1 -uint256 _defaultProposalQuorum,
+    //  2 - uint256 _defaultProposalTimeout,
+    //  3 - uint256 _defaultProposalCommitmentTimeout,
+    //  4 - uint256 _periodLength,
+    //  5 - uint256 _initialMultiSigRequired
+    uint256[6] calldata _uintArgs,
+    address[] calldata _initialMultiSigOwners
   )
     external
     payable
@@ -256,7 +265,8 @@ contract PrivateFundFactory is ChargesFee {
     c.fundStorage = fundStorageFactory.build(
       c.fundRegistry,
       _isPrivate,
-      _periodLength
+      // _periodLength
+      _uintArgs[4]
     );
 
     c.creator = msg.sender;
@@ -272,7 +282,8 @@ contract PrivateFundFactory is ChargesFee {
           abi.encodeWithSignature(
             "initialize(address[],uint256,address)",
             _initialMultiSigOwners,
-            _initialMultiSigRequired,
+            // _initialMultiSigRequired,
+            _uintArgs[5],
             address(c.fundRegistry)
           ),
           2
@@ -296,9 +307,10 @@ contract PrivateFundFactory is ChargesFee {
 
     c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
     c.fundProposalManager.setDefaultProposalConfig(
-      _defaultProposalSupport,
-      _defaultProposalQuorum,
-      _defaultProposalTimeout
+      _uintArgs[0],
+      _uintArgs[1],
+      _uintArgs[2],
+      _uintArgs[3]
     );
     c.fundACL.setRole(c.fundProposalManager.ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
 
@@ -443,7 +455,8 @@ contract PrivateFundFactory is ChargesFee {
       _generateFundDefaultMarkers(_fundId),
       defaultSupportValues,
       defaultQuorumValues,
-      defaultTimeoutValues
+      defaultTimeoutValues,
+      defaultCommittingTimeoutValues
     );
   }
 
@@ -483,7 +496,8 @@ contract PrivateFundFactory is ChargesFee {
     bytes32[] calldata _markers,
     uint256[] calldata _supportValues,
     uint256[] calldata _quorumValues,
-    uint256[] calldata _timeoutValues
+    uint256[] calldata _timeoutValues,
+    uint256[] calldata _committingTimeoutValues
   )
     external
   {
@@ -493,7 +507,7 @@ contract PrivateFundFactory is ChargesFee {
 
     uint256 len = _markers.length;
     require(
-      len == _supportValues.length && len == _quorumValues.length && len == _timeoutValues.length,
+      len == _supportValues.length && len == _quorumValues.length && len == _timeoutValues.length && len == _committingTimeoutValues.length,
       "Thresholds key and value array lengths mismatch"
     );
 
@@ -502,7 +516,8 @@ contract PrivateFundFactory is ChargesFee {
       _markers,
       _supportValues,
       _quorumValues,
-      _timeoutValues
+      _timeoutValues,
+      _committingTimeoutValues
     );
 
     emit CreateFundThirdStep(_fundId, len);
@@ -515,7 +530,8 @@ contract PrivateFundFactory is ChargesFee {
     bytes32[] memory _markers,
     uint256[] memory _supportValues,
     uint256[] memory _quorumValues,
-    uint256[] memory _timeoutValues
+    uint256[] memory _timeoutValues,
+    uint256[] memory _commitmentTimeoutValues
   )
     internal
   {
@@ -527,7 +543,13 @@ contract PrivateFundFactory is ChargesFee {
     c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
     for (uint256 i = 0; i < len; i++) {
-      _fundProposalManager.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
+      _fundProposalManager.setProposalConfig(
+        _markers[i],
+        _supportValues[i],
+        _quorumValues[i],
+        _timeoutValues[i],
+        _commitmentTimeoutValues[i]
+      );
     }
 
     c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);

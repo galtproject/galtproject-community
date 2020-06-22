@@ -111,7 +111,7 @@ describe('PrivateTransferApprovalProposal', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -171,9 +171,18 @@ describe('PrivateTransferApprovalProposal', () => {
 
       // EXPEL
       const proposalData = this.fundStorageX.contract.methods.setTransferNonTokenOwnersAllowed(true).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: charlie
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 

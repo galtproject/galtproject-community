@@ -61,7 +61,7 @@ describe('FundFactory', () => {
         factory,
         alice,
         false,
-        new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+        new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK, 0),
         {},
         [bob, charlie],
         2,

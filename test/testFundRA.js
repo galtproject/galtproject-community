@@ -90,7 +90,7 @@ describe('FundRA', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie],
       2
@@ -177,9 +177,18 @@ describe('FundRA', () => {
       this.regularEthFee = await RegularEthFee.at(this.feeAddress);
 
       const calldata = this.fundStorageX.contract.methods.addFeeContract(this.feeAddress).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
-        from: alice
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: alice
+        }
+      );
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
       assert.equal(await this.fundRAX.balanceOf(bob), 0);

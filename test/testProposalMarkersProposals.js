@@ -39,7 +39,7 @@ describe('Proposal Markers Proposals', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -65,9 +65,18 @@ describe('Proposal Markers Proposals', () => {
       let calldata = this.fundStorageX.contract.methods
         .addProposalMarker(signature, this.galtToken.address, proposalManager, hex('name'), 'dataLink')
         .encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       let proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -95,9 +104,18 @@ describe('Proposal Markers Proposals', () => {
       calldata = this.fundStorageX.contract.methods
         .replaceProposalMarker(marker, newSignature, this.spaceToken.address)
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
