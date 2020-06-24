@@ -72,6 +72,12 @@ const ether99 = new BN(ether(100))
   .mul(new BN(3))
   .toString(10);
 
+const ProposalStatus = {
+  NULL: 0,
+  ACTIVE: 1,
+  EXECUTED: 2
+};
+
 describe('PrivateFundRA', () => {
   const [minter, alice, bob, charlie, dan, lola, nana, burner, unauthorized, feeReceiver, feeManager] = accounts;
   const coreTeam = defaultSender;
@@ -910,6 +916,30 @@ describe('PrivateFundRA', () => {
       await this.fundRAX.delegate(alice, alice, 350, { from: bob });
       await this.fundRAX.revokeBurnedTokenReputation(this.aliceLockerAddress, { from: unauthorized });
     });
+  });
+
+  it('should lock reputation delegation by setTransferLocked', async function() {
+    let proposalData = this.fundStorageX.contract.methods.setTransferLocked(true).encodeABI();
+    let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'blah', {
+      from: alice
+    });
+    let proposalId = res.logs[0].args.proposalId.toString(10);
+
+    res = await this.fundProposalManagerX.proposals(proposalId);
+    assert.equal(res.status, ProposalStatus.EXECUTED);
+
+    await assertRevert(this.fundRAX.delegate(bob, alice, 350, { from: alice }), 'Transfer locked');
+
+    proposalData = this.fundStorageX.contract.methods.setTransferLocked(false).encodeABI();
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'blah', {
+      from: alice
+    });
+    proposalId = res.logs[0].args.proposalId.toString(10);
+
+    res = await this.fundProposalManagerX.proposals(proposalId);
+    assert.equal(res.status, ProposalStatus.EXECUTED);
+
+    await this.fundRAX.delegate(bob, alice, 350, { from: alice });
   });
 
   describe('transfer', () => {
