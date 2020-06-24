@@ -305,7 +305,7 @@ describe('Proposal Manager', () => {
       await increaseTime(VotingConfig.THREE_DAYS + 5);
 
       assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.PENDING);
-      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
+      await this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str1, { from: eve });
       assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.AYE);
     });
 
@@ -314,7 +314,7 @@ describe('Proposal Manager', () => {
       await increaseTime(VotingConfig.THREE_DAYS + 5);
 
       assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.PENDING);
-      await this.fundProposalManagerX.nayReveal(proposalId, str2, { from: charlie });
+      await this.fundProposalManagerX.nayReveal(proposalId, charlie, str2, { from: eve });
       assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.NAY);
     });
 
@@ -323,7 +323,7 @@ describe('Proposal Manager', () => {
       await increaseTime(VotingConfig.THREE_DAYS + 5);
 
       assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.PENDING);
-      await this.fundProposalManagerX.abstainReveal(proposalId, true, str3, { from: charlie });
+      await this.fundProposalManagerX.abstainReveal(proposalId, charlie, true, str3, { from: charlie });
       assert.equal(await this.fundProposalManagerX.getParticipantProposalChoice(proposalId, charlie), Choice.ABSTAIN);
     });
 
@@ -338,7 +338,7 @@ describe('Proposal Manager', () => {
     it('should deny revealing until committingTimeout', async function() {
       await this.fundProposalManagerX.commit(proposalId, hash0, { from: charlie });
       await assertRevert(
-        this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie }),
+        this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str1, { from: charlie }),
         "Revealing isn't open"
       );
     });
@@ -347,7 +347,7 @@ describe('Proposal Manager', () => {
       await this.fundProposalManagerX.commit(proposalId, hash2, { from: charlie });
       await increaseTime(VotingConfig.THREE_DAYS + 5);
       await assertRevert(
-        this.fundProposalManagerX.ayeReveal(proposalId, false, str2, { from: charlie }),
+        this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str2, { from: charlie }),
         'Invalid choice decoded'
       );
     });
@@ -356,7 +356,7 @@ describe('Proposal Manager', () => {
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
       await increaseTime(VotingConfig.THREE_DAYS + 5);
       await assertRevert(
-        this.fundProposalManagerX.nayReveal(proposalId, str1, { from: charlie }),
+        this.fundProposalManagerX.nayReveal(proposalId, charlie, str1, { from: charlie }),
         'Invalid choice decoded'
       );
     });
@@ -365,7 +365,7 @@ describe('Proposal Manager', () => {
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
       await increaseTime(VotingConfig.THREE_DAYS + 5);
       await assertRevert(
-        this.fundProposalManagerX.abstainReveal(proposalId, false, str1, { from: charlie }),
+        this.fundProposalManagerX.abstainReveal(proposalId, charlie, false, str1, { from: charlie }),
         'Invalid choice decoded'
       );
     });
@@ -373,9 +373,9 @@ describe('Proposal Manager', () => {
     it('should deny revealing twice', async function() {
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
       await increaseTime(VotingConfig.THREE_DAYS + 5);
-      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
+      await this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str1, { from: charlie });
       await assertRevert(
-        this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie }),
+        this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str1, { from: charlie }),
         'Already revealed'
       );
     });
@@ -398,8 +398,8 @@ describe('Proposal Manager', () => {
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: bob });
       await increaseTime(VotingConfig.THREE_DAYS + 5);
-      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
-      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: bob });
+      await this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str1, { from: charlie });
+      await this.fundProposalManagerX.ayeReveal(proposalId, bob, false, str1, { from: bob });
 
       let res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.currentSupport, ether(100));
@@ -416,8 +416,8 @@ describe('Proposal Manager', () => {
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: charlie });
       await this.fundProposalManagerX.commit(proposalId, hash1, { from: bob });
       await increaseTime(VotingConfig.THREE_DAYS + 5);
-      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: charlie });
-      await this.fundProposalManagerX.ayeReveal(proposalId, false, str1, { from: bob });
+      await this.fundProposalManagerX.ayeReveal(proposalId, charlie, false, str1, { from: alice });
+      await this.fundProposalManagerX.ayeReveal(proposalId, bob, false, str1, { from: alice });
 
       let res = await this.fundProposalManagerX.getProposalVotingProgress(proposalId);
       assert.equal(res.currentSupport, ether(100));
