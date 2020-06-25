@@ -9,7 +9,7 @@ const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { initHelperWeb3, int, getDestinationMarker, evmIncreaseTime } = require('./helpers');
+const { initHelperWeb3, int, getDestinationMarker, evmIncreaseTime, zeroAddress } = require('./helpers');
 
 const bytes32 = web3.utils.utf8ToHex;
 
@@ -80,6 +80,7 @@ describe('FundProposalManager', () => {
           false,
           false,
           false,
+          zeroAddress,
           proposalData,
           'blah',
           {
@@ -110,6 +111,7 @@ describe('FundProposalManager', () => {
           false,
           false,
           false,
+          zeroAddress,
           proposalData,
           'blah',
           {
@@ -202,6 +204,7 @@ describe('FundProposalManager', () => {
           false,
           false,
           false,
+          zeroAddress,
           proposalData,
           'blah',
           {
@@ -247,6 +250,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'hey',
         {
@@ -309,6 +313,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'obsolete',
         {
@@ -376,6 +381,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -400,6 +406,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -434,6 +441,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -490,6 +498,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -510,6 +519,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -560,6 +570,7 @@ describe('FundProposalManager', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {

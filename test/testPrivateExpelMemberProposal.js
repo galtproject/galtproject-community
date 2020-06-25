@@ -29,7 +29,7 @@ const {
   validateProposalSuccess
 } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, getEventArg, evmIncreaseTime, zeroAddress } = require('./helpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -219,6 +219,7 @@ describe('PrivateExpelFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -352,6 +353,7 @@ describe('PrivateExpelFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData2,
         'blah',
         {
@@ -475,6 +477,7 @@ describe('PrivateExpelFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {

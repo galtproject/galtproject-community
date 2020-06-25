@@ -158,6 +158,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -232,6 +233,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -334,6 +336,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -364,6 +367,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -393,6 +397,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -422,6 +427,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -525,6 +531,7 @@ describe('FineFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {

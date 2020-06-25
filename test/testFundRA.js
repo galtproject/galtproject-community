@@ -18,7 +18,15 @@ SpaceToken.numberFormat = 'String';
 SpaceLocker.numberFormat = 'String';
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, lastBlockTimestamp, increaseTime, paymentMethods } = require('./helpers');
+const {
+  ether,
+  assertRevert,
+  initHelperWeb3,
+  lastBlockTimestamp,
+  increaseTime,
+  paymentMethods,
+  zeroAddress
+} = require('./helpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -183,6 +191,7 @@ describe('FundRA', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {

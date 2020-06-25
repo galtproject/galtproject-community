@@ -1,16 +1,25 @@
 const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
 const { assert } = require('chai');
-const { ether, assertRevert, evmIncreaseTime, increaseTime } = require('@galtproject/solidity-test-chest')(web3);
+const {
+  ether,
+  assertRevert,
+  evmIncreaseTime,
+  increaseTime,
+  zeroAddress,
+  assertErc20BalanceChanged
+} = require('@galtproject/solidity-test-chest')(web3);
 
 const GaltToken = contract.fromArtifact('GaltToken');
 const MockBar = contract.fromArtifact('MockBar');
 const PPGlobalRegistry = contract.fromArtifact('PPGlobalRegistry');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
+const ERC20Mintable = contract.fromArtifact('ERC20Mintable');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 
 MockBar.numberFormat = 'String';
+ERC20Mintable.numberFormat = 'String';
 
 const ProposalStatus = {
   NULL: 0,
@@ -98,9 +107,19 @@ describe('Proposal Manager', () => {
   describe('proposal creation', () => {
     it('should create a new proposal by default', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        false,
+        false,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -115,9 +134,19 @@ describe('Proposal Manager', () => {
 
     it('should count a vote if the castVote flag is true', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, false, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        false,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -137,9 +166,19 @@ describe('Proposal Manager', () => {
 
     it('should only count a vote if both cast/execute flags are true w/o enough support', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -169,9 +208,19 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(bob), 1200);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -205,9 +254,19 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 200);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: charlie
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -239,7 +298,7 @@ describe('Proposal Manager', () => {
     it('should deny creating commitReveal vote when missing commitmentTimeout', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       await assertRevert(
-        this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, calldata, 'blah', {
+        this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, zeroAddress, calldata, 'blah', {
           from: charlie
         }),
         'Missing committing timeout'
@@ -253,9 +312,19 @@ describe('Proposal Manager', () => {
       await this.fundRAX.delegate(charlie, dan, 200, { from: bob });
 
       const calldata = this.bar.contract.methods.setAnotherNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, calldata, 'blah', {
-        from: charlie
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        false,
+        false,
+        true,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -285,9 +354,19 @@ describe('Proposal Manager', () => {
       await this.fundRAX.delegate(charlie, dan, 200, { from: bob });
 
       const calldata = this.bar.contract.methods.setAnotherNumber(42).encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, true, calldata, 'blah', {
-        from: charlie
-      });
+      const res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        false,
+        false,
+        true,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
     });
@@ -382,9 +461,19 @@ describe('Proposal Manager', () => {
 
     it('should deny committing for commitReveal proposal type', async function() {
       const calldata = this.bar.contract.methods.setAnotherNumber(42).encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, calldata, 'blah', {
-        from: charlie
-      });
+      const res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        false,
+        false,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -442,9 +531,19 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 301);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -520,9 +619,19 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(charlie), 301);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -638,9 +747,19 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(eve), 100);
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -677,9 +796,19 @@ describe('Proposal Manager', () => {
 
     beforeEach(async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      const res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      const res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -713,16 +842,16 @@ describe('Proposal Manager', () => {
 
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       await assertRevert(
-        this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
+        this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, zeroAddress, calldata, 'blah', {
           from: bob
         }),
         'Fee and msg.value not equal.'
       );
-      await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
+      await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, zeroAddress, calldata, 'blah', {
         from: bob,
         value: ether(0.001)
       });
-      await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, calldata, 'blah', {
+      await this.fundProposalManagerX.propose(this.bar.address, 0, false, false, false, zeroAddress, calldata, 'blah', {
         from: bob
       });
     });
@@ -753,5 +882,125 @@ describe('Proposal Manager', () => {
     assert.equal(res.status, '2');
 
     assert.equal(await this.fundStorageX.serviceCompany(), serviceCompany);
+  });
+
+  describe('reward distribution', () => {
+    let proposalId;
+    let myToken;
+
+    beforeEach(async function() {
+      myToken = await ERC20Mintable.new();
+      await myToken.mint(alice, ether(200));
+      await myToken.mint(bob, ether(200));
+
+      await this.fundRAX.delegate(charlie, dan, 1, { from: dan });
+      assert.equal(await this.fundRAX.balanceOf(bob), 300);
+      assert.equal(await this.fundRAX.balanceOf(charlie), 301);
+
+      await this.ppFeeRegistry.setEthFeeKeysAndValues([await this.fundProposalManagerX.VOTE_FEE_KEY()], [0], {
+        from: feeManager
+      });
+
+      const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
+      const res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        myToken.address,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
+
+      proposalId = res.logs[0].args.proposalId.toString(10);
+    });
+
+    it('should allow anyone depositing to a contract', async function() {
+      assert.equal(await myToken.balanceOf(this.fundProposalManagerX.address), ether(0));
+
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: alice });
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: bob });
+      await this.fundProposalManagerX.depositErc20Reward(proposalId, ether(200), { from: alice });
+      await this.fundProposalManagerX.depositErc20Reward(proposalId, ether(200), { from: bob });
+
+      assert.equal(await this.fundProposalManagerX.rewardContracts(proposalId), myToken.address);
+      assert.equal(await this.fundProposalManagerX.totalDeposited(proposalId), ether(400));
+      assert.equal(await myToken.balanceOf(this.fundProposalManagerX.address), ether(400));
+    });
+
+    it('should deny depositing to a non existing proposal', async function() {
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: alice });
+      await assertRevert(
+        this.fundProposalManagerX.depositErc20Reward(proposalId + 3, ether(200), { from: alice }),
+        "FundProposalManager: Proposal isn't open"
+      );
+    });
+
+    it('should deny depositing to already executed proposal', async function() {
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: alice });
+      await assertRevert(
+        this.fundProposalManagerX.depositErc20Reward(proposalId + 3, ether(200), { from: alice }),
+        "FundProposalManager: Proposal isn't open"
+      );
+    });
+
+    it('should deny a voter claiming rewards if a proposal is still active', async function() {
+      const res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.ACTIVE);
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: bob });
+      await this.fundProposalManagerX.depositErc20Reward(proposalId, ether(200), { from: bob });
+
+      await assertRevert(
+        this.fundProposalManagerX.claimErc20Reward(proposalId, { from: alice }),
+        'FundProposalManager: Rewards will be available after the voting ends.'
+      );
+    });
+
+    it('should allow a voter claiming rewards for their votes', async function() {
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: alice });
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: bob });
+      await this.fundProposalManagerX.depositErc20Reward(proposalId, ether(200), { from: alice });
+      await this.fundProposalManagerX.depositErc20Reward(proposalId, ether(200), { from: bob });
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+
+      let res = await this.fundProposalManagerX.proposals(proposalId);
+      assert.equal(res.status, ProposalStatus.EXECUTED);
+      res = await this.fundProposalManagerX.getProposalVoting(proposalId);
+      assert.equal(res.totalVotes, 3);
+
+      await increaseTime(VotingConfig.ONE_WEEK + 3);
+
+      const aliceBalanceBefore = await myToken.balanceOf(alice);
+      await this.fundProposalManagerX.claimErc20Reward(proposalId, { from: alice });
+      await this.fundProposalManagerX.claimErc20Reward(proposalId, { from: charlie });
+      await this.fundProposalManagerX.claimErc20Reward(proposalId, { from: eve });
+      const aliceBalanceAfter = await myToken.balanceOf(alice);
+
+      assertErc20BalanceChanged(aliceBalanceBefore, aliceBalanceAfter, '133333333333333333333');
+    });
+
+    it('should deny a voter claiming rewards twice', async function() {
+      await myToken.approve(this.fundProposalManagerX.address, ether(200), { from: bob });
+      await this.fundProposalManagerX.depositErc20Reward(proposalId, ether(200), { from: bob });
+
+      await this.fundProposalManagerX.aye(proposalId, true, { from: charlie });
+      await this.fundProposalManagerX.aye(proposalId, true, { from: eve });
+
+      await increaseTime(VotingConfig.ONE_WEEK + 3);
+      await this.fundProposalManagerX.claimErc20Reward(proposalId, { from: alice });
+      await assertRevert(
+        this.fundProposalManagerX.claimErc20Reward(proposalId, { from: alice }),
+        'FundProposalManager: Reward is already claimed'
+      );
+    });
   });
 });

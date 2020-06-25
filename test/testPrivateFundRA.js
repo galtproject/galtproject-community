@@ -45,7 +45,8 @@ const {
   lastBlockTimestamp,
   increaseTime,
   evmIncreaseTime,
-  getEventArg
+  getEventArg,
+  zeroAddress
 } = require('./helpers');
 
 const { utf8ToHex, BN } = web3.utils;
@@ -692,6 +693,7 @@ describe('PrivateFundRA', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {
@@ -848,6 +850,7 @@ describe('PrivateFundRA', () => {
         true,
         true,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -926,6 +929,7 @@ describe('PrivateFundRA', () => {
       true,
       true,
       false,
+      zeroAddress,
       proposalData,
       'blah',
       {
@@ -946,6 +950,7 @@ describe('PrivateFundRA', () => {
       true,
       true,
       false,
+      zeroAddress,
       proposalData,
       'blah',
       {

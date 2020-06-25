@@ -7,7 +7,7 @@ const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, hex, evmIncreaseTime } = require('./helpers');
+const { ether, initHelperWeb3, hex, evmIncreaseTime, zeroAddress } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -68,6 +68,7 @@ describe('Community Apps Proposals', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {

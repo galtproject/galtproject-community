@@ -9,7 +9,15 @@ const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, lastBlockTimestamp, initHelperWeb3, increaseTime, evmIncreaseTime } = require('./helpers');
+const {
+  ether,
+  assertRevert,
+  lastBlockTimestamp,
+  initHelperWeb3,
+  increaseTime,
+  evmIncreaseTime,
+  zeroAddress
+} = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -155,6 +163,7 @@ describe('Regular ERC20 Fees', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {

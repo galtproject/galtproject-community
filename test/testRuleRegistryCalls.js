@@ -16,7 +16,7 @@ PPLocker.numberFormat = 'String';
 const { BN } = require('web3-utils');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getDestinationMarker, assertRevert } = require('./helpers');
+const { ether, initHelperWeb3, getDestinationMarker, assertRevert, zeroAddress } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -108,6 +108,7 @@ describe('FundRuleRegistry Calls', () => {
       true,
       true,
       false,
+      zeroAddress,
       calldata,
       'blah',
       {
@@ -157,6 +158,7 @@ describe('FundRuleRegistry Calls', () => {
       true,
       true,
       false,
+      zeroAddress,
       calldata,
       'blah',
       {
