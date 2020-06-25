@@ -28,7 +28,7 @@ const Choice = {
 const { keccak256 } = web3.utils;
 
 describe('Proposal Manager', () => {
-  const [alice, bob, charlie, dan, eve, frank, feeManager] = accounts;
+  const [alice, bob, charlie, dan, eve, frank, feeManager, serviceCompany] = accounts;
   const coreTeam = defaultSender;
 
   before(async function() {
@@ -726,5 +726,32 @@ describe('Proposal Manager', () => {
         from: bob
       });
     });
+  });
+
+  it('should be able to set ServiceCompany', async function() {
+    await this.fundRAX.delegate(bob, charlie, 300, { from: charlie });
+    await this.fundRAX.delegate(bob, dan, 300, { from: dan });
+    await this.fundRAX.delegate(bob, eve, 300, { from: eve });
+
+    const calldata = this.fundStorageX.contract.methods.setServiceCompany(serviceCompany).encodeABI();
+    let res = await this.fundProposalManagerX.propose(
+      this.fundStorageX.address,
+      0,
+      true,
+      true,
+      false,
+      calldata,
+      'blah',
+      {
+        from: bob
+      }
+    );
+
+    const proposalId = res.logs[0].args.proposalId.toString(10);
+
+    res = await this.fundProposalManagerX.proposals(proposalId);
+    assert.equal(res.status, '2');
+
+    assert.equal(await this.fundStorageX.serviceCompany(), serviceCompany);
   });
 });

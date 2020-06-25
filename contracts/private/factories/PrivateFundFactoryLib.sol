@@ -43,6 +43,7 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundStorage.ROLE_SERVICE_COMPANY_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(
       FundProposalManager(_fundProposalManager).ROLE_PROPOSAL_THRESHOLD_MANAGER(),
       _fundProposalManager,
@@ -85,6 +86,7 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_DETAILS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_MEMBER_IDENTIFICATION_MANAGER(), _fundMultiSig, true);
+    _fundACL.setRole(_fundStorage.ROLE_SERVICE_COMPANY_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(
       FundProposalManager(_fundProposalManager).ROLE_PROPOSAL_THRESHOLD_MANAGER(),
       _fundMultiSig,
