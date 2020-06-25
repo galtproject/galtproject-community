@@ -12,18 +12,31 @@ pragma solidity ^0.5.13;
 import "./interfaces/IFundRegistry.sol";
 import "../common/interfaces/IFundRA.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
-
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@galtproject/private-property-registry/contracts/abstract/PPAbstractProposalManager.sol";
 
 
 contract FundProposalManager is PPAbstractProposalManager {
+  using SafeERC20 for IERC20;
+  using SafeMath for uint256;
 
   uint256 constant VERSION = 2;
 
   bytes32 public constant ROLE_PROPOSAL_THRESHOLD_MANAGER = bytes32("THRESHOLD_MANAGER");
   bytes32 public constant ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER = bytes32("DEFAULT_THRESHOLD_MANAGER");
 
+  event DepositErc20Reward(uint256 indexed proposalId, address indexed depositer, uint256 amount);
+  event WithdrawErc20Reward(uint256 indexed proposalId, address indexed withdrawer, uint256 amount);
+
   IFundRegistry public fundRegistry;
+
+  // period => tokenContract
+  mapping(uint256 => address) public rewardContracts;
+  // period => totalDeposited
+  mapping(uint256 => uint256) public totalDeposited;
+  // period => (voter => hasClaimed)
+  mapping(uint256 => mapping(address => bool)) public rewardClaimed;
 
   modifier onlyMember() {
     require(_fundRA().balanceOf(msg.sender) > 0, "Not valid member");
@@ -65,13 +78,64 @@ contract FundProposalManager is PPAbstractProposalManager {
     bool _castVote,
     bool _executesIfDecided,
     bool _isCommitReveal,
+    address _erc20RewardsContract,
     bytes calldata _data,
     string calldata _dataLink
   )
     external
     payable
+    returns (uint256)
   {
-    _propose(_destination, _value, _castVote, _executesIfDecided, _isCommitReveal, _data, _dataLink);
+    uint256 id = _propose(_destination, _value, _castVote, _executesIfDecided, _isCommitReveal, _data, _dataLink);
+    if (_erc20RewardsContract != address(0)) {
+      rewardContracts[id] = _erc20RewardsContract;
+    }
+    return id;
+  }
+
+  function depositErc20Reward(uint256 _proposalId, uint256 _amount) external {
+    require(_isProposalOpen(_proposalId), "FundProposalManager: Proposal isn't open");
+    address tokenAddress = rewardContracts[_proposalId];
+
+    require(tokenAddress != address(0), "FundProposalManager: Reward token is not assigned");
+
+    totalDeposited[_proposalId] = totalDeposited[_proposalId].add(_amount);
+
+    emit DepositErc20Reward(_proposalId, msg.sender, _amount);
+
+    IERC20(tokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
+  }
+
+  function claimErc20Reward(uint256 _proposalId) external {
+    require(rewardClaimed[_proposalId][msg.sender] == false, "FundProposalManager: Reward is already claimed");
+    require(
+      block.timestamp > _proposalVotings[_proposalId].timeoutAt,
+      "FundProposalManager: Rewards will be available after the voting ends"
+    );
+
+    uint256 reward = calculateErc20Reward(_proposalId);
+    require(reward > 0, "FundProposalManager: Calculated reward is 0");
+
+    address rewardToken = rewardContracts[_proposalId];
+    require(rewardToken != address(0), "FundProposalManager: Reward token is not assigned");
+
+
+    rewardClaimed[_proposalId][msg.sender] = true;
+
+    emit WithdrawErc20Reward(_proposalId, msg.sender, reward);
+
+    // Empty contract check is done in calculateErc20Reward() method
+    IERC20(rewardToken).safeTransfer(msg.sender, reward);
+  }
+
+  function calculateErc20Reward(uint256 _proposalId) public view returns (uint256) {
+    uint256 totalVotes = _proposalVotings[_proposalId].totalVotes;
+    require(totalVotes > 0, "FundProposalManager: Proposal has no votes");
+
+    uint256 totalReward = totalDeposited[_proposalId];
+    require(totalReward > 0, "FundProposalManager: Missing reward deposit");
+
+    return totalReward / totalVotes;
   }
 
   function _fundStorage() internal view returns (IAbstractFundStorage) {
