@@ -7,7 +7,7 @@ const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { initHelperWeb3, getDestinationMarker, getMethodSignature, evmIncreaseTime } = require('./helpers');
+const { initHelperWeb3, getDestinationMarker, getMethodSignature, evmIncreaseTime, zeroAddress } = require('./helpers');
 
 // eslint-disable-next-line import/order
 const { ether, hex, assertRevert } = require('@galtproject/solidity-test-chest')(web3);
@@ -71,6 +71,7 @@ describe('Proposal Markers Proposals', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {
@@ -110,6 +111,7 @@ describe('Proposal Markers Proposals', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {

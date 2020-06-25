@@ -25,7 +25,7 @@ const { approveAndMintLockerProposal } = require('@galtproject/private-property-
 );
 
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getEventArg, assertRevert } = require('./helpers');
+const { ether, initHelperWeb3, getEventArg, assertRevert, zeroAddress } = require('./helpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -177,6 +177,7 @@ describe('PrivateTransferApprovalProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {

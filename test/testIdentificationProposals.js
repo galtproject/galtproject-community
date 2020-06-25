@@ -7,7 +7,7 @@ const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, hex, fullHex, evmIncreaseTime } = require('./helpers');
+const { ether, initHelperWeb3, hex, fullHex, evmIncreaseTime, zeroAddress } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -63,6 +63,7 @@ describe('Identification Proposals', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {

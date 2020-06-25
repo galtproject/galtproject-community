@@ -100,6 +100,7 @@ describe('PrivateFundUpgrader', () => {
       false,
       false,
       false,
+      zeroAddress,
       payload,
       'some data',
       {
@@ -143,6 +144,7 @@ describe('PrivateFundUpgrader', () => {
       false,
       false,
       false,
+      zeroAddress,
       payload,
       'some data',
       {
@@ -189,6 +191,7 @@ describe('PrivateFundUpgrader', () => {
       false,
       false,
       false,
+      zeroAddress,
       payload,
       'some data',
       {

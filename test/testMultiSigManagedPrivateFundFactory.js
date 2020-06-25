@@ -21,7 +21,7 @@ const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 const galt = require('@galtproject/utils');
 const { mintLockerProposal } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getEventArg, int, assertRevert } = require('./helpers');
+const { ether, initHelperWeb3, getEventArg, int, assertRevert, zeroAddress } = require('./helpers');
 
 const ProposalStatus = {
   NULL: 0,
@@ -222,6 +222,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         true,
         true,
         false,
+        zeroAddress,
         proposalData,
         'hey',
         {
@@ -264,6 +265,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'obsolete',
         {
@@ -307,6 +309,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         true,
         true,
         false,
+        zeroAddress,
         proposalData,
         'hey',
         {
@@ -331,6 +334,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         true,
         true,
         false,
+        zeroAddress,
         proposalData,
         'obsolete',
         {
@@ -352,9 +356,19 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
     it('fundProposalManager should work with external contracts', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
-        from: bob
-      });
+      let res = await this.fundProposalManagerX.propose(
+        this.bar.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -381,6 +395,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'hey',
         {
@@ -472,6 +487,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         true,
         true,
         false,
+        zeroAddress,
         proposalData,
         'hey',
         {
