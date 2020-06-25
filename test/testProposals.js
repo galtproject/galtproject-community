@@ -48,7 +48,7 @@ describe('FundProposalManager', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -71,12 +71,13 @@ describe('FundProposalManager', () => {
         await this.fundRAX.mintAllHack(this.beneficiaries, this.benefeciarSpaceTokens, 300, { from: alice });
 
         const proposalData = this.fundProposalManagerX.contract.methods
-          .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123)
+          .setProposalConfig(bytes32('modify_config_threshold'), ether(42), ether(12), 123, 0)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(
           this.fundProposalManagerX.address,
           0,
+          false,
           false,
           false,
           proposalData,
@@ -100,12 +101,13 @@ describe('FundProposalManager', () => {
         const marker = getDestinationMarker(this.fundProposalManagerX, 'setProposalConfig');
 
         const proposalData = this.fundProposalManagerX.contract.methods
-          .setProposalConfig(marker, ether(42), ether(40), 555)
+          .setProposalConfig(marker, ether(42), ether(40), 555, 0)
           .encodeABI();
 
         let res = await this.fundProposalManagerX.propose(
           this.fundProposalManagerX.address,
           0,
+          false,
           false,
           false,
           proposalData,
@@ -199,6 +201,7 @@ describe('FundProposalManager', () => {
           0,
           false,
           false,
+          false,
           proposalData,
           'blah',
           {
@@ -241,6 +244,7 @@ describe('FundProposalManager', () => {
       let res = await this.fundProposalManagerX.propose(
         this.fundRuleRegistryX.address,
         0,
+        false,
         false,
         false,
         proposalData,
@@ -302,6 +306,7 @@ describe('FundProposalManager', () => {
       res = await this.fundProposalManagerX.propose(
         this.fundRuleRegistryX.address,
         0,
+        false,
         false,
         false,
         proposalData,
@@ -370,6 +375,7 @@ describe('FundProposalManager', () => {
         0,
         false,
         false,
+        false,
         proposalData,
         'blah',
         {
@@ -388,9 +394,18 @@ describe('FundProposalManager', () => {
       // approve George
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, george, 'George', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       pId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
@@ -413,9 +428,18 @@ describe('FundProposalManager', () => {
       // setOwners
       proposalData = this.fundMultiSigX.contract.methods.setOwners([alice, dan, frank, george], 3).encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundMultiSigX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundMultiSigX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -460,9 +484,18 @@ describe('FundProposalManager', () => {
       // approve Dan
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, dan, 'Dan', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       pId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
@@ -471,9 +504,18 @@ describe('FundProposalManager', () => {
       // approve Frank
       proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, frank, 'Frank', 'asdf').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       pId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(pId, true, { from: bob });
       await this.fundProposalManagerX.aye(pId, true, { from: charlie });
@@ -515,6 +557,7 @@ describe('FundProposalManager', () => {
       let res = await this.fundProposalManagerX.propose(
         this.fundStorageX.address,
         0,
+        false,
         false,
         false,
         proposalData,

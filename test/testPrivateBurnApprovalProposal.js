@@ -114,7 +114,7 @@ describe('PrivateBurnApprovalProposal', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(50), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -182,9 +182,18 @@ describe('PrivateBurnApprovalProposal', () => {
 
       // EXPEL
       let proposalData = this.fundStorageX.contract.methods.setBurnLocked(true).encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: charlie
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       let proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -204,9 +213,18 @@ describe('PrivateBurnApprovalProposal', () => {
       proposalData = this.fundStorageX.contract.methods
         .setBurnApprovalAll([this.registry1.address], [token1.toString()], true)
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: charlie
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: charlie
+        }
+      );
 
       proposalId = res.logs[0].args.proposalId.toString(10);
 

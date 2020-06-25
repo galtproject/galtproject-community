@@ -92,7 +92,7 @@ contract FundMultiSig is MultiSigWallet, Initializable {
   // call has been separated into its own function in order to take advantage
   // of the Solidity's code generator to produce a loop that copies tx.data into memory.
   // solium-disable-next-line mixedcase
-  function external_call(address destination, uint value, uint dataLength, bytes memory data) private returns (bool) {
+  function external_call(address destination, uint value, uint dataLength, bytes memory data) internal returns (bool) {
     beforeTransactionHook(destination, value, dataLength, data);
 
     bool result;

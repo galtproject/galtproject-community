@@ -84,7 +84,7 @@ describe('FineFundMemberProposal', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -152,9 +152,18 @@ describe('FineFundMemberProposal', () => {
       const proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, this.galtToken.address, 350)
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -217,9 +226,18 @@ describe('FineFundMemberProposal', () => {
       const proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, ETH_CONTRACT, ether(350))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -310,9 +328,18 @@ describe('FineFundMemberProposal', () => {
       let proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, ETH_CONTRACT, ether(350))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
 
       const ethProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(ethProposalId, true, { from: bob });
@@ -331,9 +358,18 @@ describe('FineFundMemberProposal', () => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, this.galtToken.address, ether(450))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       const galtProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(galtProposalId, true, { from: bob });
       await this.fundProposalManagerX.aye(galtProposalId, true, { from: charlie });
@@ -351,9 +387,18 @@ describe('FineFundMemberProposal', () => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, this.dai.address, ether(550))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       const daiProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(daiProposalId, true, { from: bob });
       await this.fundProposalManagerX.aye(daiProposalId, true, { from: charlie });
@@ -371,9 +416,18 @@ describe('FineFundMemberProposal', () => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token2, this.galtToken.address, ether(650))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       const anotherGaltProposalId = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(anotherGaltProposalId, true, { from: bob });
       await this.fundProposalManagerX.aye(anotherGaltProposalId, true, { from: charlie });
@@ -465,9 +519,18 @@ describe('FineFundMemberProposal', () => {
       proposalData = this.fundStorageX.contract.methods
         .incrementFine(this.token1, ETH_CONTRACT, ether(150))
         .encodeABI();
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, proposalData, 'blah', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        false,
+        false,
+        false,
+        proposalData,
+        'blah',
+        {
+          from: bob
+        }
+      );
       const ethProposal2Id = res.logs[0].args.proposalId.toString(10);
       await this.fundProposalManagerX.aye(ethProposal2Id, true, { from: bob });
       await this.fundProposalManagerX.aye(ethProposal2Id, true, { from: charlie });

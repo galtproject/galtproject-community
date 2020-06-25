@@ -46,7 +46,7 @@ describe('MultiSig Withdrawal Limits', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(60), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(60), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2,
@@ -83,7 +83,7 @@ describe('MultiSig Withdrawal Limits', () => {
     const calldata = this.fundStorageX.contract.methods
       .setPeriodLimit(true, this.galtToken.address, ether(4000))
       .encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, false, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);
@@ -136,7 +136,7 @@ describe('MultiSig Withdrawal Limits', () => {
 
     // Limit ETH payments
     const calldata = this.fundStorageX.contract.methods.setPeriodLimit(true, ETH_CONTRACT, ether(4000)).encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, calldata, 'blah', {
+    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, false, calldata, 'blah', {
       from: bob
     });
     const pId = res.logs[0].args.proposalId.toString(10);

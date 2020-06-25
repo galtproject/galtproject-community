@@ -67,8 +67,8 @@ describe('FundRuleRegistry Calls', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
-      [new CustomVotingConfig('fundRuleRegistry', '0xc9e5d096', ether(100), ether(100), VotingConfig.ONE_WEEK)],
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
+      [new CustomVotingConfig('fundRuleRegistry', '0xc9e5d096', ether(100), ether(100), VotingConfig.ONE_WEEK, 0)],
       [multisigOwner1, multisigOwner2],
       2
     );
@@ -102,9 +102,18 @@ describe('FundRuleRegistry Calls', () => {
     const calldata = this.fundRuleRegistryX.contract.methods
       .addRuleType4('0', '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
-    let res = await this.fundProposalManagerX.propose(this.fundRuleRegistryX.address, 0, true, true, calldata, 'blah', {
-      from: bob
-    });
+    let res = await this.fundProposalManagerX.propose(
+      this.fundRuleRegistryX.address,
+      0,
+      true,
+      true,
+      false,
+      calldata,
+      'blah',
+      {
+        from: bob
+      }
+    );
 
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
@@ -142,9 +151,18 @@ describe('FundRuleRegistry Calls', () => {
       .addRuleType4(meetingId, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
 
-    res = await this.fundProposalManagerX.propose(this.fundRuleRegistryX.address, 0, true, true, calldata, 'blah', {
-      from: bob
-    });
+    res = await this.fundProposalManagerX.propose(
+      this.fundRuleRegistryX.address,
+      0,
+      true,
+      true,
+      false,
+      calldata,
+      'blah',
+      {
+        from: bob
+      }
+    );
 
     const proposalId = res.logs[0].args.proposalId.toString(10);
 

@@ -146,7 +146,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         this.fundFactory,
         alice,
         true,
-        new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK),
+        new VotingConfig(ether(90), ether(30), VotingConfig.ONE_WEEK, 0),
         {},
         [charlie, dan],
         2,
@@ -221,6 +221,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         0,
         true,
         true,
+        false,
         proposalData,
         'hey',
         {
@@ -262,6 +263,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         0,
         false,
         false,
+        false,
         proposalData,
         'obsolete',
         {
@@ -299,9 +301,18 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
       let proposalData = this.fundStorageX.contract.methods.setMultiSigManager(true, bob, 'Bob', '').encodeABI();
 
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'hey', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        true,
+        true,
+        false,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
       res = await this.fundProposalManagerX.proposals(proposalId);
@@ -319,6 +330,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
         0,
         true,
         true,
+        false,
         proposalData,
         'obsolete',
         {
@@ -340,7 +352,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
 
     it('fundProposalManager should work with external contracts', async function() {
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
-      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, calldata, 'blah', {
+      let res = await this.fundProposalManagerX.propose(this.bar.address, 0, true, true, false, calldata, 'blah', {
         from: bob
       });
 
@@ -366,6 +378,7 @@ describe('MultiSig Managed Private Fund Factory', () => {
       let res = await this.fundProposalManagerX.propose(
         this.fundStorageX.address,
         0,
+        false,
         false,
         false,
         proposalData,
@@ -453,9 +466,18 @@ describe('MultiSig Managed Private Fund Factory', () => {
       assert.equal(res, false);
 
       // execute approveMintAll by proposal manager
-      res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'hey', {
-        from: bob
-      });
+      res = await this.fundProposalManagerX.propose(
+        this.fundStorageX.address,
+        0,
+        true,
+        true,
+        false,
+        proposalData,
+        'hey',
+        {
+          from: bob
+        }
+      );
 
       const proposalId = res.logs[0].args.proposalId.toString(10);
       res = await this.fundProposalManagerX.getProposalVoting(proposalId);

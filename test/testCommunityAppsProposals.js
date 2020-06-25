@@ -36,7 +36,7 @@ describe('Community Apps Proposals', () => {
       this.fundFactory,
       alice,
       false,
-      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK),
+      new VotingConfig(ether(60), ether(40), VotingConfig.ONE_WEEK, 0),
       {},
       [bob, charlie, dan],
       2
@@ -65,6 +65,7 @@ describe('Community Apps Proposals', () => {
       const res = await this.fundProposalManagerX.propose(
         this.fundStorageX.address,
         0,
+        false,
         false,
         false,
         calldata,

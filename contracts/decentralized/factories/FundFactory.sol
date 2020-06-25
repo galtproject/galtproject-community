@@ -263,7 +263,8 @@ contract FundFactory is Ownable {
     bytes32 _fundId,
     uint256 _defaultProposalSupport,
     uint256 _defaultProposalQuorum,
-    uint256 _defaultProposalTimeout
+    uint256 _defaultProposalTimeout,
+    uint256 _defaultProposalCommittingTimeout
   )
     external
   {
@@ -287,7 +288,8 @@ contract FundFactory is Ownable {
     FundProposalManager(_fundProposalManager).setDefaultProposalConfig(
       _defaultProposalSupport,
       _defaultProposalQuorum,
-      _defaultProposalTimeout
+      _defaultProposalTimeout,
+      _defaultProposalCommittingTimeout
     );
     _fundACL.setRole(
       FundProposalManager(_fundProposalManager).ROLE_DEFAULT_PROPOSAL_THRESHOLD_MANAGER(),
@@ -349,7 +351,8 @@ contract FundFactory is Ownable {
     bytes32[] calldata _markers,
     uint256[] calldata _supportValues,
     uint256[] calldata _quorumValues,
-    uint256[] calldata _timeoutValues
+    uint256[] calldata _timeoutValues,
+    uint256[] calldata _commitingTimeoutValues
   )
     external
   {
@@ -363,18 +366,46 @@ contract FundFactory is Ownable {
       "Thresholds key and value array lengths mismatch"
     );
 
-    FundStorage _fundStorage = c.fundStorage;
+    _applyMarkers(
+      _fundId,
+      _markers,
+      _supportValues,
+      _quorumValues,
+      _timeoutValues,
+      _commitingTimeoutValues
+    );
+
+    emit CreateFundFourthStep(_fundId, len);
+  }
+
+  function _applyMarkers(
+    bytes32 _fundId,
+    bytes32[] memory _markers,
+    uint256[] memory _supportValues,
+    uint256[] memory _quorumValues,
+    uint256[] memory _timeoutValues,
+    uint256[] memory _commitmentTimeoutValues
+  )
+    internal
+  {
+    FundContracts storage c = fundContracts[_fundId];
+
     FundProposalManager _fundProposalManager = FundProposalManager(c.fundRegistry.getProposalManagerAddress());
+    uint256 len = _markers.length;
 
     c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), true);
 
     for (uint256 i = 0; i < len; i++) {
-      _fundProposalManager.setProposalConfig(_markers[i], _supportValues[i], _quorumValues[i], _timeoutValues[i]);
+      _fundProposalManager.setProposalConfig(
+        _markers[i],
+        _supportValues[i],
+        _quorumValues[i],
+        _timeoutValues[i],
+        _commitmentTimeoutValues[i]
+      );
     }
 
     c.fundACL.setRole(_fundProposalManager.ROLE_PROPOSAL_THRESHOLD_MANAGER(), address(this), false);
-
-    emit CreateFundFourthStep(_fundId, len);
   }
 
   function buildFourthStepDone(bytes32 _fundId, string calldata _name, string calldata _dataLink) external {

@@ -224,6 +224,7 @@ async function buildFund(
     defaultVotingConfig.support,
     defaultVotingConfig.quorum,
     defaultVotingConfig.timeout,
+    defaultVotingConfig.commitmentTimeout,
     { from: creator }
   );
   // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
@@ -238,6 +239,7 @@ async function buildFund(
   const supports = [];
   const quorums = [];
   const timeouts = [];
+  const commitmentTimeouts = [];
 
   signatures = keys.map(k => fundStorage[`${k}_SIGNATURE`]());
   signatures = await Promise.all(signatures);
@@ -271,12 +273,15 @@ async function buildFund(
     supports.push(customVotingConfigs[keys[i]][contractName].support);
     quorums.push(customVotingConfigs[keys[i]][contractName].quorum);
     timeouts.push(customVotingConfigs[keys[i]][contractName].timeout);
+    commitmentTimeouts.push(customVotingConfigs[keys[i]][contractName].commitmentTimeout);
   }
 
   markers = await Promise.all(markers);
 
   // >>> Step #4
-  res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, { from: creator });
+  res = await factory.buildFourthStep(fundId, markers, supports, quorums, timeouts, commitmentTimeouts, {
+    from: creator
+  });
   // console.log('buildFourthStep gasUsed', res.receipt.gasUsed);
 
   res = await factory.buildFourthStepDone(fundId, name, dataLink, { from: creator });
@@ -338,12 +343,15 @@ async function buildPrivateFund(
   let res = await factory.buildFirstStep(
     creator,
     isPrivate,
-    defaultVotingConfig.support,
-    defaultVotingConfig.quorum,
-    defaultVotingConfig.timeout,
-    periodLength,
+    [
+      defaultVotingConfig.support,
+      defaultVotingConfig.quorum,
+      defaultVotingConfig.timeout,
+      defaultVotingConfig.commitmentTimeout,
+      periodLength,
+      initialMultiSigRequired
+    ],
     initialMultiSigOwners,
-    initialMultiSigRequired,
     {
       from: creator,
       gas: 9000000,
@@ -376,6 +384,7 @@ async function buildPrivateFund(
   const supports = [];
   const quorums = [];
   const timeouts = [];
+  const commitmentTimeouts = [];
 
   // We don't know the fund contract addresses in advance to generate a marker,
   // so a contract name should be used instead
@@ -410,13 +419,16 @@ async function buildPrivateFund(
     supports.push(config.support);
     quorums.push(config.quorum);
     timeouts.push(config.timeout);
+    commitmentTimeouts.push(config.commitmentTimeout);
   }
 
   markers = await Promise.all(markers);
 
   if (!finishOn2ndStep) {
     // >>> Step #3
-    res = await factory.buildThirdStep(fundId, markers, supports, quorums, timeouts, { from: creator });
+    res = await factory.buildThirdStep(fundId, markers, supports, quorums, timeouts, commitmentTimeouts, {
+      from: creator
+    });
     // console.log('buildThirdStep gasUsed', res.receipt.gasUsed);
   }
 
@@ -436,21 +448,24 @@ async function buildPrivateFund(
   };
 }
 
-function VotingConfig(support, quorum, timeout) {
+function VotingConfig(support, quorum, timeout, commitmentTimeout) {
   this.support = support;
   this.quorum = quorum;
   this.timeout = timeout;
+  this.commitmentTimeout = commitmentTimeout;
 }
 
-function CustomVotingConfig(contractAddress, methodSignature, support, quorum, timeout) {
+function CustomVotingConfig(contractAddress, methodSignature, support, quorum, timeout, commitmentTimeout) {
   this.contractAddress = contractAddress;
   this.methodSignature = methodSignature;
   this.support = support;
   this.quorum = quorum;
   this.timeout = timeout;
+  this.commitmentTimeout = commitmentTimeout;
 }
 
 VotingConfig.ONE_WEEK = 60 * 60 * 24 * 7;
+VotingConfig.THREE_DAYS = 60 * 60 * 24 * 3;
 
 module.exports = {
   deployFundFactory,
