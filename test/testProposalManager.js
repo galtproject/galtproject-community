@@ -870,6 +870,10 @@ describe('Proposal Manager', () => {
       assert.equal(await this.fundRAX.balanceOf(bob), 300);
       assert.equal(await this.fundRAX.balanceOf(charlie), 301);
 
+      await this.ppFeeRegistry.setEthFeeKeysAndValues([await this.fundProposalManagerX.VOTE_FEE_KEY()], [0], {
+        from: feeManager
+      });
+
       const calldata = this.bar.contract.methods.setNumber(42).encodeABI();
       const res = await this.fundProposalManagerX.propose(
         this.bar.address,
