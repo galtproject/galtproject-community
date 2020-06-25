@@ -43,6 +43,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   event SetPeriodLimit(address indexed erc20Contract, uint256 amount, bool active);
   event HandleMultiSigTransaction(address indexed erc20Contract, uint256 amount);
 
+  event SetServiceCompany(address indexed serviceCompany);
+
   event SetConfig(bytes32 indexed key, bytes32 value);
 
   // 100% == 100 ether
@@ -60,6 +62,7 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   bytes32 public constant ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER = bytes32("CHANGE_NAME_DATA_LINK_MANAGER");
   bytes32 public constant ROLE_FEE_MANAGER = bytes32("FEE_MANAGER");
   bytes32 public constant ROLE_MEMBER_DETAILS_MANAGER = bytes32("MEMBER_DETAILS_MANAGER");
+  bytes32 public constant ROLE_SERVICE_COMPANY_MANAGER = bytes32("SERVICE_COMPANY_MANAGER");
   bytes32 public constant ROLE_MULTI_SIG_WITHDRAWAL_LIMITS_MANAGER = bytes32("MULTISIG_WITHDRAWAL_MANAGER");
   bytes32 public constant ROLE_MEMBER_IDENTIFICATION_MANAGER = bytes32("MEMBER_IDENTIFICATION_MANAGER");
   bytes32 public constant ROLE_DECREMENT_TOKEN_REPUTATION = bytes32("DECREMENT_TOKEN_REPUTATION_ROLE");
@@ -110,6 +113,8 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
   string public dataLink;
   uint256 public initialTimestamp;
   uint256 public periodLength;
+
+  address public serviceCompany;
 
   ArraySet.AddressSet internal _communityApps;
   ArraySet.AddressSet internal _feeContracts;
@@ -174,6 +179,14 @@ contract AbstractFundStorage is IAbstractFundStorage, Initializable {
     config[_key] = _value;
 
     emit SetConfig(_key, _value);
+  }
+
+  function setServiceCompany(address _addr)
+    external
+    onlyRole(ROLE_SERVICE_COMPANY_MANAGER)
+  {
+    serviceCompany = _addr;
+    emit SetServiceCompany(_addr);
   }
 
   function addCommunityApp(
