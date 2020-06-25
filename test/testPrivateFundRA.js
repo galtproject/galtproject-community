@@ -45,7 +45,8 @@ const {
   lastBlockTimestamp,
   increaseTime,
   evmIncreaseTime,
-  getEventArg
+  getEventArg,
+  zeroAddress
 } = require('./helpers');
 
 const { utf8ToHex, BN } = web3.utils;
@@ -692,6 +693,7 @@ describe('PrivateFundRA', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {
@@ -848,6 +850,7 @@ describe('PrivateFundRA', () => {
         true,
         true,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -920,9 +923,19 @@ describe('PrivateFundRA', () => {
 
   it('should lock reputation delegation by setTransferLocked', async function() {
     let proposalData = this.fundStorageX.contract.methods.setTransferLocked(true).encodeABI();
-    let res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'blah', {
-      from: alice
-    });
+    let res = await this.fundProposalManagerX.propose(
+      this.fundStorageX.address,
+      0,
+      true,
+      true,
+      false,
+      zeroAddress,
+      proposalData,
+      'blah',
+      {
+        from: alice
+      }
+    );
     let proposalId = res.logs[0].args.proposalId.toString(10);
 
     res = await this.fundProposalManagerX.proposals(proposalId);
@@ -931,9 +944,19 @@ describe('PrivateFundRA', () => {
     await assertRevert(this.fundRAX.delegate(bob, alice, 350, { from: alice }), 'Transfer locked');
 
     proposalData = this.fundStorageX.contract.methods.setTransferLocked(false).encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, true, true, proposalData, 'blah', {
-      from: alice
-    });
+    res = await this.fundProposalManagerX.propose(
+      this.fundStorageX.address,
+      0,
+      true,
+      true,
+      false,
+      zeroAddress,
+      proposalData,
+      'blah',
+      {
+        from: alice
+      }
+    );
     proposalId = res.logs[0].args.proposalId.toString(10);
 
     res = await this.fundProposalManagerX.proposals(proposalId);

@@ -6,7 +6,7 @@ const GaltGlobalRegistry = contract.fromArtifact('GaltGlobalRegistry');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, increaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, increaseTime, zeroAddress } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -83,9 +83,19 @@ describe('MultiSig Withdrawal Limits', () => {
     const calldata = this.fundStorageX.contract.methods
       .setPeriodLimit(true, this.galtToken.address, ether(4000))
       .encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, false, calldata, 'blah', {
-      from: bob
-    });
+    res = await this.fundProposalManagerX.propose(
+      this.fundStorageX.address,
+      0,
+      false,
+      false,
+      false,
+      zeroAddress,
+      calldata,
+      'blah',
+      {
+        from: bob
+      }
+    );
     const pId = res.logs[0].args.proposalId.toString(10);
     await this.fundProposalManagerX.aye(pId, true, { from: bob });
     await this.fundProposalManagerX.aye(pId, true, { from: charlie });
@@ -136,9 +146,19 @@ describe('MultiSig Withdrawal Limits', () => {
 
     // Limit ETH payments
     const calldata = this.fundStorageX.contract.methods.setPeriodLimit(true, ETH_CONTRACT, ether(4000)).encodeABI();
-    res = await this.fundProposalManagerX.propose(this.fundStorageX.address, 0, false, false, false, calldata, 'blah', {
-      from: bob
-    });
+    res = await this.fundProposalManagerX.propose(
+      this.fundStorageX.address,
+      0,
+      false,
+      false,
+      false,
+      zeroAddress,
+      calldata,
+      'blah',
+      {
+        from: bob
+      }
+    );
     const pId = res.logs[0].args.proposalId.toString(10);
 
     assert.equal(await this.fundRAX.balanceOf(bob), 300);

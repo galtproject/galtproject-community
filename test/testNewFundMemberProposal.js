@@ -13,7 +13,7 @@ const ACL = contract.fromArtifact('ACL');
 const FundFactory = contract.fromArtifact('FundFactory');
 
 const { deployFundFactory, buildFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, assertRevert, initHelperWeb3, paymentMethods, evmIncreaseTime } = require('./helpers');
+const { ether, assertRevert, initHelperWeb3, paymentMethods, evmIncreaseTime, zeroAddress } = require('./helpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -141,6 +141,7 @@ describe('NewFundMemberProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         calldata,
         'blah',
         {

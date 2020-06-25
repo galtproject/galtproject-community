@@ -28,7 +28,7 @@ const {
   validateProposalError
 } = require('@galtproject/private-property-registry/test/proposalHelpers')(contract);
 const { deployFundFactory, buildPrivateFund, VotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getEventArg } = require('./helpers');
+const { ether, initHelperWeb3, getEventArg, zeroAddress } = require('./helpers');
 
 const { utf8ToHex } = web3.utils;
 const bytes32 = utf8ToHex;
@@ -188,6 +188,7 @@ describe('PrivateBurnApprovalProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
@@ -219,6 +220,7 @@ describe('PrivateBurnApprovalProposal', () => {
         false,
         false,
         false,
+        zeroAddress,
         proposalData,
         'blah',
         {
