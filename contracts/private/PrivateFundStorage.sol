@@ -29,7 +29,7 @@ contract PrivateFundStorage is AbstractFundStorage {
   event BurnLockedChange(bool indexed burnLocked);
 
   event SetTransferNonTokenOwnersAllowed(bool indexed allowed);
-  event SetTransferNonTokenOwnersItemApproval(address tokenOwner, bool indexed burnLocked);
+  event SetTransferNonTokenOwnersItemApproval(address tokenOwner, bool indexed allowed);
   event SetTransferLocked(bool indexed disabled);
 
   event Expel(address indexed registry, uint256 indexed tokenId);
@@ -118,7 +118,7 @@ contract PrivateFundStorage is AbstractFundStorage {
 
     for (uint256 i = 0; i < len; i++) {
       _transferNonTokenOwnersApprovals[_addresses[i]] = _value;
-      emit SetTransferNonTokenOwnersItemApproval(_addresses[i], burnLocked);
+      emit SetTransferNonTokenOwnersItemApproval(_addresses[i], _value);
     }
   }
 

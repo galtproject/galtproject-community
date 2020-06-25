@@ -45,7 +45,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
     _meetings.push(_id);
 
-    emit AddMeeting(_id);
+    emit AddMeeting(_id, _dataLink, _startOn, _endOn);
   }
 
   function editMeeting(
@@ -69,7 +69,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     meeting.startOn = _startOn;
     meeting.endOn = _endOn;
 
-    emit EditMeeting(_id);
+    emit EditMeeting(_id, _dataLink, _startOn, _endOn, _active);
   }
 
   function addRuleType1(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
