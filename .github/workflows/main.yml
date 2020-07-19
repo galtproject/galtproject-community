@@ -15,7 +15,7 @@ jobs:
         sudo mv solc-static-linux /usr/bin/solc
     - uses: actions/setup-node@v1
       with:
-        node-version: '12.18.0'
+        node-version: '10.x'
     - name: Run tests
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
