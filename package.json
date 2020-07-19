@@ -33,9 +33,6 @@
     "ethlint": "solium --dir .",
     "test": "npx mocha --exit --timeout 30000 --recursive test"
   },
-  "engines": {
-    "node": ">=10.15.3"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
