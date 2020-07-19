@@ -169,9 +169,9 @@
   version "0.1.0"
   resolved "git+ssh://git@github.com/galtproject/galtproject-multisig.git#0212d20bc46eb9e064747a86f4eee1dee6f49fb5"
 
-"@galtproject/private-property-registry@git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#bd07ce1":
+"@galtproject/private-property-registry@git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#fd3014d":
   version "1.0.0"
-  resolved "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#bd07ce18f2d9600c3efb7b4f7c11c51c7b551a47"
+  resolved "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#fd3014d1cdc82e705a440b2dfb8746b9337a3a48"
   dependencies:
     web3-utils "^1.2.6"
 
