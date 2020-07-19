@@ -4,7 +4,7 @@ cleanup:
 	rm -rf ./build
 
 compile: cleanup
-	npm run compile
+	SOLC=0.5.13 npm run compile
 	node scripts/checkContractSize.js
 	-tput bel
 

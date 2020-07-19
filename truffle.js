@@ -1,6 +1,7 @@
 const Ganache = require('ganache-core');
 
 const config = {
+  docker: false,
   networks: {
     production: {
       host: '127.0.0.1',
