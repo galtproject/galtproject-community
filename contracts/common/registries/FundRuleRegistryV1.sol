@@ -29,12 +29,9 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   // EXTERNAL INTERFACE
 
-  function setMeetingNoticePeriod(uint256 _period) external onlyRole(ROLE_MEETING_SETTINGS_MANAGER) {
-    meetingNoticePeriod = _period;
-  }
-
-  function setMeetingMinDuration(uint256 _duration) external onlyRole(ROLE_MEETING_SETTINGS_MANAGER) {
-    meetingMinDuration = _duration;
+  function setMeetingSettings(uint256 _meetingNoticePeriod, uint256 _meetingMinDuration) external onlyRole(ROLE_MEETING_SETTINGS_MANAGER) {
+    meetingNoticePeriod = _meetingNoticePeriod;
+    meetingMinDuration = _meetingMinDuration;
   }
 
   function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn)
