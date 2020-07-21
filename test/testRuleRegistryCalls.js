@@ -13,10 +13,10 @@ const OwnedUpgradeabilityProxy = contract.fromArtifact('OwnedUpgradeabilityProxy
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
-const { BN } = require('web3-utils');
+const { BN, hexToAscii } = require('web3-utils');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getDestinationMarker, assertRevert, zeroAddress } = require('./helpers');
+const { ether, initHelperWeb3, getDestinationMarker, assertRevert, zeroAddress, evmIncreaseTime, lastBlockTimestamp } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -134,12 +134,12 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'blah');
   });
 
-  it.only('meetings should working correctly', async function() {
+  it('meetings should working correctly', async function() {
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: bob }),
       'startOn must be greater then current timestamp'
     );
-    const currentTimestamp = Math.round(new Date().getTime() / 1000);
+    let currentTimestamp = await lastBlockTimestamp();
     const meetingNoticePeriod = 864000;
     const meetingMinDuration = 432000;
 
@@ -183,6 +183,13 @@ describe('FundRuleRegistry Calls', () => {
     const proposalId = res.logs[0].args.proposalId.toString(10);
 
     res = await this.fundProposalManagerX.proposals(proposalId);
+    assert.equal(res.status, ProposalStatus.ACTIVE);
+
+    await evmIncreaseTime(meetingNoticePeriod + meetingMinDuration + 201);
+
+    await this.fundProposalManagerX.executeProposal(proposalId, '0', { from: bob });
+
+    res = await this.fundProposalManagerX.proposals(proposalId);
     assert.equal(res.status, ProposalStatus.EXECUTED);
 
     res = await this.fundRuleRegistryX.fundRules(1);
@@ -204,7 +211,11 @@ describe('FundRuleRegistry Calls', () => {
 
     const feeReceiverBalanceBefore = await web3.eth.getBalance(feeReceiver);
 
-    res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: multisigOwner1, value: ether(0.002) });
+    currentTimestamp = await lastBlockTimestamp();
+
+    let startOn = currentTimestamp + meetingNoticePeriod + 100;
+    let endOn = currentTimestamp + meetingNoticePeriod + meetingMinDuration + 200;
+    res = await this.fundRuleRegistryX.addMeeting('meetingLink', startOn, endOn, { from: multisigOwner1, value: ether(0.002) });
     const meeting2Id = res.logs[0].args.id.toString(10);
     assert.equal(meeting2Id, '2');
 
@@ -215,18 +226,25 @@ describe('FundRuleRegistry Calls', () => {
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
     assert.equal(res.active, true);
     assert.equal(res.dataLink, 'meetingLink');
-    assert.equal(res.startOn, '0');
-    assert.equal(res.endOn, '1');
+    assert.equal(res.startOn, startOn);
+    assert.equal(res.endOn, endOn);
 
-    await assertRevert(this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: bob }));
+    await assertRevert(
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', startOn + 100, endOn + 100, false, { from: bob }),
+      "Not meeting creator"
+    );
+    await assertRevert(
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', startOn - 100, endOn - 100, false, { from: bob }),
+      "startOn can't be sooner then meetingNoticePeriod"
+    );
 
-    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', 1, 2, false, { from: multisigOwner1 });
+    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink1', startOn + 100, endOn + 100, false, { from: multisigOwner1 });
 
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
     assert.equal(res.active, false);
     assert.equal(res.dataLink, 'meetingLink1');
-    assert.equal(res.startOn, '1');
-    assert.equal(res.endOn, '2');
+    assert.equal(res.startOn, startOn + 100);
+    assert.equal(res.endOn, endOn + 100);
 
     await this.ppFeeRegistry.setEthFeeKeysAndValues(
       [await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
@@ -235,16 +253,30 @@ describe('FundRuleRegistry Calls', () => {
     );
 
     await assertRevert(
-      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, { from: multisigOwner1 }),
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', startOn + 100, endOn + 100, false, { from: multisigOwner1 }),
       'Fee and msg.value not equal'
     );
 
-    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', 1, 2, false, {
+    await this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', startOn + 100, endOn + 100, false, {
       from: multisigOwner1,
       value: ether(0.001)
     });
 
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
     assert.equal(res.dataLink, 'meetingLink2');
+
+    await evmIncreaseTime(meetingNoticePeriod);
+
+    await assertRevert(
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', startOn + 100, endOn + 100, false, { from: multisigOwner1 }),
+      'edit not available for reached notice period meetings'
+    );
+
+    await evmIncreaseTime(meetingMinDuration + 300);
+
+    await assertRevert(
+      this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', startOn + 100, endOn + 100, false, { from: multisigOwner1 }),
+      'edit not available for reached notice period meetings'
+    );
   });
 });

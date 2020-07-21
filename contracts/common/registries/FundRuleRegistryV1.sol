@@ -39,8 +39,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     payable
     onlyMemberOrMultiSigOwner
   {
-    require(_startOn > block.timestamp, "startOn must be greater then current timestamp");
-    require(_endOn > _startOn && _endOn.sub(_startOn) >= meetingMinDuration, "duration must be grater or equal meetingMinDuration");
+    _checkMeetingDates(_startOn, _endOn);
 
     _acceptPayment(ADD_MEETING_FEE_KEY);
     uint256 _id = _meetings.length + 1;
@@ -74,8 +73,9 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     _acceptPayment(EDIT_MEETING_FEE_KEY);
     Meeting storage meeting = meetings[_id];
 
-    require(meeting.startOn - meetingNoticePeriod > block.timestamp, "endOn should be greater then startOn");
-    require(_endOn > _startOn && _endOn.sub(_startOn) >= meetingMinDuration, "duration must be grater or equal meetingMinDuration");
+    require(meeting.startOn - meetingNoticePeriod > block.timestamp, "edit not available for reached notice period meetings");
+
+    _checkMeetingDates(_startOn, _endOn);
     require(meetings[_id].creator == msg.sender, "Not meeting creator");
 
     meeting.active = _active;
@@ -119,6 +119,11 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   }
 
   // INTERNAL HELPERS
+
+  function _checkMeetingDates(uint256 _startOn, uint256 _endOn) internal {
+    require(_startOn > block.timestamp + meetingNoticePeriod, "startOn can't be sooner then meetingNoticePeriod");
+    require(_endOn > _startOn && _endOn.sub(_startOn) >= meetingMinDuration, "duration must be grater or equal meetingMinDuration");
+  }
 
   function _addRule(uint256 _meetingId, bytes32 _ipfsHash, uint256 _typeId, string memory _dataLink) internal {
     if (_meetingId > 0) {
