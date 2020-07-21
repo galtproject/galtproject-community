@@ -10,6 +10,7 @@
 pragma solidity ^0.5.13;
 
 import "./interfaces/IFundRegistry.sol";
+import "./registries/interfaces/IFundRuleRegistry.sol";
 import "../common/interfaces/IFundRA.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -91,6 +92,35 @@ contract FundProposalManager is PPAbstractProposalManager {
       rewardContracts[id] = _erc20RewardsContract;
     }
     return id;
+  }
+
+  function canBeProposedToMeeting(bytes memory _data) public view returns (bool) {
+    uint256 meetingId;
+
+    assembly {
+      let code := mload(add(_data, 0x20))
+      code := and(code, 0xffffffff00000000000000000000000000000000000000000000000000000000)
+
+      switch code
+      // addRuleType1
+      case 0x83a4481300000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+      // addRuleType2
+      case 0xca8decda00000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+      // addRuleType3
+      case 0x46b78ee200000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+      // addRuleType4
+      case 0xc9e5d09600000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+    }
+
+    return IFundRuleRegistry(fundRegistry.getRuleRegistryAddress()).isMeetingStarted(meetingId);
   }
 
   function depositErc20Reward(uint256 _proposalId, uint256 _amount) external {

@@ -37,6 +37,7 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundProposalManager, true);
+    _fundACL.setRole(_fundRuleRegistry.ROLE_MEETING_SETTINGS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundRuleRegistry.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundRuleRegistry.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FEE_MANAGER(), _fundProposalManager, true);
@@ -80,6 +81,7 @@ library PrivateFundFactoryLib {
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_INCREMENT_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_FINE_MEMBER_DECREMENT_MANAGER(), _fundMultiSig, true);
     _fundACL.setRole(_fundStorage.ROLE_CHANGE_NAME_AND_DESCRIPTION_MANAGER(), _fundMultiSig, true);
+    _fundACL.setRole(_fundRuleRegistry.ROLE_MEETING_SETTINGS_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundRuleRegistry.ROLE_ADD_FUND_RULE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundRuleRegistry.ROLE_DEACTIVATE_FUND_RULE_MANAGER(), _fundProposalManager, true);
     _fundACL.setRole(_fundStorage.ROLE_FEE_MANAGER(), _fundMultiSig, true);

@@ -73,6 +73,7 @@ describe('MultiSig Withdrawal Limits', () => {
     await this.daiToken.mint(this.fundMultiSigX.address, ether(10000000), { from: coreTeam });
 
     let txData = this.galtToken.contract.methods.transfer(dan, ether(1000)).encodeABI();
+    console.log('txData', txData);
     let res = await this.fundMultiSigX.submitTransaction(this.galtToken.address, '0', txData, { from: bob });
     let txId = res.logs[0].args.transactionId.toString(10);
     await this.fundMultiSigX.confirmTransaction(txId, { from: charlie });

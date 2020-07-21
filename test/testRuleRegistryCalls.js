@@ -134,13 +134,25 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'blah');
   });
 
-  it('meetings should working correctly', async function() {
+  it.only('meetings should working correctly', async function() {
+    await assertRevert(
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: bob }),
+      'startOn must be greater then current timestamp'
+    );
+    const currentTimestamp = Math.round(new Date().getTime() / 1000);
+    const meetingNoticePeriod = 864000;
+    const meetingMinDuration = 432000;
+
+    await assertRevert(
+      this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + 100, 1, { from: bob }),
+      'duration must be grater or equal meetingMinDuration'
+    );
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: charlie }),
       'Not member or multiSig owner'
     );
 
-    let res = await this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: bob });
+    let res = await this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + meetingNoticePeriod + 100, currentTimestamp + meetingNoticePeriod + meetingMinDuration + 200, { from: bob });
     const meetingId = res.logs[0].args.id.toString(10);
     assert.equal(meetingId, '1');
 
@@ -151,6 +163,8 @@ describe('FundRuleRegistry Calls', () => {
     const calldata = this.fundRuleRegistryX.contract.methods
       .addRuleType4(meetingId, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
+
+    console.log('canBeProposedToMeeting', await this.fundProposalManagerX.canBeProposedToMeeting(calldata));
 
     res = await this.fundProposalManagerX.propose(
       this.fundRuleRegistryX.address,

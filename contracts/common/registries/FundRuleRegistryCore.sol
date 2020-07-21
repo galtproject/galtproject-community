@@ -40,6 +40,9 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
   // ID => meetingDetails
   mapping(uint256 => Meeting) public meetings;
 
+  uint256 public meetingNoticePeriod = 864000;
+  uint256 public meetingMinDuration = 432000;
+
   modifier onlyRole(bytes32 _role) {
     require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
 
@@ -82,5 +85,13 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
 
   function getMeetingsCount() external view returns (uint256) {
     return _meetings.length;
+  }
+
+  function isMeetingStarted(uint256 _meetingId) external view returns (bool) {
+    return meetings[_meetingId].active && block.timestamp > meetings[_meetingId].startOn;
+  }
+
+  function isMeetingEnded(uint256 _meetingId) external view returns (bool) {
+    return meetings[_meetingId].active && block.timestamp > meetings[_meetingId].endOn;
   }
 }

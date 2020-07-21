@@ -10,11 +10,15 @@
 pragma solidity ^0.5.13;
 
 import "./FundRuleRegistryCore.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 contract FundRuleRegistryV1 is FundRuleRegistryCore {
-  uint256 public constant VERSION = 1;
+  using SafeMath for uint256;
 
+  uint256 public constant VERSION = 2;
+
+  bytes32 public constant ROLE_MEETING_SETTINGS_MANAGER = bytes32("MEETING_SETTINGS_MANAGER");
   bytes32 public constant ROLE_ADD_FUND_RULE_MANAGER = bytes32("ADD_FUND_RULE_MANAGER");
   bytes32 public constant ROLE_DEACTIVATE_FUND_RULE_MANAGER = bytes32("DEACTIVATE_FUND_RULE_MANAGER");
   bytes32 public constant ADD_MEETING_FEE_KEY = bytes32("ADD_MEETING");
@@ -25,11 +29,22 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
 
   // EXTERNAL INTERFACE
 
+  function setMeetingNoticePeriod(uint256 _period) external onlyRole(ROLE_MEETING_SETTINGS_MANAGER) {
+    meetingNoticePeriod = _period;
+  }
+
+  function setMeetingMinDuration(uint256 _duration) external onlyRole(ROLE_MEETING_SETTINGS_MANAGER) {
+    meetingMinDuration = _duration;
+  }
+
   function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn)
     external
     payable
     onlyMemberOrMultiSigOwner
   {
+    require(_startOn > block.timestamp, "startOn must be greater then current timestamp");
+    require(_endOn > _startOn && _endOn.sub(_startOn) >= meetingMinDuration, "duration must be grater or equal meetingMinDuration");
+
     _acceptPayment(ADD_MEETING_FEE_KEY);
     uint256 _id = _meetings.length + 1;
 
@@ -62,6 +77,8 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     _acceptPayment(EDIT_MEETING_FEE_KEY);
     Meeting storage meeting = meetings[_id];
 
+    require(meeting.startOn - meetingNoticePeriod > block.timestamp, "endOn should be greater then startOn");
+    require(_endOn > _startOn && _endOn.sub(_startOn) >= meetingMinDuration, "duration must be grater or equal meetingMinDuration");
     require(meetings[_id].creator == msg.sender, "Not meeting creator");
 
     meeting.active = _active;
@@ -109,6 +126,8 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   function _addRule(uint256 _meetingId, bytes32 _ipfsHash, uint256 _typeId, string memory _dataLink) internal {
     if (_meetingId > 0) {
       require(meetings[_meetingId].active, "Meeting not active");
+
+      require(block.timestamp > meetings[_meetingId].endOn, "Must be executed after meeting end");
     }
     fundRuleCounter.increment();
     uint256 _id = fundRuleCounter.current();
