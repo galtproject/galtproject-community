@@ -9,7 +9,6 @@ const PPACL = contract.fromArtifact('PPACL');
 const PrivateFundFactory = contract.fromArtifact('PrivateFundFactory');
 const EthFeeRegistry = contract.fromArtifact('EthFeeRegistry');
 const OwnedUpgradeabilityProxy = contract.fromArtifact('OwnedUpgradeabilityProxy');
-
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
