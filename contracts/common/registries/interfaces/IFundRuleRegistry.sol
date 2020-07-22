@@ -45,6 +45,8 @@ interface IFundRuleRegistry {
   function getMeetings() external view returns (uint256[] memory);
   function getMeetingsCount() external view returns (uint256);
 
+  function isMeetingActive(uint256 _meetingId) external view returns (bool);
+
   function isMeetingStarted(uint256 _meetingId) external view returns (bool);
 
   function isMeetingEnded(uint256 _meetingId) external view returns (bool);

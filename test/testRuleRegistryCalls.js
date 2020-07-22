@@ -16,7 +16,7 @@ PPLocker.numberFormat = 'String';
 const { BN, hexToAscii } = require('web3-utils');
 
 const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
-const { ether, initHelperWeb3, getDestinationMarker, assertRevert, zeroAddress, evmIncreaseTime, lastBlockTimestamp } = require('./helpers');
+const { ether, initHelperWeb3, getDestinationMarker, assertRevert, zeroAddress, increaseTime, lastBlockTimestamp } = require('./helpers');
 
 initHelperWeb3(web3);
 
@@ -160,11 +160,11 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.active, true);
     assert.equal(res.dataLink, 'meetingLink');
 
-    const calldata = this.fundRuleRegistryX.contract.methods
+    let calldata = this.fundRuleRegistryX.contract.methods
       .addRuleType4(meetingId, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
 
-    console.log('canBeProposedToMeeting', await this.fundProposalManagerX.canBeProposedToMeeting(calldata));
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), true);
 
     res = await this.fundProposalManagerX.propose(
       this.fundRuleRegistryX.address,
@@ -185,9 +185,37 @@ describe('FundRuleRegistry Calls', () => {
     res = await this.fundProposalManagerX.proposals(proposalId);
     assert.equal(res.status, ProposalStatus.ACTIVE);
 
-    await evmIncreaseTime(meetingNoticePeriod + meetingMinDuration + 201);
+    await increaseTime(meetingNoticePeriod);
+
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), true);
+
+    await increaseTime(meetingMinDuration);
+
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), false);
+
+    await increaseTime(201);
 
     await this.fundProposalManagerX.executeProposal(proposalId, '0', { from: bob });
+
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), false);
+
+    calldata = this.fundRuleRegistryX.contract.methods
+      .addRuleType4(meetingId, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
+      .encodeABI();
+
+    await assertRevert(this.fundProposalManagerX.propose(
+      this.fundRuleRegistryX.address,
+      0,
+      true,
+      true,
+      false,
+      zeroAddress,
+      calldata,
+      'blah',
+      {
+        from: bob
+      }
+    ), "Can't be proposed to already started meeting");
 
     res = await this.fundProposalManagerX.proposals(proposalId);
     assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -265,14 +293,30 @@ describe('FundRuleRegistry Calls', () => {
     res = await this.fundRuleRegistryX.meetings(meeting2Id);
     assert.equal(res.dataLink, 'meetingLink2');
 
-    await evmIncreaseTime(meetingNoticePeriod);
+    await increaseTime(meetingNoticePeriod);
+
+    calldata = this.fundRuleRegistryX.contract.methods
+      .addRuleType4(meeting2Id, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
+      .encodeABI();
+
+    assert.equal(await lastBlockTimestamp() < startOn + 100, true);
+    assert.equal(await this.fundRuleRegistryX.isMeetingStarted(meeting2Id), false);
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), false);
 
     await assertRevert(
       this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', startOn + 100, endOn + 100, false, { from: multisigOwner1 }),
       'edit not available for reached notice period meetings'
     );
 
-    await evmIncreaseTime(meetingMinDuration + 300);
+    await increaseTime(meetingMinDuration + 300);
+
+    await this.ppFeeRegistry.setEthFeeKeysAndValues(
+      [await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
+      [ether(0.001)],
+      { from: feeManager }
+    );
+
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), false);
 
     await assertRevert(
       this.fundRuleRegistryX.editMeeting(meeting2Id, 'meetingLink2', startOn + 100, endOn + 100, false, { from: multisigOwner1 }),

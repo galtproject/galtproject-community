@@ -87,7 +87,10 @@ contract FundProposalManager is PPAbstractProposalManager {
     payable
     returns (uint256)
   {
+    require(canBeProposedToMeeting(_data), "Can't be proposed to already started meeting");
+
     uint256 id = _propose(_destination, _value, _castVote, _executesIfDecided, _isCommitReveal, _data, _dataLink);
+
     if (_erc20RewardsContract != address(0)) {
       rewardContracts[id] = _erc20RewardsContract;
     }
@@ -119,8 +122,15 @@ contract FundProposalManager is PPAbstractProposalManager {
         meetingId := mload(add(_data, 0x24))
       }
     }
+    if (meetingId == 0) {
+      return true;
+    }
+    IFundRuleRegistry ruleRegistry = IFundRuleRegistry(fundRegistry.getRuleRegistryAddress());
+    if (!ruleRegistry.isMeetingActive(meetingId)) {
+      return false;
+    }
 
-    return IFundRuleRegistry(fundRegistry.getRuleRegistryAddress()).isMeetingStarted(meetingId);
+    return !ruleRegistry.isMeetingStarted(meetingId);
   }
 
   function depositErc20Reward(uint256 _proposalId, uint256 _amount) external {

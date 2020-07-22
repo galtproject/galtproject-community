@@ -87,11 +87,15 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
     return _meetings.length;
   }
 
+  function isMeetingActive(uint256 _meetingId) external view returns (bool) {
+    return meetings[_meetingId].active;
+  }
+
   function isMeetingStarted(uint256 _meetingId) external view returns (bool) {
-    return meetings[_meetingId].active && block.timestamp > meetings[_meetingId].startOn;
+    return block.timestamp > meetings[_meetingId].startOn;
   }
 
   function isMeetingEnded(uint256 _meetingId) external view returns (bool) {
-    return meetings[_meetingId].active && block.timestamp > meetings[_meetingId].endOn;
+    return block.timestamp > meetings[_meetingId].endOn;
   }
 }
