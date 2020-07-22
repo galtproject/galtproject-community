@@ -150,9 +150,16 @@ describe('FundRuleRegistry Calls', () => {
     const meetingNoticePeriod = 864000;
     const meetingMinDuration = 432000;
 
+    assert.equal(await this.fundRuleRegistryX.meetingNoticePeriod(), meetingNoticePeriod);
+    assert.equal(await this.fundRuleRegistryX.meetingMinDuration(), meetingMinDuration);
+
     await assertRevert(
-      this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + 100, 1, { from: bob }),
+      this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + meetingNoticePeriod + 100, 1, { from: bob }),
       'duration must be grater or equal meetingMinDuration'
+    );
+    await assertRevert(
+      this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + 100, currentTimestamp + meetingMinDuration + 100, { from: bob }),
+      'startOn can\'t be sooner then meetingNoticePeriod'
     );
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: charlie }),

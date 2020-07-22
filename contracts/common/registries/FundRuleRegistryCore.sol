@@ -40,8 +40,8 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
   // ID => meetingDetails
   mapping(uint256 => Meeting) public meetings;
 
-  uint256 public meetingNoticePeriod = 864000;
-  uint256 public meetingMinDuration = 432000;
+  uint256 public meetingNoticePeriod;
+  uint256 public meetingMinDuration;
 
   modifier onlyRole(bytes32 _role) {
     require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
@@ -63,6 +63,8 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
 
   function initialize(address _fundRegistry) external isInitializer {
     fundRegistry = IFundRegistry(_fundRegistry);
+    meetingNoticePeriod = 864000;
+    meetingMinDuration = 432000;
   }
 
   function feeRegistry() public view returns(address) {
