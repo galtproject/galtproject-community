@@ -40,6 +40,7 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
   // ID => meetingDetails
   mapping(uint256 => Meeting) public meetings;
 
+  uint256 public meetingProposalCreationPeriod;
   uint256 public meetingNoticePeriod;
   uint256 public meetingMinDuration;
 
@@ -65,6 +66,7 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
     fundRegistry = IFundRegistry(_fundRegistry);
     meetingNoticePeriod = 864000;
     meetingMinDuration = 432000;
+    meetingProposalCreationPeriod = 86400;
   }
 
   function feeRegistry() public view returns(address) {
@@ -91,6 +93,12 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
 
   function isMeetingActive(uint256 _meetingId) external view returns (bool) {
     return meetings[_meetingId].active;
+  }
+
+  function isMeetingAvailableToCreateProposal(uint256 _meetingId) external view returns (bool) {
+    return
+      block.timestamp < meetings[_meetingId].startOn &&
+      block.timestamp >= meetings[_meetingId].startOn - meetingProposalCreationPeriod;
   }
 
   function isMeetingStarted(uint256 _meetingId) external view returns (bool) {

@@ -149,17 +149,24 @@ describe('FundRuleRegistry Calls', () => {
     let currentTimestamp = await lastBlockTimestamp();
     const meetingNoticePeriod = 864000;
     const meetingMinDuration = 432000;
+    const meetingProposalCreationPeriod = 86400;
 
     assert.equal(await this.fundRuleRegistryX.meetingNoticePeriod(), meetingNoticePeriod);
     assert.equal(await this.fundRuleRegistryX.meetingMinDuration(), meetingMinDuration);
+    assert.equal(await this.fundRuleRegistryX.meetingProposalCreationPeriod(), meetingProposalCreationPeriod);
 
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + meetingNoticePeriod + 100, 1, { from: bob }),
       'duration must be grater or equal meetingMinDuration'
     );
     await assertRevert(
-      this.fundRuleRegistryX.addMeeting('meetingLink', currentTimestamp + 100, currentTimestamp + meetingMinDuration + 100, { from: bob }),
-      'startOn can\'t be sooner then meetingNoticePeriod'
+      this.fundRuleRegistryX.addMeeting(
+        'meetingLink',
+        currentTimestamp + 100,
+        currentTimestamp + meetingMinDuration + 100,
+        { from: bob }
+      ),
+      "startOn can't be sooner then meetingNoticePeriod"
     );
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, { from: charlie }),
@@ -183,6 +190,31 @@ describe('FundRuleRegistry Calls', () => {
       .addRuleType4(meetingId, '0x000000000000000000000000000000000000000000000000000000000000002a', 'blah')
       .encodeABI();
 
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), false);
+
+    await assertRevert(
+      this.fundProposalManagerX.propose(
+        this.fundRuleRegistryX.address,
+        0,
+        true,
+        true,
+        false,
+        zeroAddress,
+        calldata,
+        'blah',
+        {
+          from: bob
+        }
+      ),
+      'Meeting currently not available to create proposals'
+    );
+
+    await increaseTime(meetingNoticePeriod - meetingProposalCreationPeriod + 101);
+
+    res = await this.fundRuleRegistryX.meetings(meetingId);
+    const meetingStartOn = parseInt(res.startOn.toString(10), 10);
+    const timestamp = await lastBlockTimestamp();
+    assert.equal(timestamp > meetingStartOn - meetingProposalCreationPeriod, true);
     assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), true);
 
     res = await this.fundProposalManagerX.propose(
@@ -204,9 +236,9 @@ describe('FundRuleRegistry Calls', () => {
     res = await this.fundProposalManagerX.proposals(proposalId);
     assert.equal(res.status, ProposalStatus.ACTIVE);
 
-    await increaseTime(meetingNoticePeriod);
+    await increaseTime(meetingProposalCreationPeriod);
 
-    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), true);
+    assert.equal(await this.fundProposalManagerX.canBeProposedToMeeting(calldata), false);
 
     await increaseTime(meetingMinDuration);
 
@@ -236,7 +268,7 @@ describe('FundRuleRegistry Calls', () => {
           from: bob
         }
       ),
-      "Can't be proposed to already started meeting"
+      'Meeting currently not available to create proposals'
     );
 
     res = await this.fundProposalManagerX.proposals(proposalId);

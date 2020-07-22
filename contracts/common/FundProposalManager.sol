@@ -87,7 +87,7 @@ contract FundProposalManager is PPAbstractProposalManager {
     payable
     returns (uint256)
   {
-    require(canBeProposedToMeeting(_data), "Can't be proposed to already started meeting");
+    require(canBeProposedToMeeting(_data), "Meeting currently not available to create proposals");
 
     uint256 id = _propose(_destination, _value, _castVote, _executesIfDecided, _isCommitReveal, _data, _dataLink);
 
@@ -130,7 +130,7 @@ contract FundProposalManager is PPAbstractProposalManager {
       return false;
     }
 
-    return !ruleRegistry.isMeetingStarted(meetingId);
+    return ruleRegistry.isMeetingAvailableToCreateProposal(meetingId);
   }
 
   function depositErc20Reward(uint256 _proposalId, uint256 _amount) external {

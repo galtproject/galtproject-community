@@ -50,4 +50,6 @@ interface IFundRuleRegistry {
   function isMeetingStarted(uint256 _meetingId) external view returns (bool);
 
   function isMeetingEnded(uint256 _meetingId) external view returns (bool);
+
+  function isMeetingAvailableToCreateProposal(uint256 _meetingId) external view returns (bool);
 }
