@@ -8,9 +8,11 @@
  */
 
 pragma solidity ^0.5.13;
+//pragma experimental ABIEncoderV2;
 
 import "./FundRuleRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../interfaces/IFundProposalManager.sol";
 
 
 contract FundRuleRegistryV1 is FundRuleRegistryCore {
@@ -30,24 +32,26 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   // EXTERNAL INTERFACE
 
   function setMeetingSettings(
-    uint256 _meetingProposalCreationPeriod,
-    uint256 _meetingNoticePeriod,
-    uint256 _meetingMinDuration
+    uint256 _meetingNoticePeriod
   )
     external
     onlyRole(ROLE_MEETING_SETTINGS_MANAGER)
   {
-    meetingProposalCreationPeriod = _meetingProposalCreationPeriod;
     meetingNoticePeriod = _meetingNoticePeriod;
-    meetingMinDuration = _meetingMinDuration;
   }
 
-  function addMeeting(string calldata _dataLink, uint256 _startOn, uint256 _endOn)
+  function addMeeting(
+    string calldata _dataLink,
+    uint256 _startOn,
+    uint256 _endOn,
+    bool _isCommitReveal,
+    address _erc20RewardsContract
+  )
     external
     payable
     onlyMemberOrMultiSigOwner
   {
-    _checkMeetingDates(_startOn, _endOn);
+    require(_startOn > block.timestamp + meetingNoticePeriod, "startOn can't be sooner then meetingNoticePeriod");
 
     _acceptPayment(ADD_MEETING_FEE_KEY);
     uint256 _id = _meetings.length + 1;
@@ -61,10 +65,88 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     meeting.createdAt = block.timestamp;
     meeting.startOn = _startOn;
     meeting.endOn = _endOn;
+    meeting.isCommitReveal = _isCommitReveal;
+    meeting.erc20RewardsContract = _erc20RewardsContract;
 
     _meetings.push(_id);
 
     emit AddMeeting(_id, _dataLink, _startOn, _endOn);
+  }
+
+  function addProposalsData(
+    uint256 _meetingId,
+    uint256 _index,
+    bytes memory _proposalData1,
+    bytes memory _proposalData2,
+    bytes memory _proposalData3,
+    bytes memory _proposalData4,
+    bytes memory _proposalData5,
+    bytes memory _proposalData6
+  )
+    public
+    onlyMemberOrMultiSigOwner
+  {
+    require(_proposalData1.length > 1, "Proposal data 1 can't be null");
+    require(meetings[_meetingId].creator == msg.sender, "Not meeting creator");
+    require(meetings[_meetingId].active, "Meeting not active");
+    require(block.timestamp < meetings[_meetingId].startOn, "Meeting already started");
+
+    _pushMeetingProposalData(_index, _meetingId, _proposalData1);
+
+    if (_proposalData2.length > 1) {
+      _pushMeetingProposalData(_index + 1, _meetingId, _proposalData2);
+    }
+    if (_proposalData3.length > 1) {
+      _pushMeetingProposalData(_index + 2, _meetingId, _proposalData3);
+    }
+    if (_proposalData4.length > 1) {
+      _pushMeetingProposalData(_index + 3, _meetingId, _proposalData4);
+    }
+    if (_proposalData5.length > 1) {
+      _pushMeetingProposalData(_index + 4, _meetingId, _proposalData5);
+    }
+    if (_proposalData6.length > 1) {
+      _pushMeetingProposalData(_index + 5, _meetingId, _proposalData6);
+    }
+  }
+
+  function _pushMeetingProposalData(uint256 _index, uint256 _meetingId, bytes memory _data) internal {
+    require(meetingsProposalsData[_meetingId].length >= _index, "Index too big");
+    meetingsProposalsData[_meetingId].push(_data);
+    meetingsProposalsDataLink[_meetingId].push(_getDataLink(_data));
+  }
+
+  function _getDataLink(bytes memory _data) internal view returns(string memory) {
+    bytes memory _slicedData = new bytes(_data.length - 4);
+    uint256 len = _data.length;
+    for (uint i = 0; i < len - 4; i++) {
+      _slicedData[i] = _data[i + 4];
+    }
+    (, , string memory dataLink) = abi.decode(_slicedData, (uint256, bytes32, string));
+    return dataLink;
+  }
+
+  function createProposals(uint256 _meetingId, uint256 _countToCreate) external onlyMemberOrMultiSigOwner {
+    require(meetings[_meetingId].active, "Meeting not active");
+    require(block.timestamp >= meetings[_meetingId].startOn, "Proposals creation currently not available");
+
+    IFundProposalManager proposalManager = IFundProposalManager(fundRegistry.getProposalManagerAddress());
+
+    require(_countToCreate > 0, "countToCreate can't be 0");
+    require(meetingsProposalsData[_meetingId].length - meetings[_meetingId].createdProposalsCount >= _countToCreate, "Proposals overflow");
+    for (uint256 i = meetings[_meetingId].createdProposalsCount; i < meetings[_meetingId].createdProposalsCount + _countToCreate; i++) {
+      proposalManager.propose(
+        address(this),
+        0,
+        false,
+        false,
+        meetings[_meetingId].isCommitReveal,
+        meetings[_meetingId].erc20RewardsContract,
+        meetingsProposalsData[_meetingId][i],
+        meetingsProposalsDataLink[_meetingId][i]
+      );
+    }
+    meetings[_meetingId].createdProposalsCount = meetings[_meetingId].createdProposalsCount.add(_countToCreate);
   }
 
   function editMeeting(
@@ -72,6 +154,8 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     string calldata _dataLink,
     uint256 _startOn,
     uint256 _endOn,
+    bool _isCommitReveal,
+    address _erc20RewardsContract,
     bool _active
   )
     external
@@ -82,14 +166,16 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     Meeting storage meeting = meetings[_id];
 
     require(meeting.startOn - meetingNoticePeriod > block.timestamp, "edit not available for reached notice period meetings");
+    require(_startOn > block.timestamp + meetingNoticePeriod, "startOn can't be sooner then meetingNoticePeriod");
 
-    _checkMeetingDates(_startOn, _endOn);
     require(meetings[_id].creator == msg.sender, "Not meeting creator");
 
     meeting.active = _active;
     meeting.dataLink = _dataLink;
     meeting.startOn = _startOn;
     meeting.endOn = _endOn;
+    meeting.isCommitReveal = _isCommitReveal;
+    meeting.erc20RewardsContract = _erc20RewardsContract;
 
     emit EditMeeting(_id, _dataLink, _startOn, _endOn, _active);
   }
@@ -127,17 +213,12 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   }
 
   // INTERNAL HELPERS
-
-  function _checkMeetingDates(uint256 _startOn, uint256 _endOn) internal {
-    require(_startOn > block.timestamp + meetingNoticePeriod, "startOn can't be sooner then meetingNoticePeriod");
-    require(_endOn > _startOn && _endOn.sub(_startOn) >= meetingMinDuration, "duration must be grater or equal meetingMinDuration");
-  }
-
   function _addRule(uint256 _meetingId, bytes32 _ipfsHash, uint256 _typeId, string memory _dataLink) internal {
     if (_meetingId > 0) {
       require(meetings[_meetingId].active, "Meeting not active");
 
-      require(block.timestamp > meetings[_meetingId].endOn, "Must be executed after meeting end");
+      //TODO: is it needed?
+      require(block.timestamp > meetings[_meetingId].startOn, "Must be executed after meeting start");
     }
     fundRuleCounter.increment();
     uint256 _id = fundRuleCounter.current();

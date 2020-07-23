@@ -25,6 +25,9 @@ interface IFundRuleRegistry {
     uint256 createdAt;
     uint256 startOn;
     uint256 endOn;
+    bool isCommitReveal;
+    address erc20RewardsContract;
+    uint256 createdProposalsCount;
   }
 
   struct FundRule {
@@ -50,6 +53,4 @@ interface IFundRuleRegistry {
   function isMeetingStarted(uint256 _meetingId) external view returns (bool);
 
   function isMeetingEnded(uint256 _meetingId) external view returns (bool);
-
-  function isMeetingAvailableToCreateProposal(uint256 _meetingId) external view returns (bool);
 }
