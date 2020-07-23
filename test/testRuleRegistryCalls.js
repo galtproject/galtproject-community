@@ -1,5 +1,5 @@
-const {accounts, defaultSender, contract, web3} = require('@openzeppelin/test-environment');
-const {assert} = require('chai');
+const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
+const { assert } = require('chai');
 
 const PPToken = contract.fromArtifact('PPToken');
 const GaltToken = contract.fromArtifact('GaltToken');
@@ -12,9 +12,9 @@ const OwnedUpgradeabilityProxy = contract.fromArtifact('OwnedUpgradeabilityProxy
 PPToken.numberFormat = 'String';
 PPLocker.numberFormat = 'String';
 
-const {BN} = require('web3-utils');
+const { BN } = require('web3-utils');
 
-const {deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig} = require('./deploymentHelpers');
+const { deployFundFactory, buildPrivateFund, VotingConfig, CustomVotingConfig } = require('./deploymentHelpers');
 const {
   ether,
   initHelperWeb3,
@@ -34,11 +34,22 @@ const ProposalStatus = {
 };
 
 describe.only('FundRuleRegistry Calls', () => {
-  const [alice, bob, charlie, multisigOwner1, multisigOwner2, fakeRegistry, feeManager, feeReceiver, anyone, serviceCompany] = accounts;
+  const [
+    alice,
+    bob,
+    charlie,
+    multisigOwner1,
+    multisigOwner2,
+    fakeRegistry,
+    feeManager,
+    feeReceiver,
+    anyone,
+    serviceCompany
+  ] = accounts;
   const coreTeam = defaultSender;
 
-  before(async function () {
-    this.galtToken = await GaltToken.new({from: coreTeam});
+  before(async function() {
+    this.galtToken = await GaltToken.new({ from: coreTeam });
 
     this.ppgr = await PPGlobalRegistry.new();
     this.acl = await PPACL.new();
@@ -53,7 +64,7 @@ describe.only('FundRuleRegistry Calls', () => {
 
     await this.ppgr.setContract(await this.ppgr.PPGR_GALT_TOKEN(), this.galtToken.address);
     await this.ppgr.setContract(await this.ppgr.PPGR_FEE_REGISTRY(), this.ppFeeRegistry.address);
-    await this.galtToken.mint(alice, ether(10000000), {from: coreTeam});
+    await this.galtToken.mint(alice, ether(10000000), { from: coreTeam });
 
     // fund factory contracts
     this.fundFactory = await deployFundFactory(
@@ -64,12 +75,12 @@ describe.only('FundRuleRegistry Calls', () => {
       ether(10),
       ether(20)
     );
-    await this.fundFactory.setFeeManager(coreTeam, {from: alice});
+    await this.fundFactory.setFeeManager(coreTeam, { from: alice });
   });
 
-  beforeEach(async function () {
+  beforeEach(async function() {
     // build fund
-    await this.galtToken.approve(this.fundFactory.address, ether(100), {from: alice});
+    await this.galtToken.approve(this.fundFactory.address, ether(100), { from: alice });
     const fund = await buildPrivateFund(
       this.fundFactory,
       alice,
@@ -98,15 +109,15 @@ describe.only('FundRuleRegistry Calls', () => {
     });
   });
 
-  afterEach(async function () {
+  afterEach(async function() {
     await this.ppFeeRegistry.setEthFeeKeysAndValues(
       [await this.fundRuleRegistryX.ADD_MEETING_FEE_KEY(), await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
       ['0', '0'],
-      {from: feeManager}
+      { from: feeManager }
     );
   });
 
-  it('should handle addRuleType4 s100%/q100% correctly', async function () {
+  it('should handle addRuleType4 s100%/q100% correctly', async function() {
     const addRuleType4Marker = await this.fundProposalManagerX.customVotingConfigs(
       getDestinationMarker(this.fundRuleRegistryX, 'addRuleType4')
     );
@@ -149,9 +160,9 @@ describe.only('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'blah');
   });
 
-  it('meetings should working correctly', async function () {
+  it('meetings should working correctly', async function() {
     await assertRevert(
-      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, {from: bob}),
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, { from: bob }),
       'startOn must be greater then current timestamp'
     );
     let currentTimestamp = await lastBlockTimestamp();
@@ -166,12 +177,12 @@ describe.only('FundRuleRegistry Calls', () => {
         currentTimestamp + meetingDuration + 100,
         false,
         zeroAddress,
-        {from: bob}
+        { from: bob }
       ),
       "startOn can't be sooner then meetingNoticePeriod"
     );
     await assertRevert(
-      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, {from: charlie}),
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, { from: charlie }),
       'Not member or multiSig owner'
     );
 
@@ -181,7 +192,7 @@ describe.only('FundRuleRegistry Calls', () => {
       currentTimestamp + meetingNoticePeriod + meetingDuration + 200,
       false,
       zeroAddress,
-      {from: bob}
+      { from: bob }
     );
     const meetingId = res.logs[0].args.id.toString(10);
     assert.equal(meetingId, '1');
@@ -206,20 +217,16 @@ describe.only('FundRuleRegistry Calls', () => {
         meetingId,
         '0',
         this.fundRuleRegistryX.contract.methods
-          .addRuleType4(
-            '2',
-            '0x476b55a32bf26c82001e57317c5a00351c5c764bc0967bb501ecbab39b516b06',
-            mockDataLink + '1'
-          )
+          .addRuleType4('2', '0x476b55a32bf26c82001e57317c5a00351c5c764bc0967bb501ecbab39b516b06', `${mockDataLink}1`)
           .encodeABI(),
         getMockCalldata('2'),
         getMockCalldata('3'),
         getMockCalldata('4'),
         getMockCalldata('5'),
         getMockCalldata('6'),
-        {from: bob}
+        { from: bob }
       ),
-      "Meeting id does not match"
+      'Meeting id does not match'
     );
 
     await this.fundRuleRegistryX.addMeetingProposalsData(
@@ -231,7 +238,7 @@ describe.only('FundRuleRegistry Calls', () => {
       getMockCalldata('4'),
       getMockCalldata('5'),
       getMockCalldata('6'),
-      {from: bob}
+      { from: bob }
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 6);
 
@@ -244,7 +251,7 @@ describe.only('FundRuleRegistry Calls', () => {
       getMockCalldata('a'),
       getMockCalldata('b'),
       getMockCalldata('c'),
-      {from: bob}
+      { from: bob }
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 12);
 
@@ -257,7 +264,7 @@ describe.only('FundRuleRegistry Calls', () => {
       getMockCalldata('g'),
       getMockCalldata('h'),
       getMockCalldata('j'),
-      {from: bob}
+      { from: bob }
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 18);
 
@@ -271,7 +278,7 @@ describe.only('FundRuleRegistry Calls', () => {
         getMockCalldata('n'),
         getMockCalldata('o'),
         '0x0',
-        {from: bob}
+        { from: bob }
       ),
       'Index too big'
     );
@@ -286,7 +293,7 @@ describe.only('FundRuleRegistry Calls', () => {
         getMockCalldata('n'),
         getMockCalldata('o'),
         '0x0',
-        {from: multisigOwner1}
+        { from: multisigOwner1 }
       ),
       'Not meeting creator'
     );
@@ -300,7 +307,7 @@ describe.only('FundRuleRegistry Calls', () => {
       getMockCalldata('n'),
       getMockCalldata('o'),
       '0x0',
-      {from: bob}
+      { from: bob }
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 23);
 
@@ -308,7 +315,7 @@ describe.only('FundRuleRegistry Calls', () => {
     assert.equal(res.createdProposalsCount, 0);
 
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', {from: multisigOwner1}),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: multisigOwner1 }),
       'Proposals creation currently not available'
     );
 
@@ -324,7 +331,7 @@ describe.only('FundRuleRegistry Calls', () => {
         getMockCalldata('n'),
         getMockCalldata('o'),
         '0x0',
-        {from: bob}
+        { from: bob }
       ),
       'Meeting already started'
     );
@@ -332,30 +339,30 @@ describe.only('FundRuleRegistry Calls', () => {
     assert.equal(await this.fundProposalManagerX.getProposalsCount(), 0);
 
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', {from: anyone}),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: anyone }),
       'Not member or multiSig owner'
     );
 
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', {from: multisigOwner1});
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: multisigOwner1 });
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '4', {from: multisigOwner1}),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '4', { from: multisigOwner1 }),
       'Proposals overflow'
     );
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 20);
 
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '3', {from: multisigOwner1});
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '3', { from: multisigOwner1 });
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 23);
 
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '1', {from: multisigOwner1}),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '1', { from: multisigOwner1 }),
       'Proposals overflow'
     );
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '0', {from: multisigOwner1}),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '0', { from: multisigOwner1 }),
       "countToCreate can't be 0"
     );
 
@@ -373,7 +380,7 @@ describe.only('FundRuleRegistry Calls', () => {
     const proposal23 = await this.fundProposalManagerX.proposals('23');
     assert.equal(proposal23.dataLink, `${mockDataLink}o`);
 
-    await this.fundProposalManagerX.aye('1', true, {from: bob});
+    await this.fundProposalManagerX.aye('1', true, { from: bob });
 
     res = await this.fundProposalManagerX.proposals('1');
     assert.equal(res.status, ProposalStatus.EXECUTED);
@@ -387,11 +394,11 @@ describe.only('FundRuleRegistry Calls', () => {
     await this.ppFeeRegistry.setEthFeeKeysAndValues(
       [await this.fundRuleRegistryX.ADD_MEETING_FEE_KEY()],
       [ether(0.002)],
-      {from: feeManager}
+      { from: feeManager }
     );
 
     await assertRevert(
-      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, {from: multisigOwner1}),
+      this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, { from: multisigOwner1 }),
       'Fee and msg.value not equal'
     );
 
@@ -427,7 +434,7 @@ describe.only('FundRuleRegistry Calls', () => {
         false,
         zeroAddress,
         false,
-        {from: bob}
+        { from: bob }
       ),
       'Not meeting creator'
     );
@@ -440,7 +447,7 @@ describe.only('FundRuleRegistry Calls', () => {
         false,
         zeroAddress,
         false,
-        {from: bob}
+        { from: bob }
       ),
       "startOn can't be sooner then meetingNoticePeriod"
     );
@@ -467,7 +474,7 @@ describe.only('FundRuleRegistry Calls', () => {
     await this.ppFeeRegistry.setEthFeeKeysAndValues(
       [await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
       [ether(0.001)],
-      {from: feeManager}
+      { from: feeManager }
     );
 
     await assertRevert(
@@ -533,7 +540,7 @@ describe.only('FundRuleRegistry Calls', () => {
     await this.ppFeeRegistry.setEthFeeKeysAndValues(
       [await this.fundRuleRegistryX.EDIT_MEETING_FEE_KEY()],
       [ether(0.001)],
-      {from: feeManager}
+      { from: feeManager }
     );
 
     await assertRevert(
@@ -553,8 +560,8 @@ describe.only('FundRuleRegistry Calls', () => {
     );
   });
 
-  it('serviceCompany should manage meetings', async function () {
-    let currentTimestamp = await lastBlockTimestamp();
+  it('serviceCompany should manage meetings', async function() {
+    const currentTimestamp = await lastBlockTimestamp();
     const meetingNoticePeriod = 864000;
     const meetingDuration = 432000;
 
@@ -565,7 +572,7 @@ describe.only('FundRuleRegistry Calls', () => {
         currentTimestamp + meetingNoticePeriod + meetingDuration + 200,
         false,
         zeroAddress,
-        {from: serviceCompany}
+        { from: serviceCompany }
       ),
       "msg.sender can't manage meeting"
     );
@@ -596,7 +603,7 @@ describe.only('FundRuleRegistry Calls', () => {
       currentTimestamp + meetingNoticePeriod + meetingDuration + 200,
       false,
       zeroAddress,
-      {from: serviceCompany}
+      { from: serviceCompany }
     );
     const meetingId = res.logs[0].args.id.toString(10);
     assert.equal(meetingId, '1');
@@ -625,7 +632,7 @@ describe.only('FundRuleRegistry Calls', () => {
       getMockCalldata('4'),
       getMockCalldata('5'),
       getMockCalldata('6'),
-      {from: serviceCompany}
+      { from: serviceCompany }
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 6);
 
@@ -636,7 +643,7 @@ describe.only('FundRuleRegistry Calls', () => {
 
     assert.equal(await this.fundProposalManagerX.getProposalsCount(), 1);
 
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '6', {from: multisigOwner1});
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '6', { from: multisigOwner1 });
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 6);
