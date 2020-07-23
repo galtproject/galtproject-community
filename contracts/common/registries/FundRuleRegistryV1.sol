@@ -49,7 +49,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   )
     external
     payable
-    onlyMemberOrMultiSigOwner
+    canManageMeeting
   {
     require(_startOn > block.timestamp + meetingNoticePeriod, "startOn can't be sooner then meetingNoticePeriod");
 
@@ -73,7 +73,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     emit AddMeeting(_id, _dataLink, _startOn, _endOn);
   }
 
-  function addProposalsData(
+  function addMeetingProposalsData(
     uint256 _meetingId,
     uint256 _index,
     bytes memory _proposalData1,
@@ -84,7 +84,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     bytes memory _proposalData6
   )
     public
-    onlyMemberOrMultiSigOwner
+    canManageMeeting
   {
     require(_proposalData1.length > 1, "Proposal data 1 can't be null");
     require(meetings[_meetingId].creator == msg.sender, "Not meeting creator");
@@ -110,23 +110,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     }
   }
 
-  function _pushMeetingProposalData(uint256 _index, uint256 _meetingId, bytes memory _data) internal {
-    require(meetingsProposalsData[_meetingId].length >= _index, "Index too big");
-    meetingsProposalsData[_meetingId].push(_data);
-    meetingsProposalsDataLink[_meetingId].push(_getDataLink(_data));
-  }
-
-  function _getDataLink(bytes memory _data) internal view returns(string memory) {
-    bytes memory _slicedData = new bytes(_data.length - 4);
-    uint256 len = _data.length;
-    for (uint i = 0; i < len - 4; i++) {
-      _slicedData[i] = _data[i + 4];
-    }
-    (, , string memory dataLink) = abi.decode(_slicedData, (uint256, bytes32, string));
-    return dataLink;
-  }
-
-  function createProposals(uint256 _meetingId, uint256 _countToCreate) external onlyMemberOrMultiSigOwner {
+  function createMeetingProposals(uint256 _meetingId, uint256 _countToCreate) external canManageMeeting {
     require(meetings[_meetingId].active, "Meeting not active");
     require(block.timestamp >= meetings[_meetingId].startOn, "Proposals creation currently not available");
 
@@ -160,7 +144,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   )
     external
     payable
-    onlyMemberOrMultiSigOwner
+    canManageMeeting
   {
     _acceptPayment(EDIT_MEETING_FEE_KEY);
     Meeting storage meeting = meetings[_id];
@@ -213,6 +197,27 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
   }
 
   // INTERNAL HELPERS
+  function _pushMeetingProposalData(uint256 _index, uint256 _meetingId, bytes memory _data) internal {
+    require(meetingsProposalsData[_meetingId].length >= _index, "Index too big");
+
+    (uint256 extractedMeetingId, string memory extractedDataLink) = _getMeetingIdAndDataLink(_data);
+
+    require(_meetingId == extractedMeetingId, "Meeting id does not match");
+
+    meetingsProposalsData[_meetingId].push(_data);
+    meetingsProposalsDataLink[_meetingId].push(extractedDataLink);
+  }
+
+  function _getMeetingIdAndDataLink(bytes memory _data) internal view returns(uint256, string memory) {
+    bytes memory _slicedData = new bytes(_data.length - 4);
+    uint256 len = _data.length;
+    for (uint i = 0; i < len - 4; i++) {
+      _slicedData[i] = _data[i + 4];
+    }
+    (uint256 meetingId, , string memory dataLink) = abi.decode(_slicedData, (uint256, bytes32, string));
+    return (meetingId, dataLink);
+  }
+
   function _addRule(uint256 _meetingId, bytes32 _ipfsHash, uint256 _typeId, string memory _dataLink) internal {
     if (_meetingId > 0) {
       require(meetings[_meetingId].active, "Meeting not active");

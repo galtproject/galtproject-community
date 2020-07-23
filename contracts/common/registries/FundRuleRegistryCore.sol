@@ -50,7 +50,7 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
     _;
   }
 
-  modifier onlyMemberOrMultiSigOwner() {
+  modifier canManageMeeting() {
     require(
       IFundStorage(fundRegistry.getStorageAddress()).isFundMemberOrMultiSigOwner(msg.sender),
       "Not member or multiSig owner"

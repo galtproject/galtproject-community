@@ -193,7 +193,28 @@ describe('FundRuleRegistry Calls', () => {
         .encodeABI();
     };
 
-    await this.fundRuleRegistryX.addProposalsData(
+    await assertRevert(
+      this.fundRuleRegistryX.addMeetingProposalsData(
+        meetingId,
+        '0',
+        this.fundRuleRegistryX.contract.methods
+          .addRuleType4(
+            '2',
+            '0x476b55a32bf26c82001e57317c5a00351c5c764bc0967bb501ecbab39b516b06',
+            mockDataLink + '1'
+          )
+          .encodeABI(),
+        getMockCalldata('2'),
+        getMockCalldata('3'),
+        getMockCalldata('4'),
+        getMockCalldata('5'),
+        getMockCalldata('6'),
+        { from: bob }
+      ),
+      "Meeting id does not match"
+    );
+
+    await this.fundRuleRegistryX.addMeetingProposalsData(
       meetingId,
       '0',
       getMockCalldata('1'),
@@ -206,7 +227,7 @@ describe('FundRuleRegistry Calls', () => {
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 6);
 
-    await this.fundRuleRegistryX.addProposalsData(
+    await this.fundRuleRegistryX.addMeetingProposalsData(
       meetingId,
       '6',
       getMockCalldata('7'),
@@ -219,7 +240,7 @@ describe('FundRuleRegistry Calls', () => {
     );
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 12);
 
-    await this.fundRuleRegistryX.addProposalsData(
+    await this.fundRuleRegistryX.addMeetingProposalsData(
       meetingId,
       '12',
       getMockCalldata('d'),
@@ -233,7 +254,7 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 18);
 
     await assertRevert(
-      this.fundRuleRegistryX.addProposalsData(
+      this.fundRuleRegistryX.addMeetingProposalsData(
         meetingId,
         '18',
         getMockCalldata('k'),
@@ -248,7 +269,7 @@ describe('FundRuleRegistry Calls', () => {
     );
 
     await assertRevert(
-      this.fundRuleRegistryX.addProposalsData(
+      this.fundRuleRegistryX.addMeetingProposalsData(
         meetingId,
         '18',
         getMockCalldata('k'),
@@ -262,7 +283,7 @@ describe('FundRuleRegistry Calls', () => {
       'Not meeting creator'
     );
 
-    await this.fundRuleRegistryX.addProposalsData(
+    await this.fundRuleRegistryX.addMeetingProposalsData(
       meetingId,
       '18',
       getMockCalldata('k'),
@@ -279,14 +300,14 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.createdProposalsCount, 0);
 
     await assertRevert(
-      this.fundRuleRegistryX.createProposals(meetingId, '20', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: multisigOwner1 }),
       'Proposals creation currently not available'
     );
 
     await increaseTime(meetingNoticePeriod + 101);
 
     await assertRevert(
-      this.fundRuleRegistryX.addProposalsData(
+      this.fundRuleRegistryX.addMeetingProposalsData(
         meetingId,
         '18',
         getMockCalldata('k'),
@@ -303,30 +324,30 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(await this.fundProposalManagerX.getProposalsCount(), 0);
 
     await assertRevert(
-      this.fundRuleRegistryX.createProposals(meetingId, '20', { from: anyone }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: anyone }),
       'Not member or multiSig owner'
     );
 
-    await this.fundRuleRegistryX.createProposals(meetingId, '20', { from: multisigOwner1 });
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: multisigOwner1 });
     await assertRevert(
-      this.fundRuleRegistryX.createProposals(meetingId, '4', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '4', { from: multisigOwner1 }),
       'Proposals overflow'
     );
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 20);
 
-    await this.fundRuleRegistryX.createProposals(meetingId, '3', { from: multisigOwner1 });
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '3', { from: multisigOwner1 });
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 23);
 
     await assertRevert(
-      this.fundRuleRegistryX.createProposals(meetingId, '1', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '1', { from: multisigOwner1 }),
       'Proposals overflow'
     );
     await assertRevert(
-      this.fundRuleRegistryX.createProposals(meetingId, '0', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '0', { from: multisigOwner1 }),
       "countToCreate can't be 0"
     );
 
