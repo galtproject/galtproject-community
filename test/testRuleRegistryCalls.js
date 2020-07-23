@@ -141,7 +141,7 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.dataLink, 'blah');
   });
 
-  it.only('meetings should working correctly', async function() {
+  it('meetings should working correctly', async function() {
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, { from: bob }),
       'startOn must be greater then current timestamp'
