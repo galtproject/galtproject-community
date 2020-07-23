@@ -33,7 +33,7 @@ const ProposalStatus = {
   EXECUTED: 2
 };
 
-describe.only('FundRuleRegistry Calls', () => {
+describe('FundRuleRegistry Calls', () => {
   const [
     alice,
     bob,
