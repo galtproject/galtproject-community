@@ -48,6 +48,8 @@ describe('FundRuleRegistry Calls', () => {
   ] = accounts;
   const coreTeam = defaultSender;
 
+  const mockDataLink = 'bafyreidlwatcadkjrnykng7alhuss4iysmpn7lfxidvi6p5dgkhr4xtt6';
+
   before(async function() {
     this.galtToken = await GaltToken.new({ from: coreTeam });
 
@@ -183,7 +185,7 @@ describe('FundRuleRegistry Calls', () => {
     );
     await assertRevert(
       this.fundRuleRegistryX.addMeeting('meetingLink', 0, 1, false, zeroAddress, { from: charlie }),
-      'Not member or multiSig owner'
+      "msg.sender can't manage meeting"
     );
 
     let res = await this.fundRuleRegistryX.addMeeting(
@@ -197,11 +199,6 @@ describe('FundRuleRegistry Calls', () => {
     const meetingId = res.logs[0].args.id.toString(10);
     assert.equal(meetingId, '1');
 
-    res = await this.fundRuleRegistryX.meetings(meetingId);
-    assert.equal(res.active, true);
-    assert.equal(res.dataLink, 'meetingLink');
-
-    const mockDataLink = 'bafyreidlwatcadkjrnykng7alhuss4iysmpn7lfxidvi6p5dgkhr4xtt6';
     const getMockCalldata = str => {
       return this.fundRuleRegistryX.contract.methods
         .addRuleType4(
@@ -211,6 +208,10 @@ describe('FundRuleRegistry Calls', () => {
         )
         .encodeABI();
     };
+
+    res = await this.fundRuleRegistryX.meetings(meetingId);
+    assert.equal(res.active, true);
+    assert.equal(res.dataLink, 'meetingLink');
 
     await assertRevert(
       this.fundRuleRegistryX.addMeetingProposalsData(
@@ -603,11 +604,6 @@ describe('FundRuleRegistry Calls', () => {
     const meetingId = res.logs[0].args.id.toString(10);
     assert.equal(meetingId, '1');
 
-    res = await this.fundRuleRegistryX.meetings(meetingId);
-    assert.equal(res.active, true);
-    assert.equal(res.dataLink, 'meetingLink');
-
-    const mockDataLink = 'bafyreidlwatcadkjrnykng7alhuss4iysmpn7lfxidvi6p5dgkhr4xtt6';
     const getMockCalldata = str => {
       return this.fundRuleRegistryX.contract.methods
         .addRuleType4(
@@ -617,6 +613,10 @@ describe('FundRuleRegistry Calls', () => {
         )
         .encodeABI();
     };
+
+    res = await this.fundRuleRegistryX.meetings(meetingId);
+    assert.equal(res.active, true);
+    assert.equal(res.dataLink, 'meetingLink');
 
     await this.fundRuleRegistryX.addMeetingProposalsData(
       meetingId,
@@ -629,23 +629,59 @@ describe('FundRuleRegistry Calls', () => {
       getMockCalldata('6'),
       { from: serviceCompany }
     );
+
     assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 6);
+
+    await this.fundRuleRegistryX.removeMeetingProposalsData(meetingId, '2', { from: serviceCompany });
+
+    await this.fundRuleRegistryX.addMeetingProposalsData(
+      meetingId,
+      '0',
+      getMockCalldata('11'),
+      getMockCalldata('22'),
+      getMockCalldata('33'),
+      getMockCalldata('44'),
+      '0x',
+      '0x',
+      { from: serviceCompany }
+    );
+
+    assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 4);
+
+    await increaseTime(101);
+
+    await assertRevert(
+      this.fundRuleRegistryX.addMeetingProposalsData(
+        meetingId,
+        '0',
+        getMockCalldata('1'),
+        getMockCalldata('2'),
+        getMockCalldata('3'),
+        getMockCalldata('4'),
+        getMockCalldata('5'),
+        getMockCalldata('6'),
+        { from: serviceCompany }
+      ),
+      'edit not available for reached notice period meetings'
+    );
+
+    assert.equal(await this.fundRuleRegistryX.getMeetingProposalsDataCount(meetingId), 4);
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 0);
 
-    await increaseTime(meetingNoticePeriod + 101);
-
     assert.equal(await this.fundProposalManagerX.getProposalsCount(), 1);
 
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '6', { from: anyone });
+    await increaseTime(meetingNoticePeriod);
+
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '4', { from: anyone });
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
-    assert.equal(res.createdProposalsCount, 6);
+    assert.equal(res.createdProposalsCount, 4);
 
-    assert.equal(await this.fundProposalManagerX.getProposalsCount(), 7);
+    assert.equal(await this.fundProposalManagerX.getProposalsCount(), 5);
 
     const proposal1 = await this.fundProposalManagerX.proposals('2');
-    assert.equal(proposal1.dataLink, `${mockDataLink}1`);
+    assert.equal(proposal1.dataLink, `${mockDataLink}11`);
   });
 });
