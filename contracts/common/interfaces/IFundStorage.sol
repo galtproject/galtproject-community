@@ -12,4 +12,6 @@ pragma solidity ^0.5.13;
 
 interface IFundStorage {
   function isFundMemberOrMultiSigOwner(address _addr) external view returns (bool);
+
+  function serviceCompany() external view returns (address);
 }

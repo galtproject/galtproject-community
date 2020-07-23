@@ -51,9 +51,10 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
   }
 
   modifier canManageMeeting() {
+    IFundStorage fundStorage = IFundStorage(fundRegistry.getStorageAddress());
     require(
-      IFundStorage(fundRegistry.getStorageAddress()).isFundMemberOrMultiSigOwner(msg.sender),
-      "Not member or multiSig owner"
+      fundStorage.isFundMemberOrMultiSigOwner(msg.sender) || fundStorage.serviceCompany() == msg.sender,
+      "msg.sender can't manage meeting"
     );
 
     _;
