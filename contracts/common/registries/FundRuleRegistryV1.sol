@@ -110,7 +110,7 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     }
   }
 
-  function createMeetingProposals(uint256 _meetingId, uint256 _countToCreate) external canManageMeeting {
+  function createMeetingProposals(uint256 _meetingId, uint256 _countToCreate) external {
     require(meetings[_meetingId].active, "Meeting not active");
     require(block.timestamp >= meetings[_meetingId].startOn, "Proposals creation currently not available");
 

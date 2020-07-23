@@ -315,7 +315,7 @@ describe('FundRuleRegistry Calls', () => {
     assert.equal(res.createdProposalsCount, 0);
 
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: anyone }),
       'Proposals creation currently not available'
     );
 
@@ -338,31 +338,26 @@ describe('FundRuleRegistry Calls', () => {
 
     assert.equal(await this.fundProposalManagerX.getProposalsCount(), 0);
 
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: anyone });
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: anyone }),
-      'Not member or multiSig owner'
-    );
-
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '20', { from: multisigOwner1 });
-    await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '4', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '4', { from: anyone }),
       'Proposals overflow'
     );
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 20);
 
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '3', { from: multisigOwner1 });
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '3', { from: anyone });
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 23);
 
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '1', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '1', { from: anyone }),
       'Proposals overflow'
     );
     await assertRevert(
-      this.fundRuleRegistryX.createMeetingProposals(meetingId, '0', { from: multisigOwner1 }),
+      this.fundRuleRegistryX.createMeetingProposals(meetingId, '0', { from: anyone }),
       "countToCreate can't be 0"
     );
 
@@ -643,7 +638,7 @@ describe('FundRuleRegistry Calls', () => {
 
     assert.equal(await this.fundProposalManagerX.getProposalsCount(), 1);
 
-    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '6', { from: multisigOwner1 });
+    await this.fundRuleRegistryX.createMeetingProposals(meetingId, '6', { from: anyone });
 
     res = await this.fundRuleRegistryX.meetings(meetingId);
     assert.equal(res.createdProposalsCount, 6);
