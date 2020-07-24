@@ -114,6 +114,8 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
     if (_proposalData6.length > 1) {
       _pushMeetingProposalData(_index + 5, _id, _proposalData6);
     }
+
+    emit AddMeetingProposals(_id);
   }
 
   function removeMeetingProposalsData(
@@ -136,6 +138,8 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
       delete meetingsProposalsData[_id][i];
       meetingsProposalsData[_id].length = meetingsProposalsData[_id].length - 1;
     }
+
+    emit RemoveMeetingProposals(_id);
   }
 
   function editMeeting(
@@ -188,6 +192,8 @@ contract FundRuleRegistryV1 is FundRuleRegistryCore {
       );
     }
     meetings[_meetingId].createdProposalsCount = meetings[_meetingId].createdProposalsCount.add(_countToCreate);
+
+    emit CreateMeetingProposals(_meetingId, _countToCreate);
   }
 
   function addRuleType1(uint256 _meetingId, bytes32 _ipfsHash, string calldata _dataLink) external onlyRole(ROLE_ADD_FUND_RULE_MANAGER) {
