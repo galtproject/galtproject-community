@@ -39,6 +39,10 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
 
   // ID => meetingDetails
   mapping(uint256 => Meeting) public meetings;
+  mapping(uint256 => bytes[]) public meetingsProposalsData;
+  mapping(uint256 => string[]) public meetingsProposalsDataLink;
+
+  uint256 public meetingNoticePeriod;
 
   modifier onlyRole(bytes32 _role) {
     require(fundRegistry.getACL().hasRole(msg.sender, _role), "Invalid role");
@@ -46,10 +50,11 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
     _;
   }
 
-  modifier onlyMemberOrMultiSigOwner() {
+  modifier canManageMeeting() {
+    IFundStorage fundStorage = IFundStorage(fundRegistry.getStorageAddress());
     require(
-      IFundStorage(fundRegistry.getStorageAddress()).isFundMemberOrMultiSigOwner(msg.sender),
-      "Not member or multiSig owner"
+      fundStorage.isFundMemberOrMultiSigOwner(msg.sender) || fundStorage.serviceCompany() == msg.sender,
+      "msg.sender can't manage meeting"
     );
 
     _;
@@ -60,6 +65,7 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
 
   function initialize(address _fundRegistry) external isInitializer {
     fundRegistry = IFundRegistry(_fundRegistry);
+    meetingNoticePeriod = 864000;
   }
 
   function feeRegistry() public view returns(address) {
@@ -82,5 +88,21 @@ contract FundRuleRegistryCore is IFundRuleRegistry, ChargesEthFee, Initializable
 
   function getMeetingsCount() external view returns (uint256) {
     return _meetings.length;
+  }
+
+  function getMeetingProposalsDataCount(uint256 _meetingId) external view returns (uint256) {
+    return meetingsProposalsData[_meetingId].length;
+  }
+
+  function isMeetingActive(uint256 _meetingId) external view returns (bool) {
+    return meetings[_meetingId].active;
+  }
+
+  function isMeetingStarted(uint256 _meetingId) external view returns (bool) {
+    return block.timestamp > meetings[_meetingId].startOn;
+  }
+
+  function isMeetingEnded(uint256 _meetingId) external view returns (bool) {
+    return block.timestamp > meetings[_meetingId].endOn;
   }
 }

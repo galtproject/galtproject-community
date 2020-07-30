@@ -10,14 +10,16 @@
 pragma solidity ^0.5.13;
 
 import "./interfaces/IFundRegistry.sol";
+import "./registries/interfaces/IFundRuleRegistry.sol";
 import "../common/interfaces/IFundRA.sol";
 import "../abstract/interfaces/IAbstractFundStorage.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@galtproject/private-property-registry/contracts/abstract/PPAbstractProposalManager.sol";
+import "./interfaces/IFundProposalManager.sol";
 
 
-contract FundProposalManager is PPAbstractProposalManager {
+contract FundProposalManager is IFundProposalManager, PPAbstractProposalManager {
   using SafeERC20 for IERC20;
   using SafeMath for uint256;
 
@@ -39,7 +41,7 @@ contract FundProposalManager is PPAbstractProposalManager {
   mapping(uint256 => mapping(address => bool)) public rewardClaimed;
 
   modifier onlyMember() {
-    require(_fundRA().balanceOf(msg.sender) > 0, "Not valid member");
+    require(_fundRA().balanceOf(msg.sender) > 0 || msg.sender == fundRegistry.getRuleRegistryAddress(), "Not valid member");
 
     _;
   }
@@ -86,11 +88,42 @@ contract FundProposalManager is PPAbstractProposalManager {
     payable
     returns (uint256)
   {
+    require(canBeProposedToMeeting(_data), "Only rule registry can propose meeting fund rules");
+
     uint256 id = _propose(_destination, _value, _castVote, _executesIfDecided, _isCommitReveal, _data, _dataLink);
+
     if (_erc20RewardsContract != address(0)) {
       rewardContracts[id] = _erc20RewardsContract;
     }
     return id;
+  }
+
+  function canBeProposedToMeeting(bytes memory _data) public view returns (bool) {
+    uint256 meetingId;
+
+    assembly {
+      let code := mload(add(_data, 0x20))
+      code := and(code, 0xffffffff00000000000000000000000000000000000000000000000000000000)
+
+      switch code
+      // addRuleType1
+      case 0x83a4481300000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+      // addRuleType2
+      case 0xca8decda00000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+      // addRuleType3
+      case 0x46b78ee200000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+      // addRuleType4
+      case 0xc9e5d09600000000000000000000000000000000000000000000000000000000 {
+        meetingId := mload(add(_data, 0x24))
+      }
+    }
+    return meetingId == 0 ? true : msg.sender == fundRegistry.getRuleRegistryAddress();
   }
 
   function depositErc20Reward(uint256 _proposalId, uint256 _amount) external {

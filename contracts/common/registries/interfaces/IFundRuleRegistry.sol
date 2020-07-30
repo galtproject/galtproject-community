@@ -13,6 +13,9 @@ pragma solidity ^0.5.13;
 interface IFundRuleRegistry {
   event AddMeeting(uint256 indexed id, string dataLink, uint256 startOn, uint256 endOn);
   event EditMeeting(uint256 indexed id, string dataLink, uint256 startOn, uint256 endOn, bool active);
+  event AddMeetingProposals(uint256 indexed id);
+  event RemoveMeetingProposals(uint256 indexed id);
+  event CreateMeetingProposals(uint256 indexed id, uint256 indexed count);
 
   event AddFundRule(uint256 indexed id);
   event DisableFundRule(uint256 indexed id);
@@ -25,6 +28,9 @@ interface IFundRuleRegistry {
     uint256 createdAt;
     uint256 startOn;
     uint256 endOn;
+    bool isCommitReveal;
+    address erc20RewardsContract;
+    uint256 createdProposalsCount;
   }
 
   struct FundRule {
@@ -44,4 +50,10 @@ interface IFundRuleRegistry {
 
   function getMeetings() external view returns (uint256[] memory);
   function getMeetingsCount() external view returns (uint256);
+
+  function isMeetingActive(uint256 _meetingId) external view returns (bool);
+
+  function isMeetingStarted(uint256 _meetingId) external view returns (bool);
+
+  function isMeetingEnded(uint256 _meetingId) external view returns (bool);
 }
