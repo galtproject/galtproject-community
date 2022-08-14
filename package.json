@@ -13,7 +13,7 @@
     "@galtproject/private-property-registry": "git+ssh://git@github.com/galtproject/galtproject-private-property-registry.git#cf2d49e",
     "@galtproject/solidity-test-chest": "https://github.com/galtproject/solidity-test-chest#898238d",
     "@galtproject/utils": "^0.9.1",
-    "@openzeppelin/contracts": "2.4.0",
+    "@openzeppelin/contracts": "4.7.2",
     "@openzeppelin/test-environment": "^0.1.3",
     "chai": "^4.2.0",
     "cli-table": "^0.3.1",
